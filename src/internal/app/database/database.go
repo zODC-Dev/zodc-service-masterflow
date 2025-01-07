@@ -4,7 +4,7 @@ import (
 	"log/slog"
 
 	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/configs"
-	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/models"
+	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/entities"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -19,7 +19,7 @@ func ConnectDatabase() (*gorm.DB, error) {
 	}
 
 	//Auto Migration
-	db.AutoMigrate(&models.FormExcel{}, &models.Form{})
+	db.AutoMigrate(&entities.FormExcel{}, &entities.Form{})
 
 	return db, nil
 }

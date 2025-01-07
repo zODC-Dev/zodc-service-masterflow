@@ -2,7 +2,7 @@ package interfaces
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/models"
+	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/dto/requests"
 )
 
 type IFormController interface {
@@ -10,9 +10,9 @@ type IFormController interface {
 }
 
 type IFormService interface {
-	Create(form *models.FormCreateRequest) error
+	Create(form *requests.FormCreateRequest) error
 }
 
 type IFormRepository interface {
-	Create(form *models.FormCreateRequest) error
+	Create(form *requests.FormCreateRequest) error
 }

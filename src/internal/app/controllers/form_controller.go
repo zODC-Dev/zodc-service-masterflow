@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/dto/requests"
 	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/interfaces"
-	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/models"
 )
 
 type formControllerImpl struct {
@@ -19,7 +19,7 @@ func NewFormController(formService interfaces.IFormService) *formControllerImpl 
 }
 
 func (c *formControllerImpl) Create(ctx echo.Context) error {
-	req := new(models.FormCreateRequest)
+	req := new(requests.FormCreateRequest)
 
 	if err := ctx.Bind(req); err != nil {
 		return ctx.JSON(http.StatusBadRequest, err.Error())

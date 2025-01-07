@@ -1,4 +1,4 @@
-package models
+package entities
 
 import (
 	"gorm.io/datatypes"
@@ -36,8 +36,4 @@ type FormExcel struct {
 	DataSheet   string `json:"dataSheet"`
 	Description string `json:"description"`
 	Forms       []Form `json:"formDetails" gorm:"foreignKey:FormExcelID"`
-}
-
-type FormCreateRequest struct {
-	FormExcel
 }

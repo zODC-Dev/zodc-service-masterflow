@@ -3,8 +3,8 @@ package services
 import (
 	"encoding/json"
 
+	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/dto/requests"
 	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/interfaces"
-	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/models"
 	"gorm.io/datatypes"
 )
 
@@ -18,7 +18,7 @@ func NewFormService(formRepo interfaces.IFormRepository) *formServiceImpl {
 	}
 }
 
-func (s *formServiceImpl) Create(req *models.FormCreateRequest) error {
+func (s *formServiceImpl) Create(req *requests.FormCreateRequest) error {
 	for i := range req.Forms {
 		optionsJSON, err := json.Marshal(req.Forms[i].AdvancedOptions)
 		if err != nil {
