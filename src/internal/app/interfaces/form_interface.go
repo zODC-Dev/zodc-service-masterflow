@@ -3,6 +3,7 @@ package interfaces
 import (
 	"github.com/labstack/echo/v4"
 	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/dto/requests"
+	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/entities"
 )
 
 type IFormController interface {
@@ -10,9 +11,12 @@ type IFormController interface {
 }
 
 type IFormService interface {
-	Create(form *requests.FormCreateRequest) error
+	Create(req *requests.FormCreateRequest) error
 }
 
 type IFormRepository interface {
-	Create(form *requests.FormCreateRequest) error
+	Create(req *requests.FormCreateRequest) error
+	Delete(form *entities.Form) error
+	FindAll() ([]entities.Form, error)
+	Find(form *entities.Form) error
 }

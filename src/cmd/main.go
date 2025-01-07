@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log/slog"
-
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/configs"
@@ -18,14 +16,10 @@ func main() {
 	}
 
 	//Database Setup
-	db, err := db.ConnectDatabase()
-	if err != nil {
-		slog.Error("Database fail: ", slog.Any("error", err))
-		return
-	}
+	db := db.ConnectDatabase()
 
 	//Route Setup
-	routeGroup := app.Group("/api/v1")
+	routeGroup := app.Group(configs.Server.API_Prefix)
 	{
 		routes.FormRoute(routeGroup, db)
 		routes.UtilRoute(routeGroup, db)
