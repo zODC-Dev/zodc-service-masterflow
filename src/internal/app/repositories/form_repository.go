@@ -1,25 +1,22 @@
 package repositories
 
 import (
+	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/interfaces"
 	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/models"
 	"gorm.io/gorm"
 )
 
-type IFormRepository interface {
-	Create(form *models.FormCreateRequest) error
-}
-
-type formRepositoryImlp struct {
+type formRepositoryImpl struct {
 	db *gorm.DB
 }
 
-func NewFormRepository(db *gorm.DB) IFormRepository {
-	return &formRepositoryImlp{
+func NewFormRepository(db *gorm.DB) interfaces.IFormRepository {
+	return &formRepositoryImpl{
 		db: db,
 	}
 }
 
-func (r *formRepositoryImlp) Create(req *models.FormCreateRequest) error {
+func (r *formRepositoryImpl) Create(req *models.FormCreateRequest) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		formExcel := models.FormExcel{
 			FileName:    req.FileName,

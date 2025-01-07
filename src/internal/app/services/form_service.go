@@ -3,20 +3,16 @@ package services
 import (
 	"encoding/json"
 
+	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/interfaces"
 	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/models"
-	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/repositories"
 	"gorm.io/datatypes"
 )
 
-type IFormService interface {
-	Create(form *models.FormCreateRequest) error
-}
-
 type formServiceImpl struct {
-	formRepo repositories.IFormRepository
+	formRepo interfaces.IFormRepository
 }
 
-func NewFormService(formRepo repositories.IFormRepository) *formServiceImpl {
+func NewFormService(formRepo interfaces.IFormRepository) *formServiceImpl {
 	return &formServiceImpl{
 		formRepo: formRepo,
 	}

@@ -4,19 +4,15 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/interfaces"
 	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/models"
-	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/services"
 )
 
-type IFormController interface {
-	Create(ctx echo.Context) error
-}
-
 type formControllerImpl struct {
-	formService services.IFormService
+	formService interfaces.IFormService
 }
 
-func NewFormController(formService services.IFormService) *formControllerImpl {
+func NewFormController(formService interfaces.IFormService) *formControllerImpl {
 	return &formControllerImpl{
 		formService: formService,
 	}
