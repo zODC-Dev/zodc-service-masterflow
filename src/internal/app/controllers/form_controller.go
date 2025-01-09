@@ -32,5 +32,4 @@ func (c *formControllerImpl) Create(ctx echo.Context) error {
 	return ctx.JSON(http.StatusCreated, map[string]string{
 		"message": "Form created successfully",
 	})
-
 }

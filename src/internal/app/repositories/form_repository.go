@@ -3,7 +3,6 @@ package repositories
 import (
 	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/dto/requests"
 	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/entities"
-	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/interfaces"
 	"gorm.io/gorm"
 )
 
@@ -11,14 +10,14 @@ type formRepositoryImpl struct {
 	db *gorm.DB
 }
 
-func NewFormRepository(db *gorm.DB) interfaces.IFormRepository {
+func NewFormRepository(db *gorm.DB) *formRepositoryImpl {
 	return &formRepositoryImpl{
 		db: db,
 	}
 }
 
 func (r *formRepositoryImpl) Create(req *requests.FormCreateRequest) error {
-	formExcel := entities.FormExcel{
+	form := entities.Form{
 		FileName:    req.FileName,
 		Title:       req.Title,
 		Function:    req.Function,
@@ -27,18 +26,16 @@ func (r *formRepositoryImpl) Create(req *requests.FormCreateRequest) error {
 		Description: req.Description,
 	}
 
-	if err := r.db.Create(&formExcel).Error; err != nil {
+	if err := r.db.Create(&form).Error; err != nil {
 		return err
 	}
 
-	for i := range req.Forms {
-		req.Forms[i].FormExcelID = formExcel.ID
+	for i := range req.FormFields {
+		req.FormFields[i].FormID = form.ID
 	}
 
-	if len(req.Forms) > 0 {
-		if err := r.db.Create(&req.Forms).Error; err != nil {
-			return err
-		}
+	if err := r.db.Create(&req.FormFields).Error; err != nil {
+		return err
 	}
 
 	return nil

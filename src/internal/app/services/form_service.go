@@ -19,13 +19,13 @@ func NewFormService(formRepo interfaces.IFormRepository) *formServiceImpl {
 }
 
 func (s *formServiceImpl) Create(req *requests.FormCreateRequest) error {
-	for i := range req.Forms {
-		optionsJSON, err := json.Marshal(req.Forms[i].AdvancedOptions)
+	for i := range req.FormFields {
+		optionsJSON, err := json.Marshal(req.FormFields[i].AdvancedOptions)
 		if err != nil {
 			return err
 		}
 
-		req.Forms[i].AdvancedOptions = datatypes.JSON(optionsJSON)
+		req.FormFields[i].AdvancedOptions = datatypes.JSON(optionsJSON)
 	}
 
 	return s.formRepo.Create(req)

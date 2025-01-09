@@ -23,7 +23,7 @@ func ConnectDatabase() *gorm.DB {
 	}
 
 	//Auto Migration
-	db.AutoMigrate(&entities.FormExcel{}, &entities.Form{})
+	db.AutoMigrate(&entities.Form{}, &entities.FormField{})
 
 	return db
 }

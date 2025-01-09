@@ -16,24 +16,24 @@ const (
 type Form struct {
 	gorm.Model
 
-	Icon            string         `json:"icon"`
-	Title           string         `json:"title"`
-	Category        Category       `json:"category"`
-	FieldName       string         `json:"fieldName"`
-	FieldType       string         `json:"fieldType"`
-	Required        bool           `json:"required"`
-	AdvancedOptions datatypes.JSON `json:"advancedOptions" gorm:"type:jsonb"`
-	FormExcelID     uint           `json:"formExcelId" gorm:"index"`
+	FileName    string      `json:"fileName" gorm:"not null"`
+	Title       string      `json:"title" gorm:"not null"`
+	Function    string      `json:"function" gorm:"not null"`
+	Template    string      `json:"template" gorm:"not null"`
+	DataSheet   string      `json:"dataSheet" gorm:"not null"`
+	Description string      `json:"description" gorm:"not null"`
+	FormFields  []FormField `gorm:"foreignKey:FormID;not null"`
 }
 
-type FormExcel struct {
+type FormField struct {
 	gorm.Model
 
-	FileName    string `json:"fileName"`
-	Title       string `json:"title"`
-	Function    string `json:"function"`
-	Template    string `json:"template"`
-	DataSheet   string `json:"dataSheet"`
-	Description string `json:"description"`
-	Forms       []Form `json:"formDetails" gorm:"foreignKey:FormExcelID"`
+	Icon            string         `json:"icon" gorm:"not null"`
+	Title           string         `json:"title" gorm:"not null"`
+	Category        Category       `json:"category" gorm:"not null"`
+	FieldName       string         `json:"fieldName" gorm:"not null"`
+	FieldType       string         `json:"fieldType" gorm:"not null"`
+	Required        bool           `json:"required" gorm:"not null"`
+	AdvancedOptions datatypes.JSON `json:"advancedOptions" gorm:"type:jsonb;not null"`
+	FormID          uint
 }
