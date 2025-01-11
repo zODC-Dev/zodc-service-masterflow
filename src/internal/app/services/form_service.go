@@ -39,3 +39,11 @@ func (s *formServiceImpl) FindAll() (*[]entities.Form, error) {
 	}
 	return forms, nil
 }
+
+func (s *formServiceImpl) Delete(form *entities.Form) error {
+	return s.formRepo.Delete(form)
+}
+
+func (s *formServiceImpl) FindById(id string) (*entities.Form, error) {
+	return s.formRepo.FindById(id)
+}

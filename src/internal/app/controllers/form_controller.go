@@ -42,3 +42,21 @@ func (c *formControllerImpl) FindAll(ctx echo.Context) error {
 
 	return ctx.JSON(http.StatusCreated, forms)
 }
+
+func (c *formControllerImpl) Delete(ctx echo.Context) error {
+	id := ctx.Param("id")
+
+	form, err := c.formService.FindById(id)
+	if err != nil {
+		return ctx.JSON(http.StatusBadGateway, err.Error())
+	}
+
+	deleteErr := c.formService.Delete(form)
+	if deleteErr != nil {
+		return ctx.JSON(http.StatusBadGateway, deleteErr.Error())
+	}
+
+	return ctx.JSON(http.StatusCreated, map[string]string{
+		"message": "Form created successfully",
+	})
+}

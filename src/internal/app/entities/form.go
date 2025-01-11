@@ -2,7 +2,6 @@ package entities
 
 import (
 	"gorm.io/datatypes"
-	"gorm.io/gorm"
 )
 
 type Category string
@@ -14,7 +13,7 @@ const (
 )
 
 type Form struct {
-	gorm.Model
+	BaseModel
 
 	FileId      string         `json:"fileId" gorm:"not null"`
 	FileName    string         `json:"fileName" gorm:"not null"`
@@ -27,7 +26,7 @@ type Form struct {
 }
 
 type FormField struct {
-	gorm.Model
+	BaseModel
 
 	Icon            string         `json:"icon" gorm:"not null"`
 	Title           string         `json:"title" gorm:"not null"`
