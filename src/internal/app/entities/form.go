@@ -16,13 +16,14 @@ const (
 type Form struct {
 	gorm.Model
 
-	FileName    string      `json:"fileName" gorm:"not null"`
-	Title       string      `json:"title" gorm:"not null"`
-	Function    string      `json:"function" gorm:"not null"`
-	Template    string      `json:"template" gorm:"not null"`
-	DataSheet   string      `json:"dataSheet" gorm:"not null"`
-	Description string      `json:"description" gorm:"not null"`
-	FormFields  []FormField `gorm:"foreignKey:FormID;not null"`
+	FileId      string         `json:"fileId" gorm:"not null"`
+	FileName    string         `json:"fileName" gorm:"not null"`
+	Title       string         `json:"title" gorm:"not null"`
+	Function    string         `json:"function" gorm:"not null"`
+	Template    string         `json:"template" gorm:"not null"`
+	DataSheet   datatypes.JSON `json:"dataSheet" gorm:"type:jsonb;not null"`
+	Description string         `json:"description" gorm:"not null"`
+	FormFields  []FormField    `json:"formFields" gorm:"foreignKey:FormID;not null"`
 }
 
 type FormField struct {

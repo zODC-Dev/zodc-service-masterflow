@@ -16,5 +16,6 @@ func FormRoute(group *echo.Group, db *gorm.DB) {
 	formRoute := group.Group("/forms")
 	{
 		formRoute.POST("/create", formController.Create)
+		formRoute.GET("/all", formController.FindAll)
 	}
 }

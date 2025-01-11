@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/dto/requests"
+	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/entities"
 	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/interfaces"
 	"gorm.io/datatypes"
 )
@@ -29,4 +30,12 @@ func (s *formServiceImpl) Create(req *requests.FormCreateRequest) error {
 	}
 
 	return s.formRepo.Create(req)
+}
+
+func (s *formServiceImpl) FindAll() (*[]entities.Form, error) {
+	forms, err := s.formRepo.FindAll()
+	if err != nil {
+		return nil, err
+	}
+	return forms, nil
 }

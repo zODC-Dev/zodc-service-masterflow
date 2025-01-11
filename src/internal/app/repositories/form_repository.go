@@ -45,14 +45,14 @@ func (r *formRepositoryImpl) Delete(form *entities.Form) error {
 	return r.db.Delete(&form).Error
 }
 
-func (r *formRepositoryImpl) FindAll() ([]entities.Form, error) {
+func (r *formRepositoryImpl) FindAll() (*[]entities.Form, error) {
 	var forms []entities.Form
-	err := r.db.Find(&forms).Error
+	err := r.db.Preload("FormFields").Find(&forms).Error
 	if err != nil {
 		return nil, err
 	}
 
-	return forms, nil
+	return &forms, nil
 }
 
 func (r *formRepositoryImpl) Find(form *entities.Form) error {

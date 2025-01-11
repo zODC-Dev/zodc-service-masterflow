@@ -33,3 +33,12 @@ func (c *formControllerImpl) Create(ctx echo.Context) error {
 		"message": "Form created successfully",
 	})
 }
+
+func (c *formControllerImpl) FindAll(ctx echo.Context) error {
+	forms, err := c.formService.FindAll()
+	if err != nil {
+		return ctx.JSON(http.StatusBadGateway, err.Error())
+	}
+
+	return ctx.JSON(http.StatusCreated, forms)
+}
