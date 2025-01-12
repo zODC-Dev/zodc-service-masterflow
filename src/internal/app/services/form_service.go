@@ -1,12 +1,10 @@
 package services
 
 import (
-	"encoding/json"
-
 	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/dto/requests"
+	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/dto/responses"
 	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/entities"
 	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/interfaces"
-	"gorm.io/datatypes"
 )
 
 type formServiceImpl struct {
@@ -20,24 +18,76 @@ func NewFormService(formRepo interfaces.IFormRepository) *formServiceImpl {
 }
 
 func (s *formServiceImpl) Create(req *requests.FormCreateRequest) error {
-	for i := range req.FormFields {
-		optionsJSON, err := json.Marshal(req.FormFields[i].AdvancedOptions)
-		if err != nil {
-			return err
-		}
-
-		req.FormFields[i].AdvancedOptions = datatypes.JSON(optionsJSON)
+	var form = entities.Form{
+		FileId:      req.FileId,
+		FileName:    req.FileName,
+		Title:       req.Title,
+		Function:    req.Function,
+		Template:    req.Template,
+		DataSheet:   req.DataSheet,
+		Description: req.Description,
 	}
 
-	return s.formRepo.Create(req)
+	var formFields []entities.FormField
+
+	for i := range req.FormFields {
+		for j := range req.FormFields[i] {
+			var data = req.FormFields[i][j]
+			formFields = append(formFields, entities.FormField{
+				Icon:            data.Icon,
+				Title:           data.Title,
+				Category:        data.Category,
+				FieldName:       data.FieldName,
+				FieldType:       data.FieldType,
+				Required:        data.Required,
+				AdvancedOptions: data.AdvancedOptions,
+				ColNum:          uint(i),
+			})
+		}
+	}
+
+	form.FormFields = formFields
+
+	return s.formRepo.Create(&form)
 }
 
-func (s *formServiceImpl) FindAll() (*[]entities.Form, error) {
+func (s *formServiceImpl) FindAll() (*[]responses.FormResponse, error) {
 	forms, err := s.formRepo.FindAll()
 	if err != nil {
 		return nil, err
 	}
-	return forms, nil
+
+	var formsResponses []responses.FormResponse
+
+	for i := range *forms {
+		data := (*forms)[i]
+
+		formFieldsResponses := [][]entities.FormField{}
+
+		for _, field := range data.FormFields {
+
+			rowIndex := int(field.ColNum)
+
+			for len(formFieldsResponses) <= rowIndex {
+				formFieldsResponses = append(formFieldsResponses, []entities.FormField{})
+			}
+
+			formFieldsResponses[rowIndex] = append(formFieldsResponses[rowIndex], field)
+		}
+
+		formsResponses = append(formsResponses, responses.FormResponse{
+			FileId:      data.FileId,
+			FileName:    data.FileName,
+			Title:       data.Title,
+			Function:    data.Function,
+			Template:    data.Template,
+			DataSheet:   data.DataSheet,
+			Description: data.Description,
+			FormFields:  formFieldsResponses,
+		})
+	}
+
+	return &formsResponses, nil
 }
 
 func (s *formServiceImpl) Delete(form *entities.Form) error {

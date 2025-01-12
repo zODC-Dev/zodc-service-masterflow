@@ -35,5 +35,6 @@ type FormField struct {
 	FieldType       string         `json:"fieldType" gorm:"not null"`
 	Required        bool           `json:"required" gorm:"not null"`
 	AdvancedOptions datatypes.JSON `json:"advancedOptions" gorm:"type:jsonb;not null"`
-	FormID          uint
+	FormID          uint           `json:"formId" gorm:"not null"`
+	ColNum          uint           `json:"rowNum" gorm:"not null"`
 }

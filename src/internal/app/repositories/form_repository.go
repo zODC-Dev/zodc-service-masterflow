@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/dto/requests"
 	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/entities"
 	"gorm.io/gorm"
 )
@@ -16,29 +15,8 @@ func NewFormRepository(db *gorm.DB) *formRepositoryImpl {
 	}
 }
 
-func (r *formRepositoryImpl) Create(req *requests.FormCreateRequest) error {
-	form := entities.Form{
-		FileName:    req.FileName,
-		Title:       req.Title,
-		Function:    req.Function,
-		Template:    req.Template,
-		DataSheet:   req.DataSheet,
-		Description: req.Description,
-	}
-
-	if err := r.db.Create(&form).Error; err != nil {
-		return err
-	}
-
-	for i := range req.FormFields {
-		req.FormFields[i].FormID = form.ID
-	}
-
-	if err := r.db.Create(&req.FormFields).Error; err != nil {
-		return err
-	}
-
-	return nil
+func (r *formRepositoryImpl) Create(form *entities.Form) error {
+	return r.db.Create(&form).Error
 }
 
 func (r *formRepositoryImpl) Delete(form *entities.Form) error {

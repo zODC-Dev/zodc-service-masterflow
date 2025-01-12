@@ -1,10 +1,9 @@
 package main
 
 import (
-	"net/http"
-
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	echoSwagger "github.com/swaggo/echo-swagger"
 	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/configs"
 	db "github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/database"
 	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/routes"
@@ -16,11 +15,14 @@ func main() {
 		app.Use(middleware.Logger())
 		app.Use(middleware.Recover())
 		app.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-			Skipper:      middleware.DefaultSkipper,
 			AllowOrigins: []string{"*"},
-			AllowMethods: []string{http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPatch, http.MethodPost, http.MethodDelete},
+			AllowMethods: []string{"*"},
+			AllowHeaders: []string{"*"},
 		}))
 	}
+
+	//Setup swagger
+	app.GET("/docs/*", echoSwagger.WrapHandler)
 
 	//Database Setup
 	db := db.ConnectDatabase()
