@@ -76,6 +76,11 @@ func (s *formServiceImpl) FindAll() (*[]responses.FormResponse, error) {
 		}
 
 		formsResponses = append(formsResponses, responses.FormResponse{
+			BaseModel: entities.BaseModel{
+				ID:        data.ID,
+				CreatedAt: data.CreatedAt,
+				UpdatedAt: data.UpdatedAt,
+			},
 			FileId:      data.FileId,
 			FileName:    data.FileName,
 			Title:       data.Title,
