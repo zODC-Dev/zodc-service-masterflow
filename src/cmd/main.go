@@ -6,6 +6,7 @@ import (
 	echoSwagger "github.com/swaggo/echo-swagger"
 	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/configs"
 	db "github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/database"
+	database "github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/database/generated"
 	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/routes"
 )
 
@@ -26,12 +27,13 @@ func main() {
 
 	//Database Setup
 	db := db.ConnectDatabase()
+	queries := database.New(db)
 
 	//Route Setup
 	routeGroup := app.Group(configs.Server.API_Prefix)
 	{
-		routes.FormRoute(routeGroup, db)
-		routes.UtilRoute(routeGroup, db)
+		routes.FormRoute(routeGroup, db, queries)
+		routes.UtilRoute(routeGroup)
 	}
 
 	app.Logger.Fatal(app.Start(configs.Env.SERVER_ADDRESS))

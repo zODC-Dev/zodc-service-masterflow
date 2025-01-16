@@ -1,104 +1,93 @@
 package services
 
 import (
-	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/dto/requests"
-	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/dto/responses"
-	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/entities"
-	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/interfaces"
+	"context"
+
+	"github.com/jackc/pgx/v5"
+	database "github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/database/generated"
+	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/database/models"
 )
 
 type formServiceImpl struct {
-	formRepo interfaces.IFormRepository
+	db      *pgx.Conn
+	queries *database.Queries
 }
 
-func NewFormService(formRepo interfaces.IFormRepository) *formServiceImpl {
+func NewFormService(db *pgx.Conn, queries *database.Queries) *formServiceImpl {
 	return &formServiceImpl{
-		formRepo: formRepo,
+		db:      db,
+		queries: queries,
 	}
 }
 
-func (s *formServiceImpl) Create(req *requests.FormCreateRequest) error {
-	var form = entities.Form{
-		FileId:      req.FileId,
-		FileName:    req.FileName,
-		Title:       req.Title,
-		Function:    req.Function,
-		Template:    req.Template,
-		DataSheet:   req.DataSheet,
-		Description: req.Description,
+func (s *formServiceImpl) Create(ctx context.Context, createFormRequest *models.CreateFormRequest) error {
+	tx, err := s.db.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+	qtx := s.queries.WithTx(tx)
+
+	/**
+	 * Create form
+	 */
+	form, err := s.queries.CreateForm(ctx, &database.CreateFormParams{
+		FileName:    createFormRequest.FileName,
+		Title:       createFormRequest.Title,
+		Function:    createFormRequest.Function,
+		Version:     createFormRequest.Version,
+		Template:    createFormRequest.Template,
+		Datasheet:   createFormRequest.Datasheet,
+		Description: createFormRequest.Description,
+		Decoration:  createFormRequest.Decoration,
+	})
+	if err != nil {
+		return err
 	}
 
-	var formFields []entities.FormField
-
-	for i := range req.FormFields {
-		for j := range req.FormFields[i] {
-			var data = req.FormFields[i][j]
-			formFields = append(formFields, entities.FormField{
-				Icon:            data.Icon,
-				Title:           data.Title,
-				Category:        data.Category,
-				FieldName:       data.FieldName,
-				FieldType:       data.FieldType,
-				Required:        data.Required,
-				AdvancedOptions: data.AdvancedOptions,
-				ColNum:          uint(i),
+	/**
+	 * Create form fields
+	 */
+	for i := range createFormRequest.FormFields {
+		for j := range createFormRequest.FormFields[i] {
+			var formFieldData = createFormRequest.FormFields[i][j]
+			_, err = qtx.CreateFormField(ctx, &database.CreateFormFieldParams{
+				FieldID:         formFieldData.FieldID,
+				Icon:            formFieldData.Icon,
+				Title:           formFieldData.Title,
+				Category:        formFieldData.Category,
+				FieldName:       formFieldData.FieldName,
+				FieldType:       formFieldData.FieldType,
+				Required:        formFieldData.Required,
+				AdvancedOptions: formFieldData.AdvancedOptions,
+				ColNum:          int32(i),
+				FormID:          form.ID,
 			})
 		}
 	}
-
-	form.FormFields = formFields
-
-	return s.formRepo.Create(&form)
-}
-
-func (s *formServiceImpl) FindAll() (*[]responses.FormResponse, error) {
-	forms, err := s.formRepo.FindAll()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	var formsResponses []responses.FormResponse
-
-	for i := range *forms {
-		data := (*forms)[i]
-
-		formFieldsResponses := [][]entities.FormField{}
-
-		for _, field := range data.FormFields {
-
-			rowIndex := int(field.ColNum)
-
-			for len(formFieldsResponses) <= rowIndex {
-				formFieldsResponses = append(formFieldsResponses, []entities.FormField{})
-			}
-
-			formFieldsResponses[rowIndex] = append(formFieldsResponses[rowIndex], field)
-		}
-
-		formsResponses = append(formsResponses, responses.FormResponse{
-			BaseModel: entities.BaseModel{
-				ID:        data.ID,
-				CreatedAt: data.CreatedAt,
-				UpdatedAt: data.UpdatedAt,
-			},
-			FileId:      data.FileId,
-			FileName:    data.FileName,
-			Title:       data.Title,
-			Function:    data.Function,
-			Template:    data.Template,
-			DataSheet:   data.DataSheet,
-			Description: data.Description,
-			FormFields:  formFieldsResponses,
-		})
+	/**
+	 * Commit transaction
+	 */
+	if err := tx.Commit(ctx); err != nil {
+		return err
 	}
 
-	return &formsResponses, nil
+	return nil
 }
 
-func (s *formServiceImpl) Delete(form *entities.Form) error {
-	return s.formRepo.Delete(form)
+func (s *formServiceImpl) FindAll(ctx context.Context) ([]*database.FindAllFormsRow, error) {
+	forms, err := s.queries.FindAllForms(ctx)
+	return forms, err
 }
 
-func (s *formServiceImpl) FindById(id string) (*entities.Form, error) {
-	return s.formRepo.FindById(id)
-}
+// func (s *formServiceImpl) Delete(form *entities.Form) error {
+// 	return s.formRepo.Delete(form)
+// }
+
+// func (s *formServiceImpl) FindById(id string) (*entities.Form, error) {
+// 	return s.formRepo.FindById(id)
+// }

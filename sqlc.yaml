@@ -1,0 +1,26 @@
+version: "2"
+sql:
+  - name: "database"
+    engine: "postgresql"
+    schema:
+      - "database/sql/forms/schema.sql"
+      - "database/sql/authors/schema.sql"
+    queries:
+      - "database/sql/forms/query.sql"
+      - "database/sql/authors/query.sql"
+    gen:
+      go:
+        package: "database"
+        out: "src/internal/app/database/generated"
+        sql_package: "pgx/v5"
+        emit_db_tags: true
+        emit_empty_slices: true
+        emit_json_tags: true
+        json_tags_case_style: camel
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: true
+        overrides:
+          - db_type: "jsonb"
+            go_type:
+              import: "encoding/json"
+              type: "RawMessage"

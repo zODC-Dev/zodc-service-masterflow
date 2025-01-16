@@ -1,29 +1,20 @@
 package db
 
 import (
+	"context"
 	"log/slog"
 	"os"
 
-	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/configs"
-	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/entities"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"github.com/jackc/pgx/v5"
 )
 
-func ConnectDatabase() *gorm.DB {
-	dsn := configs.Env.DATABASE_POSTGRE_DSN
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	defer slog.Info("Database running")
-
+func ConnectDatabase() *pgx.Conn {
+	ctx := context.Background()
+	db, err := pgx.Connect(ctx, "postgres://zodcdbuser:D4yl5m4tkh4usi3um4nh@thisisdbformasterzodcserviceflowonly.thanhf.dev:5432/zodc_masterflow")
 	if err != nil {
 		slog.Error("Database fail: ", slog.Any("error", err))
-
-		//End App
 		os.Exit(1)
 	}
-
-	//Auto Migration
-	db.AutoMigrate(&entities.Form{}, &entities.FormField{})
 
 	return db
 }
