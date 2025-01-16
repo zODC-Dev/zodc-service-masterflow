@@ -320,6 +320,44 @@ func (q *Queries) FindAllForms(ctx context.Context) ([]*FindAllFormsRow, error) 
 	return items, nil
 }
 
+const formView = `-- name: FormView :many
+SELECT id, created_at, updated_at, deleted_at, file_name, title, function, version, template, datasheet, description, decoration, form_fields FROM form_view
+`
+
+func (q *Queries) FormView(ctx context.Context) ([]*FormView, error) {
+	rows, err := q.db.Query(ctx, formView)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*FormView{}
+	for rows.Next() {
+		var i FormView
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.FileName,
+			&i.Title,
+			&i.Function,
+			&i.Version,
+			&i.Template,
+			&i.Datasheet,
+			&i.Description,
+			&i.Decoration,
+			&i.FormFields,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getAuthor = `-- name: GetAuthor :one
 SELECT id, name, bio FROM authors
 WHERE id = $1 LIMIT 1

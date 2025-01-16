@@ -47,3 +47,19 @@ type FormField struct {
 	ColNum          int32            `db:"col_num" json:"colNum"`
 	FormID          int32            `db:"form_id" json:"formId"`
 }
+
+type FormView struct {
+	ID          int32            `db:"id" json:"id"`
+	CreatedAt   pgtype.Timestamp `db:"created_at" json:"createdAt"`
+	UpdatedAt   pgtype.Timestamp `db:"updated_at" json:"updatedAt"`
+	DeletedAt   pgtype.Timestamp `db:"deleted_at" json:"deletedAt"`
+	FileName    string           `db:"file_name" json:"fileName"`
+	Title       string           `db:"title" json:"title"`
+	Function    string           `db:"function" json:"function"`
+	Version     int32            `db:"version" json:"version"`
+	Template    pgtype.Text      `db:"template" json:"template"`
+	Datasheet   json.RawMessage  `db:"datasheet" json:"datasheet"`
+	Description string           `db:"description" json:"description"`
+	Decoration  string           `db:"decoration" json:"decoration"`
+	FormFields  []FormField      `db:"form_fields" json:"formFields"`
+}

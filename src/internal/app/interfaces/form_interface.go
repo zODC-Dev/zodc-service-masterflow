@@ -9,5 +9,6 @@ import (
 
 type FormService interface {
 	FindAll(ctx context.Context) ([]*database.FindAllFormsRow, error)
+	FindAllView(ctx context.Context) ([]*database.FormView, error)
 	Create(ctx context.Context, createFormRequest *models.CreateFormRequest) error
 }

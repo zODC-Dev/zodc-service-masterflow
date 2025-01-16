@@ -29,3 +29,14 @@ CREATE TABLE IF NOT EXISTS form_fields (
     col_num INT NOT NULL,
     form_id INT NOT NULL REFERENCES forms (id)
 );
+
+CREATE VIEW form_view AS
+SELECT
+    forms.*,
+    JSON_AGG(form_fields.*) AS form_fields
+FROM
+    forms
+JOIN
+    form_fields ON form_fields.form_id = forms.id
+GROUP BY
+    forms.id;

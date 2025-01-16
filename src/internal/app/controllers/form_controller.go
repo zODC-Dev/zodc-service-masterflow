@@ -39,7 +39,7 @@ func (c *formControllerImpl) Create(ctx echo.Context) error {
 func (c *formControllerImpl) FindAll(ctx echo.Context) error {
 	ctxReq := ctx.Request().Context()
 
-	forms, err := c.formService.FindAll(ctxReq)
+	forms, err := c.formService.FindAllView(ctxReq)
 	if err != nil {
 		return ctx.JSON(http.StatusBadGateway, err.Error())
 	}

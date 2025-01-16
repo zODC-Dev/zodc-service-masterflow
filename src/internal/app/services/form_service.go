@@ -84,6 +84,11 @@ func (s *formServiceImpl) FindAll(ctx context.Context) ([]*database.FindAllForms
 	return forms, err
 }
 
+func (s *formServiceImpl) FindAllView(ctx context.Context) ([]*database.FormView, error) {
+	forms, err := s.queries.FormView(ctx)
+	return forms, err
+}
+
 // func (s *formServiceImpl) Delete(form *entities.Form) error {
 // 	return s.formRepo.Delete(form)
 // }

@@ -3,6 +3,9 @@ SELECT forms.*, sqlc.embed(form_fields)
 FROM forms
 LEFT JOIN form_fields ON forms.id = form_fields.form_id;
 
+-- name: FormView :many
+SELECT * FROM form_view;
+
 -- name: CreateForm :one
 INSERT INTO forms (
     file_name,
