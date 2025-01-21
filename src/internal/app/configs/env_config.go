@@ -9,9 +9,10 @@ import (
 )
 
 type envConfig struct {
-	SERVER_ADDRESS       string `env:"SERVER_ADDRESS,required" envDefault:"localhost:8080"`
-	DATABASE_POSTGRE_DSN string `env:"DATABASE_POSTGRE_DSN,required"`
-	DATABASE_REDIS_URL   string `env:"DATABASE_REDIS_URL,required"`
+	SERVER_ADDRESS string `env:"SERVER_ADDRESS,required"`
+	POSTGRE_DSN    string `env:"POSTGRE_DSN,required"`
+	DB_DSN         string `env:"DB_DSN,required"`
+	REDIS_URL      string `env:"REDIS_URL,required"`
 }
 
 // Export global

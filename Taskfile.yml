@@ -1,0 +1,38 @@
+version: "3"
+
+dotenv: [".env"]
+
+tasks:
+  clean:
+    cmds:
+      - go mod tidy
+
+  jet:
+    cmds:
+      - jet -dsn=$JET_DSN -path=database/generated
+
+  setup:
+    cmds:
+      - go mod download
+      - go install github.com/go-jet/jet/v2/cmd/jet@latest
+      - go install github.com/pressly/goose/v3/cmd/goose@latest
+      - go install github.com/air-verse/air@latest
+      - task: jet
+
+  run:
+    cmds:
+      - go run ./src/cmd/main.go
+
+  run-dev:
+    cmds:
+      - air
+
+  migrate-up:
+    cmds:
+      - goose up
+      - task: jet
+
+  migrate-down:
+    cmds:
+      - goose down
+      - task: jet

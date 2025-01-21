@@ -1,19 +1,26 @@
 package requests
 
-import (
-	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/entities"
-	"gorm.io/datatypes"
-)
+type FormFieldsCreate struct {
+	FieldID         string
+	Icon            string
+	Title           string
+	Category        string
+	FieldName       string
+	FieldType       string
+	Required        bool
+	AdvancedOptions map[string]interface{}
+	ColNum          int32
+	FormID          int32
+}
 
-type FormCreateRequest struct {
-	entities.BaseModel
-
-	FileId      string                 `json:"fileId"`
-	FileName    string                 `json:"fileName"`
-	Title       string                 `json:"title"`
-	Function    string                 `json:"function"`
-	Template    string                 `json:"template"`
-	DataSheet   datatypes.JSON         `json:"dataSheet"`
-	Description string                 `json:"description"`
-	FormFields  [][]entities.FormField `json:"formFields"`
+type FormCreate struct {
+	FileName    string
+	Title       string
+	CategoryID  *int32
+	Version     int32
+	TemplateID  *int32
+	DataSheet   *map[string]interface{}
+	Description string
+	Decoration  string
+	FormFields  [][]FormFieldsCreate `json:"formFields"`
 }

@@ -1,29 +1,20 @@
 package db
 
 import (
-	"log/slog"
+	"database/sql"
+	"fmt"
 	"os"
 
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/configs"
-	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/entities"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
-func ConnectDatabase() *gorm.DB {
-	dsn := configs.Env.DATABASE_POSTGRE_DSN
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	defer slog.Info("Database running")
-
+func ConnectDatabase() *sql.DB {
+	db, err := sql.Open("pgx", configs.Env.DB_DSN)
 	if err != nil {
-		slog.Error("Database fail: ", slog.Any("error", err))
-
-		//End App
+		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
 	}
-
-	//Auto Migration
-	db.AutoMigrate(&entities.Form{}, &entities.FormField{})
 
 	return db
 }

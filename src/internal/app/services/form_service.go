@@ -1,104 +1,124 @@
 package services
 
 import (
+	"encoding/json"
+
+	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow/public/model"
 	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/dto/requests"
 	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/dto/responses"
-	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/entities"
 	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/interfaces"
+	"github.com/zODC-Dev/zodc-service-masterflow/src/pkg/utils"
 )
 
 type formServiceImpl struct {
-	formRepo interfaces.IFormRepository
+	formRepo interfaces.FormRepository
 }
 
-func NewFormService(formRepo interfaces.IFormRepository) *formServiceImpl {
+func NewFormService(formRepo interfaces.FormRepository) *formServiceImpl {
 	return &formServiceImpl{
 		formRepo: formRepo,
 	}
 }
 
-func (s *formServiceImpl) Create(req *requests.FormCreateRequest) error {
-	var form = entities.Form{
-		FileId:      req.FileId,
-		FileName:    req.FileName,
-		Title:       req.Title,
-		Function:    req.Function,
-		Template:    req.Template,
-		DataSheet:   req.DataSheet,
-		Description: req.Description,
-	}
-
-	var formFields []entities.FormField
-
-	for i := range req.FormFields {
-		for j := range req.FormFields[i] {
-			var data = req.FormFields[i][j]
-			formFields = append(formFields, entities.FormField{
-				Icon:            data.Icon,
-				Title:           data.Title,
-				Category:        data.Category,
-				FieldName:       data.FieldName,
-				FieldType:       data.FieldType,
-				Required:        data.Required,
-				AdvancedOptions: data.AdvancedOptions,
-				ColNum:          uint(i),
-			})
-		}
-	}
-
-	form.FormFields = formFields
-
-	return s.formRepo.Create(&form)
-}
-
-func (s *formServiceImpl) FindAll() (*[]responses.FormResponse, error) {
+func (s *formServiceImpl) FindAll() (*[]responses.FormFindAll, error) {
 	forms, err := s.formRepo.FindAll()
 	if err != nil {
 		return nil, err
 	}
 
-	var formsResponses []responses.FormResponse
+	var formsResponse = []responses.FormFindAll{}
 
-	for i := range *forms {
-		data := (*forms)[i]
+	for _, form := range *forms {
 
-		formFieldsResponses := [][]entities.FormField{}
+		formFieldsList := [][]responses.FormFieldsFindAll{}
 
-		for _, field := range data.FormFields {
+		for _, formField := range form.FormFields {
+			colIndex := formField.ColNum
 
-			rowIndex := int(field.ColNum)
-
-			for len(formFieldsResponses) <= rowIndex {
-				formFieldsResponses = append(formFieldsResponses, []entities.FormField{})
+			for len(formFieldsList) <= int(colIndex) {
+				formFieldsList = append(formFieldsList, []responses.FormFieldsFindAll{})
 			}
 
-			formFieldsResponses[rowIndex] = append(formFieldsResponses[rowIndex], field)
+			var formFieldFindAll responses.FormFieldsFindAll
+
+			var advancedOptions map[string]interface{}
+			if err := json.Unmarshal([]byte(formField.AdvancedOptions), &advancedOptions); err != nil {
+				return nil, err
+			}
+
+			formFieldFindAll.AdvancedOptions = advancedOptions
+
+			if err := utils.Mapper(formField, &formFieldFindAll); err != nil {
+				return nil, err
+			}
+
+			formFieldsList[colIndex] = append(formFieldsList[colIndex], formFieldFindAll)
 		}
 
-		formsResponses = append(formsResponses, responses.FormResponse{
-			BaseModel: entities.BaseModel{
-				ID:        data.ID,
-				CreatedAt: data.CreatedAt,
-				UpdatedAt: data.UpdatedAt,
-			},
-			FileId:      data.FileId,
-			FileName:    data.FileName,
-			Title:       data.Title,
-			Function:    data.Function,
-			Template:    data.Template,
-			DataSheet:   data.DataSheet,
-			Description: data.Description,
-			FormFields:  formFieldsResponses,
-		})
+		var formFindAll responses.FormFindAll
+		err := utils.Mapper(form, &formFindAll)
+		if err != nil {
+			return nil, err
+		}
+
+		formFindAll.FormFields = formFieldsList
+
+		var dataSheet map[string]interface{}
+		if err := json.Unmarshal([]byte(*form.DataSheet), &dataSheet); err != nil {
+			return nil, err
+		}
+
+		formFindAll.DataSheet = &dataSheet
+
+		formsResponse = append(formsResponse, formFindAll)
 	}
 
-	return &formsResponses, nil
+	return &formsResponse, nil
+
 }
 
-func (s *formServiceImpl) Delete(form *entities.Form) error {
-	return s.formRepo.Delete(form)
-}
+func (s *formServiceImpl) Create(formCreate *requests.FormCreate) error {
+	var formModel model.Forms
 
-func (s *formServiceImpl) FindById(id string) (*entities.Form, error) {
-	return s.formRepo.FindById(id)
+	if err := utils.Mapper(formCreate, &formModel); err != nil {
+		return err
+	}
+
+	formFieldsModels := []model.FormFields{}
+
+	dataSheet, err := json.Marshal(formCreate.DataSheet)
+	if err != nil {
+		return err
+	}
+	dataSheetPtr := string(dataSheet)
+	formModel.DataSheet = &dataSheetPtr
+
+	for i := range formCreate.FormFields {
+		for j := range formCreate.FormFields[i] {
+
+			var formFieldModel model.FormFields
+
+			if err := utils.Mapper(formCreate.FormFields[i][j], &formFieldModel); err != nil {
+				return err
+			}
+
+			advancedOptions, err := json.Marshal(formCreate.FormFields[i][j].AdvancedOptions)
+			if err != nil {
+				return err
+			}
+
+			formFieldModel.AdvancedOptions = string(advancedOptions)
+
+			formFieldModel.ColNum = int32(i)
+
+			formFieldsModels = append(formFieldsModels, formFieldModel)
+		}
+	}
+
+	if err := s.formRepo.CreateForm(formModel, formFieldsModels); err != nil {
+		return err
+	}
+
+	return err
+
 }

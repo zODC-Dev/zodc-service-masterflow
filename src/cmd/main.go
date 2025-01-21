@@ -1,6 +1,8 @@
 package main
 
 import (
+	"log/slog"
+
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	echoSwagger "github.com/swaggo/echo-swagger"
@@ -31,8 +33,8 @@ func main() {
 	routeGroup := app.Group(configs.Server.API_Prefix)
 	{
 		routes.FormRoute(routeGroup, db)
-		routes.UtilRoute(routeGroup, db)
+		routes.UtilRoute(routeGroup)
 	}
 
-	app.Logger.Fatal(app.Start(configs.Env.SERVER_ADDRESS))
+	slog.Error(app.Start(configs.Env.SERVER_ADDRESS).Error())
 }

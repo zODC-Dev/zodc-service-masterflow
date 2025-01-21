@@ -9,17 +9,17 @@ import (
 )
 
 type formControllerImpl struct {
-	formService interfaces.IFormService
+	formService interfaces.FormService
 }
 
-func NewFormController(formService interfaces.IFormService) *formControllerImpl {
+func NewFormController(formService interfaces.FormService) *formControllerImpl {
 	return &formControllerImpl{
 		formService: formService,
 	}
 }
 
 func (c *formControllerImpl) Create(ctx echo.Context) error {
-	req := new(requests.FormCreateRequest)
+	req := new(requests.FormCreate)
 
 	if err := ctx.Bind(req); err != nil {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
@@ -41,22 +41,4 @@ func (c *formControllerImpl) FindAll(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusCreated, forms)
-}
-
-func (c *formControllerImpl) Delete(ctx echo.Context) error {
-	id := ctx.Param("id")
-
-	form, err := c.formService.FindById(id)
-	if err != nil {
-		return ctx.JSON(http.StatusBadGateway, err.Error())
-	}
-
-	deleteErr := c.formService.Delete(form)
-	if deleteErr != nil {
-		return ctx.JSON(http.StatusBadGateway, deleteErr.Error())
-	}
-
-	return ctx.JSON(http.StatusCreated, map[string]string{
-		"message": "Form created successfully",
-	})
 }

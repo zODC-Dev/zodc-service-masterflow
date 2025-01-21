@@ -1,45 +1,79 @@
 package repositories
 
 import (
-	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/entities"
-	"gorm.io/gorm"
+	"context"
+	"database/sql"
+
+	"github.com/go-jet/jet/v2/postgres"
+	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow/public/model"
+	. "github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow/public/table"
+	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/types"
 )
 
 type formRepositoryImpl struct {
-	db *gorm.DB
+	db *sql.DB
 }
 
-func NewFormRepository(db *gorm.DB) *formRepositoryImpl {
+func NewFormRepository(db *sql.DB) *formRepositoryImpl {
 	return &formRepositoryImpl{
 		db: db,
 	}
 }
 
-func (r *formRepositoryImpl) Create(form *entities.Form) error {
-	return r.db.Create(&form).Error
+func (r *formRepositoryImpl) FindAll() (*[]types.FormWithFields, error) {
+	stmt := postgres.SELECT(
+		Forms.AllColumns,
+		FormFields.AllColumns,
+	).FROM(
+		Forms.
+			LEFT_JOIN(FormFields, Forms.ID.EQ(FormFields.FormID)),
+	)
+
+	var forms []types.FormWithFields
+	err := stmt.Query(r.db, &forms)
+
+	return &forms, err
 }
 
-func (r *formRepositoryImpl) Delete(form *entities.Form) error {
-	//Soft delete
-	return r.db.Delete(&form).Error
-}
+func (r *formRepositoryImpl) CreateForm(form model.Forms, formFields []model.FormFields) error {
 
-func (r *formRepositoryImpl) FindAll() (*[]entities.Form, error) {
-	var forms []entities.Form
-	err := r.db.Preload("FormFields").Find(&forms).Error
+	var err error
+
+	tx, err := r.db.BeginTx(context.Background(), &sql.TxOptions{})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &forms, nil
-}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
 
-func (r *formRepositoryImpl) FindById(id string) (*entities.Form, error) {
-	var form entities.Form
-	err := r.db.First(&form, id).Error
-	if err != nil {
-		return nil, err
+	formInsertColumns := Forms.AllColumns.Except(Forms.ID, Forms.CreatedAt, Forms.UpdatedAt, Forms.DeletedAt)
+
+	formStmt := Forms.INSERT(formInsertColumns).MODEL(form).RETURNING(Forms.ID)
+
+	formModel := model.Forms{}
+
+	if err = formStmt.Query(tx, &formModel); err != nil {
+		return err
 	}
 
-	return &form, nil
+	for i := range formFields {
+		formFields[i].FormID = formModel.ID
+	}
+
+	formFieldsInsertColumns := FormFields.AllColumns.Except(FormFields.ID, FormFields.CreatedAt, FormFields.UpdatedAt, FormFields.DeletedAt)
+	formFieldsStmt := FormFields.INSERT(formFieldsInsertColumns).MODELS(formFields)
+
+	if _, err = formFieldsStmt.Exec(tx); err != nil {
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
 }

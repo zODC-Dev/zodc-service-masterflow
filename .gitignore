@@ -1,1 +1,9 @@
+# File
 .env
+
+# Folder
+tmp/*
+temp/*
+
+# Special
+database/generated/*
