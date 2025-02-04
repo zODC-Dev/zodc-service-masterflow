@@ -6,7 +6,7 @@ import (
 	"os"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/configs"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/configs"
 )
 
 func ConnectDatabase() *sql.DB {

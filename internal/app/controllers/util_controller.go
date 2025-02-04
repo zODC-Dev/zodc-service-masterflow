@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/zODC-Dev/zodc-service-masterflow/src/pkg/utils"
+	"github.com/zODC-Dev/zodc-service-masterflow/pkg/utils"
 )
 
 func ExcelExtract(ctx echo.Context) error {

@@ -11,7 +11,7 @@ CREATE TABLE forms (
     template_id INT,
     data_sheet JSONB,
     description TEXT NOT NULL,
-    decoration TEXT NOT NULL,
+    decoration TEXT NOT NULL
 );
 
 CREATE TABLE form_fields (
@@ -28,7 +28,7 @@ CREATE TABLE form_fields (
     required BOOLEAN NOT NULL,
     advanced_options JSONB NOT NULL,
     col_num INT NOT NULL,
-    form_id INT NOT NULL REFERENCES forms (id)
+    form_id INT NOT NULL REFERENCES forms (id) ON DELETE CASCADE
 );
 
 -- +goose Down

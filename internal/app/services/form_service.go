@@ -1,27 +1,33 @@
 package services
 
 import (
+	"context"
+	"database/sql"
 	"encoding/json"
 
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow/public/model"
-	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/dto/requests"
-	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/dto/responses"
-	"github.com/zODC-Dev/zodc-service-masterflow/src/internal/app/interfaces"
-	"github.com/zODC-Dev/zodc-service-masterflow/src/pkg/utils"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/requests"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/responses"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
+	"github.com/zODC-Dev/zodc-service-masterflow/pkg/utils"
 )
 
-type formServiceImpl struct {
-	formRepo interfaces.FormRepository
+type FormService struct {
+	db            *sql.DB
+	formRepo      *repositories.FormRepository
+	formFieldRepo *repositories.FormFieldRepository
 }
 
-func NewFormService(formRepo interfaces.FormRepository) *formServiceImpl {
-	return &formServiceImpl{
-		formRepo: formRepo,
+func NewFormService(db *sql.DB, formRepo *repositories.FormRepository, formFieldRepo *repositories.FormFieldRepository) *FormService {
+	return &FormService{
+		db:            db,
+		formRepo:      formRepo,
+		formFieldRepo: formFieldRepo,
 	}
 }
 
-func (s *formServiceImpl) FindAll() (*[]responses.FormFindAll, error) {
-	forms, err := s.formRepo.FindAll()
+func (s *FormService) FindAll(ctx context.Context) (*[]responses.FormFindAll, error) {
+	forms, err := s.formRepo.FindAll(ctx, s.db)
 	if err != nil {
 		return nil, err
 	}
@@ -77,37 +83,42 @@ func (s *formServiceImpl) FindAll() (*[]responses.FormFindAll, error) {
 
 }
 
-func (s *formServiceImpl) Create(formCreate *requests.FormCreate) error {
-	var formModel model.Forms
-
-	if err := utils.Mapper(formCreate, &formModel); err != nil {
-		return err
-	}
-
-	formFieldsModels := []model.FormFields{}
-
-	dataSheet, err := json.Marshal(formCreate.DataSheet)
+func (s *FormService) Create(ctx context.Context, req *requests.FormCreate) error {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
-	dataSheetPtr := string(dataSheet)
-	formModel.DataSheet = &dataSheetPtr
+	defer tx.Rollback()
 
-	for i := range formCreate.FormFields {
-		for j := range formCreate.FormFields[i] {
+	var formModel model.Forms
+	var formFieldsModels = []model.FormFields{}
+
+	if err := utils.Mapper(req, &formModel); err != nil {
+		return err
+	}
+
+	dataSheet, err := utils.MapToString(req.DataSheet)
+	if err != nil {
+		return err
+	}
+
+	formModel.DataSheet = &dataSheet
+
+	for i := range req.FormFields {
+		for j := range req.FormFields[i] {
 
 			var formFieldModel model.FormFields
 
-			if err := utils.Mapper(formCreate.FormFields[i][j], &formFieldModel); err != nil {
+			if err := utils.Mapper(req.FormFields[i][j], &formFieldModel); err != nil {
 				return err
 			}
 
-			advancedOptions, err := json.Marshal(formCreate.FormFields[i][j].AdvancedOptions)
+			advancedOptions, err := utils.MapToString(req.FormFields[i][j].AdvancedOptions)
 			if err != nil {
 				return err
 			}
 
-			formFieldModel.AdvancedOptions = string(advancedOptions)
+			formFieldModel.AdvancedOptions = advancedOptions
 
 			formFieldModel.ColNum = int32(i)
 
@@ -115,10 +126,19 @@ func (s *formServiceImpl) Create(formCreate *requests.FormCreate) error {
 		}
 	}
 
-	if err := s.formRepo.CreateForm(formModel, formFieldsModels); err != nil {
+	form, err := s.formRepo.Create(ctx, tx, formModel)
+	if err != nil {
 		return err
 	}
 
-	return err
+	if err := s.formFieldRepo.Create(ctx, tx, formFieldsModels, form.ID); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
 
 }

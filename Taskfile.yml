@@ -11,17 +11,23 @@ tasks:
     cmds:
       - jet -dsn=$JET_DSN -path=database/generated
 
+  swagger:
+    cmds:
+      - swag init -g /cmd/main.go
+
   setup:
     cmds:
       - go mod download
-      - go install github.com/go-jet/jet/v2/cmd/jet@latest
-      - go install github.com/pressly/goose/v3/cmd/goose@latest
-      - go install github.com/air-verse/air@latest
+      - go install github.com/go-jet/jet/v2/cmd/jet@v2.11.1
+      - go install github.com/pressly/goose/v3/cmd/goose@v3.24.1
+      - go install github.com/air-verse/air@v1.61.7
+      - go install github.com/swaggo/swag/cmd/swag@v1.16.4
       - task: jet
+      - task: swagger
 
   run:
     cmds:
-      - go run ./src/cmd/main.go
+      - go run ./cmd/main.go
 
   run-dev:
     cmds:
