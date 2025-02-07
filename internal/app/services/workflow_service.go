@@ -5,7 +5,10 @@ import (
 	"database/sql"
 
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow/public/model"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/filters"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/requests"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/responses"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
 	"github.com/zODC-Dev/zodc-service-masterflow/pkg/utils"
 )
@@ -50,12 +53,12 @@ func (s *WorkflowService) Create(ctx context.Context, req *requests.WorkflowRequ
 	for i := range req.Nodes {
 		node := req.Nodes[i]
 
-		nodeModel := model.Nodes{}
+		nodeModel := model.Nodes{
+			WorkflowID: workflow.ID,
+		}
 		if err := utils.Mapper(node, &nodeModel); err != nil {
 			return err
 		}
-
-		nodeModel.WorkflowID = workflow.ID
 
 		nodesModel = append(nodesModel, nodeModel)
 	}
@@ -66,24 +69,27 @@ func (s *WorkflowService) Create(ctx context.Context, req *requests.WorkflowRequ
 	}
 
 	//Connection Create
-	connectionsModel := []model.NodeConnections{}
+	if len(req.Connections) != 0 {
+		connectionsModel := []model.NodeConnections{}
 
-	for i := range req.Connections {
-		connectionReq := req.Connections[i]
+		for i := range req.Connections {
+			connectionReq := req.Connections[i]
 
-		connectionModel := model.NodeConnections{
-			ID:         connectionReq.Id,
-			FromNodeID: connectionReq.From,
-			ToNodeID:   connectionReq.To,
-			Type:       connectionReq.Type,
-			WorkflowID: workflow.ID,
+			connectionModel := model.NodeConnections{
+				ID:         connectionReq.Id,
+				FromNodeID: connectionReq.From,
+				ToNodeID:   connectionReq.To,
+				Type:       connectionReq.Type,
+				WorkflowID: workflow.ID,
+			}
+
+			connectionsModel = append(connectionsModel, connectionModel)
 		}
 
-		connectionsModel = append(connectionsModel, connectionModel)
-	}
+		if err := s.nodeConnectionRepository.Create(ctx, tx, connectionsModel); err != nil {
+			return err
+		}
 
-	if err := s.nodeConnectionRepository.Create(ctx, tx, connectionsModel); err != nil {
-		return err
 	}
 
 	//Commit
@@ -92,4 +98,24 @@ func (s *WorkflowService) Create(ctx context.Context, req *requests.WorkflowRequ
 	}
 
 	return nil
+}
+
+func (s *WorkflowService) FindAll(ctx context.Context, workflowQueryParam *queryparams.WorkflowQueryParam) ([]responses.WorkflowResponse, error) {
+	workflowsResponse := []responses.WorkflowResponse{}
+
+	workflowFilter := filters.WorkflowFilter{}
+	if err := utils.Mapper(&workflowQueryParam, &workflowFilter); err != nil {
+		return workflowsResponse, err
+	}
+
+	workflows, err := s.workflowRepo.FindAll(ctx, s.db, workflowFilter)
+	if err != nil {
+		return workflowsResponse, err
+	}
+
+	if err := utils.Mapper(workflows, &workflowsResponse); err != nil {
+		return workflowsResponse, err
+	}
+
+	return workflowsResponse, nil
 }

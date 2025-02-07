@@ -9,6 +9,7 @@ CREATE TABLE workflows (
     category_id INT NOT NULL,
     version INT NOT NULL,
     description TEXT NOT NULL,
+    decoration TEXT NOT NULL,
     form_id INT REFERENCES forms (id)
 );
 

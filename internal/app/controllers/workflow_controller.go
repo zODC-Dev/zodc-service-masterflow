@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/requests"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/services"
 )
@@ -34,4 +35,20 @@ func (c *WorkflowController) Create(e echo.Context) error {
 	return e.JSON(http.StatusCreated, map[string]string{
 		"message": "Workflow created",
 	})
+}
+
+func (c *WorkflowController) FindAll(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	workflowQueryParam := queryparams.WorkflowQueryParam{
+		CategoryID: e.QueryParam("categoryId"),
+		Type:       e.QueryParam("type"),
+	}
+
+	workflows, err := c.workflowService.FindAll(ctx, &workflowQueryParam)
+	if err != nil {
+		return e.JSON(http.StatusBadGateway, err.Error())
+	}
+
+	return e.JSON(http.StatusCreated, workflows)
 }

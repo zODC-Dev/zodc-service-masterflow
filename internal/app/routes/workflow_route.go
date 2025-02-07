@@ -18,8 +18,9 @@ func WorkflowRoute(group *echo.Group, db *sql.DB) {
 
 	workflowController := controllers.NewWorkflowController(workflowService)
 
-	workflowRoute := group.Group("/workflow")
+	workflowRoute := group.Group("/workflows")
 	{
 		workflowRoute.POST("/create", workflowController.Create)
+		workflowRoute.GET("/all", workflowController.FindAll)
 	}
 }

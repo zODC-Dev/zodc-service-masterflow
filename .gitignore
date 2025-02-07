@@ -6,5 +6,5 @@ tmp/*
 temp/*
 
 # Auto Created
-database/generated/*
+# database/generated/*
 docs/*

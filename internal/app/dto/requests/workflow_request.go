@@ -34,6 +34,7 @@ type WorkflowRequest struct {
 	CategoryId  int32
 	Version     int32
 	Description string
+	Decoration  string
 	Nodes       []NodeRequest
 	Groups      []GroupRequest
 	Connections []ConnectionRequest
