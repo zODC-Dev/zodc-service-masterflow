@@ -8,8 +8,6 @@ import (
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/configs"
 	db "github.com/zODC-Dev/zodc-service-masterflow/internal/app/database"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/routes"
-
-	_ "github.com/zODC-Dev/zodc-service-masterflow/docs"
 )
 
 // @title Echo Swagger API
