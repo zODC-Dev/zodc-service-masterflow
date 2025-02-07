@@ -1,1 +1,10 @@
+# File
 .env
+
+# Folder
+tmp/*
+temp/*
+
+# Auto Created
+# database/generated/*
+docs/*

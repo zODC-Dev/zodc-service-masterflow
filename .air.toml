@@ -1,0 +1,14 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "go build -o ./tmp/main.exe ./cmd/main.go"
+bin = ""
+
+include_ext = ["go"]
+
+[misc]
+clean_on_exit = true
+
+[screen]
+clear_on_rebuild = false
