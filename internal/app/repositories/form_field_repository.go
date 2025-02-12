@@ -5,7 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow/public/model"
-	. "github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow/public/table"
+	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow/public/table"
 )
 
 type FormFieldRepository struct{}
@@ -15,6 +15,7 @@ func NewFormFieldRepository() *FormFieldRepository {
 }
 
 func (r *FormFieldRepository) Create(ctx context.Context, tx *sql.Tx, formFields []model.FormFields, formId int32) error {
+	FormFields := table.FormFields
 
 	for i := range formFields {
 		formFields[i].FormID = formId

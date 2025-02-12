@@ -1,24 +1,25 @@
 package requests
 
+import "github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
+
 type NodeRequest struct {
 	Id       string
 	NodeType string
 	Title    string
-	X        int32
-	Y        int32
-	DueIn    int32
+	Position types.Position
+	Size     types.Size
 	EndType  string
+	ParentId string
+	TicketID string
 }
 
 type GroupRequest struct {
-	Id       string
-	Title    string
-	X        int32
-	Y        int32
-	W        int32
-	H        int32
-	ParentId string
-	Type     string
+	Id        string
+	Title     string
+	Position  types.Position
+	Size      types.Size
+	TicketID  string
+	GroupType string
 }
 
 type ConnectionRequest struct {

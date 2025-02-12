@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-jet/jet/v2/postgres"
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow/public/model"
-	. "github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow/public/table"
+	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow/public/table"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
 )
 
@@ -17,6 +17,9 @@ func NewFormRepository() *FormRepository {
 }
 
 func (r *FormRepository) FindAll(ctx context.Context, db *sql.DB) (*[]types.FormWithFields, error) {
+	Forms := table.Forms
+	FormFields := table.FormFields
+
 	stmt := postgres.SELECT(
 		Forms.AllColumns,
 		FormFields.AllColumns,
@@ -32,6 +35,7 @@ func (r *FormRepository) FindAll(ctx context.Context, db *sql.DB) (*[]types.Form
 }
 
 func (r *FormRepository) Create(ctx context.Context, tx *sql.Tx, form model.Forms) (model.Forms, error) {
+	Forms := table.Forms
 
 	formInsertColumns := Forms.AllColumns.Except(Forms.ID, Forms.CreatedAt, Forms.UpdatedAt, Forms.DeletedAt)
 

@@ -3,10 +3,11 @@ name: Build and Deploy zODC Masterflow Service
 on:
   push:
     branches:
-      - main
+      # - main
+      - dev
 env:
   SERVICE_NAME: zodc-service-masterflow
-  VERSION: 0.1.0
+  VERSION: 0.2.1
   REGISTRY_PROJECT: zodc
 
 jobs:

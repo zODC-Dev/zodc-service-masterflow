@@ -16,12 +16,14 @@ type Nodes struct {
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 	DeletedAt  *time.Time
-	X          int32
-	Y          int32
+	X          float64
+	Y          float64
+	Width      float64
+	Height     float64
 	Type       string
 	ParentID   *string
-	AssginerID *int32
 	Title      *string
-	Data       *string
+	EndType    *string
+	TicketID   *string
 	WorkflowID int32
 }

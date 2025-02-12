@@ -21,13 +21,15 @@ type nodesTable struct {
 	CreatedAt  postgres.ColumnTimestamp
 	UpdatedAt  postgres.ColumnTimestamp
 	DeletedAt  postgres.ColumnTimestamp
-	X          postgres.ColumnInteger
-	Y          postgres.ColumnInteger
+	X          postgres.ColumnFloat
+	Y          postgres.ColumnFloat
+	Width      postgres.ColumnFloat
+	Height     postgres.ColumnFloat
 	Type       postgres.ColumnString
 	ParentID   postgres.ColumnString
-	AssginerID postgres.ColumnInteger
 	Title      postgres.ColumnString
-	Data       postgres.ColumnString
+	EndType    postgres.ColumnString
+	TicketID   postgres.ColumnString
 	WorkflowID postgres.ColumnInteger
 
 	AllColumns     postgres.ColumnList
@@ -73,16 +75,18 @@ func newNodesTableImpl(schemaName, tableName, alias string) nodesTable {
 		CreatedAtColumn  = postgres.TimestampColumn("created_at")
 		UpdatedAtColumn  = postgres.TimestampColumn("updated_at")
 		DeletedAtColumn  = postgres.TimestampColumn("deleted_at")
-		XColumn          = postgres.IntegerColumn("x")
-		YColumn          = postgres.IntegerColumn("y")
+		XColumn          = postgres.FloatColumn("x")
+		YColumn          = postgres.FloatColumn("y")
+		WidthColumn      = postgres.FloatColumn("width")
+		HeightColumn     = postgres.FloatColumn("height")
 		TypeColumn       = postgres.StringColumn("type")
 		ParentIDColumn   = postgres.StringColumn("parent_id")
-		AssginerIDColumn = postgres.IntegerColumn("assginer_id")
 		TitleColumn      = postgres.StringColumn("title")
-		DataColumn       = postgres.StringColumn("data")
+		EndTypeColumn    = postgres.StringColumn("end_type")
+		TicketIDColumn   = postgres.StringColumn("ticket_id")
 		WorkflowIDColumn = postgres.IntegerColumn("workflow_id")
-		allColumns       = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, TypeColumn, ParentIDColumn, AssginerIDColumn, TitleColumn, DataColumn, WorkflowIDColumn}
-		mutableColumns   = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, TypeColumn, ParentIDColumn, AssginerIDColumn, TitleColumn, DataColumn, WorkflowIDColumn}
+		allColumns       = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, TypeColumn, ParentIDColumn, TitleColumn, EndTypeColumn, TicketIDColumn, WorkflowIDColumn}
+		mutableColumns   = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, TypeColumn, ParentIDColumn, TitleColumn, EndTypeColumn, TicketIDColumn, WorkflowIDColumn}
 	)
 
 	return nodesTable{
@@ -95,11 +99,13 @@ func newNodesTableImpl(schemaName, tableName, alias string) nodesTable {
 		DeletedAt:  DeletedAtColumn,
 		X:          XColumn,
 		Y:          YColumn,
+		Width:      WidthColumn,
+		Height:     HeightColumn,
 		Type:       TypeColumn,
 		ParentID:   ParentIDColumn,
-		AssginerID: AssginerIDColumn,
 		Title:      TitleColumn,
-		Data:       DataColumn,
+		EndType:    EndTypeColumn,
+		TicketID:   TicketIDColumn,
 		WorkflowID: WorkflowIDColumn,
 
 		AllColumns:     allColumns,

@@ -18,13 +18,15 @@ CREATE TABLE nodes (
     created_at TIMESTAMP DEFAULT now () NOT NULL,
     updated_at TIMESTAMP DEFAULT now () NOT NULL,
     deleted_at TIMESTAMP,
-    x INT NOT NULL,
-    y INT NOT NULL,
+    x NUMERIC NOT NULL,
+    y NUMERIC NOT NULL,
+    width NUMERIC NOT NULL,
+    height NUMERIC NOT NULL,
     type TEXT NOT NULL,
-    parent_id TEXT REFERENCES nodes (id) ON DELETE CASCADE,
-    assginer_id INT,
+    parent_id TEXT,
     title TEXT,
-    data JSONB,
+    end_type TEXT,
+    ticket_id TEXT,
     workflow_id INT NOT NULL REFERENCES workflows (id)
 );
 
@@ -45,11 +47,11 @@ CREATE TABLE node_groups (
     updated_at TIMESTAMP DEFAULT now () NOT NULL,
     deleted_at TIMESTAMP,
     title TEXT NOT NULL,
-    x INT NOT NULL,
-    y INT NOT NULL,
-    w INT NOT NULL,
-    h INT NOT NULL,
-    parent_id TEXT,
+    x NUMERIC NOT NULL,
+    y NUMERIC NOT NULL,
+    width NUMERIC NOT NULL,
+    height NUMERIC NOT NULL,
+    ticket_id TEXT,
     type TEXT,
     workflow_id INT NOT NULL REFERENCES workflows (id)
 );

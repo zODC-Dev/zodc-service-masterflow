@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-jet/jet/v2/postgres"
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow/public/model"
-	. "github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow/public/table"
+	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow/public/table"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/filters"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
 )
@@ -19,6 +19,8 @@ func NewWorkflowRepository() *WorkflowRepository {
 }
 
 func (r *WorkflowRepository) Create(ctx context.Context, tx *sql.Tx, workflow model.Workflows) (model.Workflows, error) {
+	Workflows := table.Workflows
+
 	workflowInsertColumns := Workflows.AllColumns.Except(Workflows.ID, Workflows.CreatedAt, Workflows.UpdatedAt, Workflows.DeletedAt)
 
 	workflowStmt := Workflows.INSERT(workflowInsertColumns).MODEL(workflow).RETURNING(Workflows.ID)
@@ -31,11 +33,16 @@ func (r *WorkflowRepository) Create(ctx context.Context, tx *sql.Tx, workflow mo
 }
 
 func (r *WorkflowRepository) FindAll(ctx context.Context, db *sql.DB, workflowFilter filters.WorkflowFilter) ([]types.WorkflowType, error) {
+	Workflows := table.Workflows
+	Nodes := table.Nodes
+	NodeConnections := table.NodeConnections
+	NodeGroups := table.NodeGroups
+
 	stmt := postgres.SELECT(
 		Workflows.AllColumns,
 		Nodes.AllColumns,
 		NodeConnections.AllColumns,
-		NodeConnections.AllColumns,
+		NodeGroups.AllColumns,
 	).FROM(
 		Workflows.
 			LEFT_JOIN(Nodes, Workflows.ID.EQ(Nodes.WorkflowID)).
@@ -54,6 +61,10 @@ func (r *WorkflowRepository) FindAll(ctx context.Context, db *sql.DB, workflowFi
 
 	if workflowFilter.Type != "" {
 		stmt.WHERE(Workflows.Type.EQ(postgres.String(workflowFilter.Type)))
+	}
+
+	if workflowFilter.Search != "" {
+		stmt.WHERE(Workflows.Title.LIKE(postgres.String("%" + workflowFilter.Search + "%")))
 	}
 
 	workflows := []types.WorkflowType{}

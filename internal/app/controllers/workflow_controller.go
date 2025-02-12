@@ -43,6 +43,7 @@ func (c *WorkflowController) FindAll(e echo.Context) error {
 	workflowQueryParam := queryparams.WorkflowQueryParam{
 		CategoryID: e.QueryParam("categoryId"),
 		Type:       e.QueryParam("type"),
+		Search:     e.QueryParam("search"),
 	}
 
 	workflows, err := c.workflowService.FindAll(ctx, &workflowQueryParam)
