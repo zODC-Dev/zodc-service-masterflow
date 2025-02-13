@@ -37,17 +37,20 @@ func (r *WorkflowRepository) FindAll(ctx context.Context, db *sql.DB, workflowFi
 	Nodes := table.Nodes
 	NodeConnections := table.NodeConnections
 	NodeGroups := table.NodeGroups
+	Categories := table.Categories
 
 	stmt := postgres.SELECT(
 		Workflows.AllColumns,
 		Nodes.AllColumns,
 		NodeConnections.AllColumns,
 		NodeGroups.AllColumns,
+		Categories.AllColumns,
 	).FROM(
 		Workflows.
 			LEFT_JOIN(Nodes, Workflows.ID.EQ(Nodes.WorkflowID)).
 			LEFT_JOIN(NodeConnections, Workflows.ID.EQ(NodeConnections.WorkflowID)).
-			LEFT_JOIN(NodeGroups, Workflows.ID.EQ(NodeConnections.WorkflowID)),
+			LEFT_JOIN(NodeGroups, Workflows.ID.EQ(NodeConnections.WorkflowID)).
+			LEFT_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)),
 	)
 
 	if workflowFilter.CategoryID != "" {

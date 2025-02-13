@@ -2,6 +2,11 @@ package responses
 
 import "github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
 
+type CategoryResponse struct {
+	Id   int32  `json:"id"`
+	Name string `json:"name"`
+}
+
 type NodeResponse struct {
 	Id       string         `json:"id"`
 	Type     string         `json:"type"`
@@ -32,7 +37,7 @@ type ConnectionResponse struct {
 type WorkflowResponse struct {
 	Title       string               `json:"title"`
 	Type        string               `json:"type"`
-	CategoryId  int32                `json:"categoryId"`
+	Category    CategoryResponse     `json:"category"`
 	Version     int32                `json:"version"`
 	Description string               `json:"description"`
 	Decoration  string               `json:"decoration"`
