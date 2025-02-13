@@ -64,7 +64,7 @@ func (r *WorkflowRepository) FindAll(ctx context.Context, db *sql.DB, workflowFi
 	}
 
 	if workflowFilter.Search != "" {
-		stmt.WHERE(Workflows.Title.LIKE(postgres.String("%" + workflowFilter.Search + "%")))
+		stmt.WHERE(postgres.LOWER(Workflows.Title).LIKE(postgres.LOWER(postgres.String("%" + workflowFilter.Search + "%"))))
 	}
 
 	workflows := []types.WorkflowType{}
