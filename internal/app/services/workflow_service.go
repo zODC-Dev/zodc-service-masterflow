@@ -66,7 +66,6 @@ func (s *WorkflowService) Create(ctx context.Context, req *requests.WorkflowRequ
 			Y:          node.Position.Y,
 			Width:      node.Size.Width,
 			Height:     node.Size.Height,
-			Type:       node.NodeType,
 		}
 		if err := utils.Mapper(node, &nodeModel); err != nil {
 			return err
@@ -117,7 +116,6 @@ func (s *WorkflowService) Create(ctx context.Context, req *requests.WorkflowRequ
 			Width:      groupReq.Size.Width,
 			Height:     groupReq.Size.Height,
 			WorkflowID: workflow.ID,
-			Type:       &groupReq.GroupType,
 		}
 
 		if err := utils.Mapper(groupReq, &groupModel); err != nil {
@@ -183,7 +181,6 @@ func (s *WorkflowService) FindAll(ctx context.Context, workflowQueryParam *query
 					Width:  node.Width,
 					Height: node.Height,
 				},
-				NodeType: node.Type,
 			}
 			if err := utils.Mapper(node, &nodeResponse); err != nil {
 				return workflowsResponse, err
@@ -209,7 +206,6 @@ func (s *WorkflowService) FindAll(ctx context.Context, workflowQueryParam *query
 					Width:  group.Width,
 					Height: group.Height,
 				},
-				GroupType: *group.Type,
 			}
 			if err := utils.Mapper(group, &groupResponse); err != nil {
 				return workflowsResponse, err

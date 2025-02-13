@@ -4,7 +4,7 @@ import "github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
 
 type NodeResponse struct {
 	Id       string         `json:"id"`
-	NodeType string         `json:"nodeType"`
+	Type     string         `json:"type"`
 	Title    string         `json:"title"`
 	Position types.Position `json:"position"`
 	Size     types.Size     `json:"size"`
@@ -14,12 +14,12 @@ type NodeResponse struct {
 }
 
 type GroupResponse struct {
-	Id        string         `json:"id"`
-	Title     string         `json:"title"`
-	Position  types.Position `json:"position"`
-	Size      types.Size     `json:"size"`
-	TicketID  string         `json:"tickerId"`
-	GroupType string         `json:"groupType"`
+	Id       string         `json:"id"`
+	Title    string         `json:"title"`
+	Position types.Position `json:"position"`
+	Size     types.Size     `json:"size"`
+	TicketID string         `json:"tickerId"`
+	Type     string         `json:"type"`
 }
 
 type ConnectionResponse struct {

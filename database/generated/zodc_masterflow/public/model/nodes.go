@@ -22,8 +22,8 @@ type Nodes struct {
 	Height     float64
 	Type       string
 	ParentID   *string
-	Title      *string
+	Summary    *string
 	EndType    *string
-	TicketID   *string
+	Key        *string
 	WorkflowID int32
 }

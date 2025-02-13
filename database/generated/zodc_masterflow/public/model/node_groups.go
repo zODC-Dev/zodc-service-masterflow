@@ -16,12 +16,13 @@ type NodeGroups struct {
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 	DeletedAt  *time.Time
-	Title      string
+	Summary    string
 	X          float64
 	Y          float64
 	Width      float64
 	Height     float64
 	TicketID   *string
+	Key        *string
 	Type       *string
 	WorkflowID int32
 }

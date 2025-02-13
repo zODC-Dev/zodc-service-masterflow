@@ -27,9 +27,9 @@ type nodesTable struct {
 	Height     postgres.ColumnFloat
 	Type       postgres.ColumnString
 	ParentID   postgres.ColumnString
-	Title      postgres.ColumnString
+	Summary    postgres.ColumnString
 	EndType    postgres.ColumnString
-	TicketID   postgres.ColumnString
+	Key        postgres.ColumnString
 	WorkflowID postgres.ColumnInteger
 
 	AllColumns     postgres.ColumnList
@@ -81,12 +81,12 @@ func newNodesTableImpl(schemaName, tableName, alias string) nodesTable {
 		HeightColumn     = postgres.FloatColumn("height")
 		TypeColumn       = postgres.StringColumn("type")
 		ParentIDColumn   = postgres.StringColumn("parent_id")
-		TitleColumn      = postgres.StringColumn("title")
+		SummaryColumn    = postgres.StringColumn("summary")
 		EndTypeColumn    = postgres.StringColumn("end_type")
-		TicketIDColumn   = postgres.StringColumn("ticket_id")
+		KeyColumn        = postgres.StringColumn("key")
 		WorkflowIDColumn = postgres.IntegerColumn("workflow_id")
-		allColumns       = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, TypeColumn, ParentIDColumn, TitleColumn, EndTypeColumn, TicketIDColumn, WorkflowIDColumn}
-		mutableColumns   = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, TypeColumn, ParentIDColumn, TitleColumn, EndTypeColumn, TicketIDColumn, WorkflowIDColumn}
+		allColumns       = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, TypeColumn, ParentIDColumn, SummaryColumn, EndTypeColumn, KeyColumn, WorkflowIDColumn}
+		mutableColumns   = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, TypeColumn, ParentIDColumn, SummaryColumn, EndTypeColumn, KeyColumn, WorkflowIDColumn}
 	)
 
 	return nodesTable{
@@ -103,9 +103,9 @@ func newNodesTableImpl(schemaName, tableName, alias string) nodesTable {
 		Height:     HeightColumn,
 		Type:       TypeColumn,
 		ParentID:   ParentIDColumn,
-		Title:      TitleColumn,
+		Summary:    SummaryColumn,
 		EndType:    EndTypeColumn,
-		TicketID:   TicketIDColumn,
+		Key:        KeyColumn,
 		WorkflowID: WorkflowIDColumn,
 
 		AllColumns:     allColumns,

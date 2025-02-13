@@ -21,12 +21,13 @@ type nodeGroupsTable struct {
 	CreatedAt  postgres.ColumnTimestamp
 	UpdatedAt  postgres.ColumnTimestamp
 	DeletedAt  postgres.ColumnTimestamp
-	Title      postgres.ColumnString
+	Summary    postgres.ColumnString
 	X          postgres.ColumnFloat
 	Y          postgres.ColumnFloat
 	Width      postgres.ColumnFloat
 	Height     postgres.ColumnFloat
 	TicketID   postgres.ColumnString
+	Key        postgres.ColumnString
 	Type       postgres.ColumnString
 	WorkflowID postgres.ColumnInteger
 
@@ -73,16 +74,17 @@ func newNodeGroupsTableImpl(schemaName, tableName, alias string) nodeGroupsTable
 		CreatedAtColumn  = postgres.TimestampColumn("created_at")
 		UpdatedAtColumn  = postgres.TimestampColumn("updated_at")
 		DeletedAtColumn  = postgres.TimestampColumn("deleted_at")
-		TitleColumn      = postgres.StringColumn("title")
+		SummaryColumn    = postgres.StringColumn("summary")
 		XColumn          = postgres.FloatColumn("x")
 		YColumn          = postgres.FloatColumn("y")
 		WidthColumn      = postgres.FloatColumn("width")
 		HeightColumn     = postgres.FloatColumn("height")
 		TicketIDColumn   = postgres.StringColumn("ticket_id")
+		KeyColumn        = postgres.StringColumn("key")
 		TypeColumn       = postgres.StringColumn("type")
 		WorkflowIDColumn = postgres.IntegerColumn("workflow_id")
-		allColumns       = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, TitleColumn, XColumn, YColumn, WidthColumn, HeightColumn, TicketIDColumn, TypeColumn, WorkflowIDColumn}
-		mutableColumns   = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, TitleColumn, XColumn, YColumn, WidthColumn, HeightColumn, TicketIDColumn, TypeColumn, WorkflowIDColumn}
+		allColumns       = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, SummaryColumn, XColumn, YColumn, WidthColumn, HeightColumn, TicketIDColumn, KeyColumn, TypeColumn, WorkflowIDColumn}
+		mutableColumns   = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, SummaryColumn, XColumn, YColumn, WidthColumn, HeightColumn, TicketIDColumn, KeyColumn, TypeColumn, WorkflowIDColumn}
 	)
 
 	return nodeGroupsTable{
@@ -93,12 +95,13 @@ func newNodeGroupsTableImpl(schemaName, tableName, alias string) nodeGroupsTable
 		CreatedAt:  CreatedAtColumn,
 		UpdatedAt:  UpdatedAtColumn,
 		DeletedAt:  DeletedAtColumn,
-		Title:      TitleColumn,
+		Summary:    SummaryColumn,
 		X:          XColumn,
 		Y:          YColumn,
 		Width:      WidthColumn,
 		Height:     HeightColumn,
 		TicketID:   TicketIDColumn,
+		Key:        KeyColumn,
 		Type:       TypeColumn,
 		WorkflowID: WorkflowIDColumn,
 

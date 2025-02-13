@@ -24,9 +24,9 @@ CREATE TABLE nodes (
     height NUMERIC NOT NULL,
     type TEXT NOT NULL,
     parent_id TEXT,
-    title TEXT,
+    summary TEXT,
     end_type TEXT,
-    ticket_id TEXT,
+    key TEXT,
     workflow_id INT NOT NULL REFERENCES workflows (id)
 );
 
@@ -46,12 +46,13 @@ CREATE TABLE node_groups (
     created_at TIMESTAMP DEFAULT now () NOT NULL,
     updated_at TIMESTAMP DEFAULT now () NOT NULL,
     deleted_at TIMESTAMP,
-    title TEXT NOT NULL,
+    summary TEXT NOT NULL,
     x NUMERIC NOT NULL,
     y NUMERIC NOT NULL,
     width NUMERIC NOT NULL,
     height NUMERIC NOT NULL,
     ticket_id TEXT,
+    key TEXT,
     type TEXT,
     workflow_id INT NOT NULL REFERENCES workflows (id)
 );

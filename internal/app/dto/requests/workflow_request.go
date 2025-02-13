@@ -4,7 +4,7 @@ import "github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
 
 type NodeRequest struct {
 	Id       string
-	NodeType string
+	Type     string
 	Title    string
 	Position types.Position
 	Size     types.Size
@@ -14,12 +14,12 @@ type NodeRequest struct {
 }
 
 type GroupRequest struct {
-	Id        string
-	Title     string
-	Position  types.Position
-	Size      types.Size
-	TicketID  string
-	GroupType string
+	Id       string
+	Title    string
+	Position types.Position
+	Size     types.Size
+	TicketID string
+	Type     string
 }
 
 type ConnectionRequest struct {
