@@ -5,7 +5,7 @@ import "github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
 type NodeRequest struct {
 	Id       string
 	Summary  string
-	Title    string
+	Type     string
 	Position types.Position
 	Size     types.Size
 	EndType  string
