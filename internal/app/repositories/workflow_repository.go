@@ -49,7 +49,7 @@ func (r *WorkflowRepository) FindAll(ctx context.Context, db *sql.DB, workflowFi
 		Workflows.
 			LEFT_JOIN(Nodes, Workflows.ID.EQ(Nodes.WorkflowID)).
 			LEFT_JOIN(NodeConnections, Workflows.ID.EQ(NodeConnections.WorkflowID)).
-			LEFT_JOIN(NodeGroups, Workflows.ID.EQ(NodeConnections.WorkflowID)).
+			LEFT_JOIN(NodeGroups, Workflows.ID.EQ(NodeGroups.WorkflowID)).
 			LEFT_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)),
 	)
 
