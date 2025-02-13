@@ -35,6 +35,7 @@ type ConnectionResponse struct {
 }
 
 type WorkflowResponse struct {
+	Id          int32                `json:"id"`
 	Title       string               `json:"title"`
 	Type        string               `json:"type"`
 	Category    CategoryResponse     `json:"category"`
