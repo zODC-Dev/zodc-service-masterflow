@@ -5,20 +5,20 @@ import "github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
 type NodeResponse struct {
 	Id       string         `json:"id"`
 	Type     string         `json:"type"`
-	Title    string         `json:"title"`
+	Summary  string         `json:"summary"`
 	Position types.Position `json:"position"`
 	Size     types.Size     `json:"size"`
 	EndType  string         `json:"endType"`
 	ParentId string         `json:"parentId"`
-	TicketId string         `json:"tickerId"`
+	Key      string         `json:"key"`
 }
 
 type GroupResponse struct {
 	Id       string         `json:"id"`
-	Title    string         `json:"title"`
+	Summary  string         `json:"summary"`
 	Position types.Position `json:"position"`
 	Size     types.Size     `json:"size"`
-	TicketID string         `json:"tickerId"`
+	Key      string         `json:"key"`
 	Type     string         `json:"type"`
 }
 
