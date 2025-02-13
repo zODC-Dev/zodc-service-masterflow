@@ -105,28 +105,30 @@ func (s *WorkflowService) Create(ctx context.Context, req *requests.WorkflowRequ
 	}
 
 	//Group Create
-	groupsModel := []model.NodeGroups{}
+	if len(req.Groups) != 0 {
+		groupsModel := []model.NodeGroups{}
 
-	for i := range req.Groups {
-		groupReq := req.Groups[i]
+		for i := range req.Groups {
+			groupReq := req.Groups[i]
 
-		groupModel := model.NodeGroups{
-			X:          groupReq.Position.X,
-			Y:          groupReq.Position.Y,
-			Width:      groupReq.Size.Width,
-			Height:     groupReq.Size.Height,
-			WorkflowID: workflow.ID,
+			groupModel := model.NodeGroups{
+				X:          groupReq.Position.X,
+				Y:          groupReq.Position.Y,
+				Width:      groupReq.Size.Width,
+				Height:     groupReq.Size.Height,
+				WorkflowID: workflow.ID,
+			}
+
+			if err := utils.Mapper(groupReq, &groupModel); err != nil {
+				return err
+			}
+
+			groupsModel = append(groupsModel, groupModel)
 		}
 
-		if err := utils.Mapper(groupReq, &groupModel); err != nil {
+		if err := s.nodeGroupRepo.Create(ctx, tx, groupsModel); err != nil {
 			return err
 		}
-
-		groupsModel = append(groupsModel, groupModel)
-	}
-
-	if err := s.nodeGroupRepo.Create(ctx, tx, groupsModel); err != nil {
-		return err
 	}
 
 	//Commit

@@ -53,21 +53,27 @@ func (r *WorkflowRepository) FindAll(ctx context.Context, db *sql.DB, workflowFi
 			LEFT_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)),
 	)
 
+	conditions := []postgres.BoolExpression{}
+
 	if workflowFilter.CategoryID != "" {
 		categoryIdInt, err := strconv.Atoi(workflowFilter.CategoryID)
 		if err != nil {
 			return []types.WorkflowType{}, err
 		}
 
-		stmt.WHERE(Workflows.CategoryID.EQ(postgres.Int(int64(categoryIdInt))))
+		conditions = append(conditions, Workflows.CategoryID.EQ(postgres.Int(int64(categoryIdInt))))
 	}
 
 	if workflowFilter.Type != "" {
-		stmt.WHERE(Workflows.Type.EQ(postgres.String(workflowFilter.Type)))
+		conditions = append(conditions, Workflows.Type.EQ(postgres.String(workflowFilter.Type)))
 	}
 
 	if workflowFilter.Search != "" {
-		stmt.WHERE(postgres.LOWER(Workflows.Title).LIKE(postgres.LOWER(postgres.String("%" + workflowFilter.Search + "%"))))
+		conditions = append(conditions, postgres.LOWER(Workflows.Title).LIKE(postgres.LOWER(postgres.String("%"+workflowFilter.Search+"%"))))
+	}
+
+	if len(conditions) > 0 {
+		stmt.WHERE(postgres.AND(conditions...))
 	}
 
 	workflows := []types.WorkflowType{}
