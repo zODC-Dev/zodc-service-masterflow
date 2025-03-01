@@ -10,4 +10,6 @@ package model
 type Categories struct {
 	ID   int32 `sql:"primary_key"`
 	Name string
+	Type string
+	Key  string
 }

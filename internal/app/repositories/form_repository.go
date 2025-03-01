@@ -5,9 +5,9 @@ import (
 	"database/sql"
 
 	"github.com/go-jet/jet/v2/postgres"
-	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow/public/model"
-	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow/public/table"
-	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
+	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
+	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/table"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/results"
 )
 
 type FormRepository struct{}
@@ -16,34 +16,110 @@ func NewFormRepository() *FormRepository {
 	return &FormRepository{}
 }
 
-func (r *FormRepository) FindAll(ctx context.Context, db *sql.DB) (*[]types.FormWithFields, error) {
-	Forms := table.Forms
-	FormFields := table.FormFields
+func (r *FormRepository) FindAllFormTemplate(ctx context.Context, db *sql.DB) ([]results.FormTemplateResult, error) {
+	FormTemplates := table.FormTemplates
+	FormTemplateVersions := table.FormTemplateVersions
+	FormTemplateFields := table.FormTemplateFields
 
-	stmt := postgres.SELECT(
-		Forms.AllColumns,
-		FormFields.AllColumns,
+	statement := postgres.SELECT(
+		FormTemplates.AllColumns,
+		FormTemplateVersions.AllColumns,
+		FormTemplateFields.AllColumns,
 	).FROM(
-		Forms.
-			LEFT_JOIN(FormFields, Forms.ID.EQ(FormFields.FormID)),
+		FormTemplates.
+			INNER_JOIN(FormTemplateVersions, FormTemplates.ID.EQ(FormTemplateVersions.FormTemplateID)).
+			INNER_JOIN(FormTemplateFields, FormTemplateVersions.ID.EQ(FormTemplateFields.FormTemplateVersionID)),
 	)
 
-	var forms []types.FormWithFields
-	err := stmt.QueryContext(ctx, db, &forms)
+	results := []results.FormTemplateResult{}
 
-	return &forms, err
+	err := statement.QueryContext(ctx, db, &results)
+
+	return results, err
+
 }
 
-func (r *FormRepository) Create(ctx context.Context, tx *sql.Tx, form model.Forms) (model.Forms, error) {
-	Forms := table.Forms
+func (r *FormRepository) CreateFormTemplate(ctx context.Context, tx *sql.Tx, formTemplate model.FormTemplates) (model.FormTemplates, error) {
+	FormTemplates := table.FormTemplates
 
-	formInsertColumns := Forms.AllColumns.Except(Forms.ID, Forms.CreatedAt, Forms.UpdatedAt, Forms.DeletedAt)
+	columns := FormTemplates.AllColumns.Except(FormTemplates.ID, FormTemplates.CreatedAt, FormTemplates.UpdatedAt, FormTemplates.DeletedAt)
 
-	formStmt := Forms.INSERT(formInsertColumns).MODEL(form).RETURNING(Forms.ID)
+	statement := FormTemplates.INSERT(columns).MODEL(formTemplate).RETURNING(FormTemplates.ID)
 
-	if err := formStmt.QueryContext(ctx, tx, &form); err != nil {
-		return form, err
-	}
+	err := statement.QueryContext(ctx, tx, &formTemplate)
 
-	return form, nil
+	return formTemplate, err
+}
+
+func (r *FormRepository) CreateFormTemplateVersion(ctx context.Context, tx *sql.Tx, formTemplateVersionModel model.FormTemplateVersions) (model.FormTemplateVersions, error) {
+	FormTemplateVersions := table.FormTemplateVersions
+
+	columns := FormTemplateVersions.AllColumns.Except(FormTemplateVersions.ID, FormTemplateVersions.CreatedAt, FormTemplateVersions.UpdatedAt, FormTemplateVersions.DeletedAt)
+
+	statement := FormTemplateVersions.INSERT(columns).MODEL(formTemplateVersionModel).RETURNING(FormTemplateVersions.ID)
+
+	err := statement.QueryContext(ctx, tx, &formTemplateVersionModel)
+
+	return formTemplateVersionModel, err
+}
+
+func (r *FormRepository) CreateFormTemplateFields(ctx context.Context, tx *sql.Tx, formTemplateFieldModels []model.FormTemplateFields) error {
+	FormTemplateFields := table.FormTemplateFields
+
+	columns := FormTemplateFields.AllColumns.Except(FormTemplateFields.ID, FormTemplateFields.CreatedAt, FormTemplateFields.UpdatedAt, FormTemplateFields.DeletedAt)
+
+	statement := FormTemplateFields.INSERT(columns).MODELS(formTemplateFieldModels)
+
+	err := statement.QueryContext(ctx, tx, &formTemplateFieldModels)
+
+	return err
+}
+
+func (r *FormRepository) FindAllFormSystem(ctx context.Context, db *sql.DB) ([]results.FormSystemResult, error) {
+	FormTemplates := table.FormTemplates
+	FormTemplateVersions := table.FormTemplateVersions
+	FormTemplateFields := table.FormTemplateFields
+
+	statement := postgres.SELECT(
+		FormTemplates.AllColumns,
+		FormTemplateVersions.AllColumns,
+		FormTemplateFields.AllColumns,
+	).FROM(
+		FormTemplates.
+			INNER_JOIN(FormTemplateVersions, FormTemplateVersions.FormTemplateID.EQ(FormTemplates.ID)).
+			INNER_JOIN(FormTemplateFields, FormTemplateFields.FormTemplateVersionID.EQ(FormTemplateVersions.ID)),
+	).WHERE(
+		FormTemplates.Type.EQ(postgres.String("SYSTEM")),
+	)
+
+	formSystemResults := []results.FormSystemResult{}
+
+	err := statement.QueryContext(ctx, db, &formSystemResults)
+
+	return formSystemResults, err
+}
+
+func (r *FormRepository) CreateFormData(ctx context.Context, tx *sql.Tx, formData model.FormData) (model.FormData, error) {
+	FormData := table.FormData
+
+	columns := FormData.AllColumns.Except(FormData.ID, FormData.CreatedAt, FormData.UpdatedAt, FormData.DeletedAt)
+
+	statement := FormData.INSERT(columns).MODEL(formData).RETURNING(FormData.AllColumns)
+
+	err := statement.QueryContext(ctx, tx, &formData)
+
+	return formData, err
+
+}
+
+func (r *FormRepository) CreateFormFieldDatas(ctx context.Context, tx *sql.Tx, formFieldDatas []model.FormFieldData) error {
+	FormFieldData := table.FormFieldData
+
+	columns := FormFieldData.AllColumns.Except(FormFieldData.ID, FormFieldData.CreatedAt, FormFieldData.UpdatedAt, FormFieldData.DeletedAt)
+
+	statement := FormFieldData.INSERT(columns).MODELS(formFieldDatas)
+
+	err := statement.QueryContext(ctx, tx, &formFieldDatas)
+
+	return err
 }

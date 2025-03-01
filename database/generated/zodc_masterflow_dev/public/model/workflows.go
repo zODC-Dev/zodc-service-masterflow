@@ -19,8 +19,6 @@ type Workflows struct {
 	Title       string
 	Type        string
 	CategoryID  int32
-	Version     int32
 	Description string
 	Decoration  string
-	FormID      *int32
 }

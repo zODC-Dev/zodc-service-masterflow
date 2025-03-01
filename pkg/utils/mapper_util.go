@@ -21,12 +21,3 @@ func Mapper(source interface{}, dest interface{}) error {
 
 	return nil
 }
-
-func MapToString(value any) (string, error) {
-	bytes, err := json.Marshal(value)
-	if err != nil {
-		return "", err
-	}
-
-	return string(bytes), nil
-}

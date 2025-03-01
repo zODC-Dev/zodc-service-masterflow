@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-type Forms struct {
+type FormTemplates struct {
 	ID          int32 `sql:"primary_key"`
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
@@ -19,9 +19,10 @@ type Forms struct {
 	FileName    string
 	Title       string
 	CategoryID  *int32
-	Version     int32
 	TemplateID  *int32
 	DataSheet   *string
 	Description string
 	Decoration  string
+	Tag         string
+	Type        string
 }

@@ -19,6 +19,8 @@ type categoriesTable struct {
 	// Columns
 	ID   postgres.ColumnInteger
 	Name postgres.ColumnString
+	Type postgres.ColumnString
+	Key  postgres.ColumnString
 
 	AllColumns     postgres.ColumnList
 	MutableColumns postgres.ColumnList
@@ -61,8 +63,10 @@ func newCategoriesTableImpl(schemaName, tableName, alias string) categoriesTable
 	var (
 		IDColumn       = postgres.IntegerColumn("id")
 		NameColumn     = postgres.StringColumn("name")
-		allColumns     = postgres.ColumnList{IDColumn, NameColumn}
-		mutableColumns = postgres.ColumnList{NameColumn}
+		TypeColumn     = postgres.StringColumn("type")
+		KeyColumn      = postgres.StringColumn("key")
+		allColumns     = postgres.ColumnList{IDColumn, NameColumn, TypeColumn, KeyColumn}
+		mutableColumns = postgres.ColumnList{NameColumn, TypeColumn, KeyColumn}
 	)
 
 	return categoriesTable{
@@ -71,6 +75,8 @@ func newCategoriesTableImpl(schemaName, tableName, alias string) categoriesTable
 		//Columns
 		ID:   IDColumn,
 		Name: NameColumn,
+		Type: TypeColumn,
+		Key:  KeyColumn,
 
 		AllColumns:     allColumns,
 		MutableColumns: mutableColumns,

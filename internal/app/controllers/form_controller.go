@@ -18,16 +18,16 @@ func NewFormController(formService *services.FormService) *FormController {
 	}
 }
 
-func (c *FormController) Create(e echo.Context) error {
+func (c *FormController) CreateFormTemplate(e echo.Context) error {
 	ctx := e.Request().Context()
 
-	req := new(requests.FormCreate)
+	req := new(requests.FormTemplateCreate)
 
 	if err := e.Bind(req); err != nil {
 		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	if err := c.formService.Create(ctx, req); err != nil {
+	if err := c.formService.CreateFormTemplate(ctx, req); err != nil {
 		return e.JSON(http.StatusInternalServerError, err.Error())
 	}
 
@@ -36,13 +36,13 @@ func (c *FormController) Create(e echo.Context) error {
 	})
 }
 
-func (c *FormController) FindAll(e echo.Context) error {
+func (c *FormController) FindAllFormTemplate(e echo.Context) error {
 	ctx := e.Request().Context()
 
-	forms, err := c.formService.FindAll(ctx)
+	formTemplates, err := c.formService.FindAllFormTemplate(ctx)
 	if err != nil {
-		return e.JSON(http.StatusBadGateway, err.Error())
+		return e.JSON(http.StatusInternalServerError, err.Error())
 	}
 
-	return e.JSON(http.StatusCreated, forms)
+	return e.JSON(http.StatusCreated, formTemplates)
 }

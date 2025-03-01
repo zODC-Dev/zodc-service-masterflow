@@ -2,9 +2,9 @@ package controllers
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
-	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/requests"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/services"
 )
@@ -19,7 +19,7 @@ func NewWorkflowController(workflowService *services.WorkflowService) *WorkflowC
 	}
 }
 
-func (c *WorkflowController) Create(e echo.Context) error {
+func (c *WorkflowController) CreateWorkflow(e echo.Context) error {
 	ctx := e.Request().Context()
 
 	req := new(requests.WorkflowRequest)
@@ -28,28 +28,38 @@ func (c *WorkflowController) Create(e echo.Context) error {
 		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	if err := c.workflowService.Create(ctx, req); err != nil {
+	if err := c.workflowService.CreateWorkFlowHandler(ctx, req); err != nil {
 		return e.JSON(http.StatusInternalServerError, err.Error())
 	}
 
 	return e.JSON(http.StatusCreated, map[string]string{
-		"message": "Workflow created",
+		"message": "Workflow created successfully",
 	})
 }
 
-func (c *WorkflowController) FindAll(e echo.Context) error {
+func (c *WorkflowController) FindAllWorkflow(e echo.Context) error {
 	ctx := e.Request().Context()
 
-	workflowQueryParam := queryparams.WorkflowQueryParam{
-		CategoryID: e.QueryParam("categoryId"),
-		Type:       e.QueryParam("type"),
-		Search:     e.QueryParam("search"),
-	}
-
-	workflows, err := c.workflowService.FindAll(ctx, &workflowQueryParam)
+	workflows, err := c.workflowService.FindAllWorkflowHandler(ctx)
 	if err != nil {
-		return e.JSON(http.StatusBadGateway, err.Error())
+		return e.JSON(http.StatusInternalServerError, err.Error())
 	}
 
 	return e.JSON(http.StatusCreated, workflows)
+}
+
+func (c *WorkflowController) FindOneWorkflowDetail(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	workflowVersionId, err := strconv.Atoi(e.Param("id"))
+	if err != nil {
+		return e.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	workflowDetail, err := c.workflowService.FindOneWorkflowDetailHandler(ctx, int32(workflowVersionId))
+	if err != nil {
+		return e.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return e.JSON(http.StatusCreated, workflowDetail)
 }

@@ -4,8 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 
-	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow/public/model"
+	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/requests"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/responses"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
@@ -13,132 +14,146 @@ import (
 )
 
 type FormService struct {
-	db            *sql.DB
-	formRepo      *repositories.FormRepository
-	formFieldRepo *repositories.FormFieldRepository
+	db       *sql.DB
+	formRepo *repositories.FormRepository
 }
 
-func NewFormService(db *sql.DB, formRepo *repositories.FormRepository, formFieldRepo *repositories.FormFieldRepository) *FormService {
+func NewFormService(db *sql.DB, formRepo *repositories.FormRepository) *FormService {
 	return &FormService{
-		db:            db,
-		formRepo:      formRepo,
-		formFieldRepo: formFieldRepo,
+		db:       db,
+		formRepo: formRepo,
 	}
 }
 
-func (s *FormService) FindAll(ctx context.Context) (*[]responses.FormFindAll, error) {
-	forms, err := s.formRepo.FindAll(ctx, s.db)
-	if err != nil {
-		return nil, err
-	}
-
-	var formsResponse = []responses.FormFindAll{}
-
-	for _, form := range *forms {
-
-		formFieldsList := [][]responses.FormFieldsFindAll{}
-
-		for _, formField := range form.FormFields {
-			colIndex := formField.ColNum
-
-			for len(formFieldsList) <= int(colIndex) {
-				formFieldsList = append(formFieldsList, []responses.FormFieldsFindAll{})
-			}
-
-			var formFieldFindAll responses.FormFieldsFindAll
-
-			var advancedOptions map[string]interface{}
-			if err := json.Unmarshal([]byte(formField.AdvancedOptions), &advancedOptions); err != nil {
-				return nil, err
-			}
-
-			formFieldFindAll.AdvancedOptions = advancedOptions
-
-			if err := utils.Mapper(formField, &formFieldFindAll); err != nil {
-				return nil, err
-			}
-
-			formFieldsList[colIndex] = append(formFieldsList[colIndex], formFieldFindAll)
-		}
-
-		var formFindAll responses.FormFindAll
-		err := utils.Mapper(form, &formFindAll)
-		if err != nil {
-			return nil, err
-		}
-
-		formFindAll.FormFields = formFieldsList
-
-		var dataSheet map[string]interface{}
-		if err := json.Unmarshal([]byte(*form.DataSheet), &dataSheet); err != nil {
-			return nil, err
-		}
-
-		formFindAll.DataSheet = &dataSheet
-
-		formsResponse = append(formsResponse, formFindAll)
-	}
-
-	return &formsResponse, nil
-
-}
-
-func (s *FormService) Create(ctx context.Context, req *requests.FormCreate) error {
+func (s *FormService) CreateFormTemplate(ctx context.Context, req *requests.FormTemplateCreate) error {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	var formModel model.Forms
-	var formFieldsModels = []model.FormFields{}
-
-	if err := utils.Mapper(req, &formModel); err != nil {
-		return err
+	// Create Form Template
+	formTemplate := model.FormTemplates{}
+	if err := utils.Mapper(req, &formTemplate); err != nil {
+		return fmt.Errorf("mapping form template failed: %w", err)
 	}
 
-	dataSheet, err := utils.MapToString(req.DataSheet)
+	// Datasheet Mapping
+	if req.DataSheet != nil {
+		datasheet := string(*req.DataSheet)
+		formTemplate.DataSheet = &datasheet
+	}
+
+	formTemplate, err = s.formRepo.CreateFormTemplate(ctx, tx, formTemplate)
 	if err != nil {
-		return err
+		return fmt.Errorf("create form template failed: %w", err)
 	}
 
-	formModel.DataSheet = &dataSheet
+	// Create Form Template Version
+	formTemplateVersion := model.FormTemplateVersions{
+		Version:        1,
+		FormTemplateID: formTemplate.ID,
+	}
 
+	formTemplateVersion, err = s.formRepo.CreateFormTemplateVersion(ctx, tx, formTemplateVersion)
+	if err != nil {
+		return fmt.Errorf("create form template version failed: %w", err)
+	}
+
+	// Create Form Template Fields
+	formTemplateFields := []model.FormTemplateFields{}
 	for i := range req.FormFields {
 		for j := range req.FormFields[i] {
+			formTemplateField := model.FormTemplateFields{}
 
-			var formFieldModel model.FormFields
-
-			if err := utils.Mapper(req.FormFields[i][j], &formFieldModel); err != nil {
-				return err
+			if err := utils.Mapper(req.FormFields[i][j], &formTemplateField); err != nil {
+				return fmt.Errorf("mapping form template field failed: %w", err)
 			}
 
-			advancedOptions, err := utils.MapToString(req.FormFields[i][j].AdvancedOptions)
-			if err != nil {
-				return err
+			// AdvancedOptions Mapping
+			if req.FormFields[i][j].AdvancedOptions != nil {
+				advancedOptions := string(*req.FormFields[i][j].AdvancedOptions)
+				formTemplateField.AdvancedOptions = &advancedOptions
 			}
 
-			formFieldModel.AdvancedOptions = advancedOptions
+			//
+			formTemplateField.ColNum = int32(i)
 
-			formFieldModel.ColNum = int32(i)
+			//
+			formTemplateField.FormTemplateVersionID = formTemplateVersion.ID
 
-			formFieldsModels = append(formFieldsModels, formFieldModel)
+			//
+			formTemplateFields = append(formTemplateFields, formTemplateField)
 		}
+
 	}
 
-	form, err := s.formRepo.Create(ctx, tx, formModel)
-	if err != nil {
-		return err
+	if err := s.formRepo.CreateFormTemplateFields(ctx, tx, formTemplateFields); err != nil {
+		return fmt.Errorf("create form template field failed: %w", err)
 	}
 
-	if err := s.formFieldRepo.Create(ctx, tx, formFieldsModels, form.ID); err != nil {
-		return err
-	}
-
+	//Commit
 	if err := tx.Commit(); err != nil {
 		return err
 	}
 
 	return nil
+}
 
+func (s *FormService) FindAllFormTemplate(ctx context.Context) ([]responses.FormTemplateFindAll, error) {
+	formTemplatesResponse := []responses.FormTemplateFindAll{}
+
+	formTemplates, err := s.formRepo.FindAllFormTemplate(ctx, s.db)
+	fmt.Println(formTemplates)
+	if err != nil {
+		return formTemplatesResponse, err
+	}
+
+	for _, formTemplate := range formTemplates {
+
+		formTemplateResponse := responses.FormTemplateFindAll{}
+
+		verionsResponse := []responses.FormTemplateVersionFindAll{}
+
+		for _, formTemplateVersion := range formTemplate.Versions {
+
+			versionResponse := responses.FormTemplateVersionFindAll{}
+
+			fieldsResponse := [][]responses.FormTemplateFieldsFindAll{}
+
+			for _, formformTemplateField := range formTemplateVersion.Fields {
+
+				colIndex := formformTemplateField.ColNum
+
+				for len(fieldsResponse) <= int(colIndex) {
+					fieldsResponse = append(fieldsResponse, []responses.FormTemplateFieldsFindAll{})
+				}
+
+				fieldResponse := responses.FormTemplateFieldsFindAll{}
+
+				//Mapping AdvancedOptions
+				var advancedOptions map[string]interface{}
+				if err := json.Unmarshal([]byte(*formformTemplateField.AdvancedOptions), &advancedOptions); err != nil {
+					return formTemplatesResponse, err
+				}
+				fieldResponse.AdvancedOptions = advancedOptions
+				if err := utils.Mapper(formformTemplateField, &fieldResponse); err != nil {
+					return formTemplatesResponse, err
+				}
+
+				fieldsResponse[colIndex] = append(fieldsResponse[colIndex], fieldResponse)
+			}
+
+			versionResponse.FormFields = fieldsResponse
+
+			verionsResponse = append(verionsResponse, versionResponse)
+		}
+
+		formTemplateResponse.Versions = verionsResponse
+
+		formTemplatesResponse = append(formTemplatesResponse, formTemplateResponse)
+
+	}
+
+	return formTemplatesResponse, nil
 }

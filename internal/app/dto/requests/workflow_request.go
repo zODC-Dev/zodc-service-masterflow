@@ -1,26 +1,8 @@
 package requests
 
-import "github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
-
-type NodeRequest struct {
-	Id       string
-	Summary  string
-	Type     string
-	Position types.Position
-	Size     types.Size
-	EndType  string
-	ParentId string
-	Key      string
-}
-
-type GroupRequest struct {
-	Id       string
-	Summary  string
-	Position types.Position
-	Size     types.Size
-	Key      string
-	Type     string
-}
+import (
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
+)
 
 type ConnectionRequest struct {
 	Id   string
@@ -29,14 +11,51 @@ type ConnectionRequest struct {
 	Type string
 }
 
+type NodeDataRequest struct {
+	Type       string
+	Title      string
+	DueIn      int32
+	AssigneeId int32
+	EndType    string
+}
+
+type NodeFormRequest struct {
+	FieldId string
+	Value   string
+}
+
+type NodeRequest struct {
+	Id       string
+	Position types.Position
+	Size     types.Size
+	ParentId string
+
+	Type string
+
+	Data NodeDataRequest
+
+	Form []NodeFormRequest
+}
+
+type StoriesRequest struct {
+	Decoration  string
+	Description string
+	Title       string
+	Type        string
+	// CategoryId  int32 /* Tự xử lý */
+
+	Node NodeRequest
+}
+
 type WorkflowRequest struct {
+	Decoration  string
+	Description string
 	Title       string
 	Type        string
 	CategoryId  int32
-	Version     int32
-	Description string
-	Decoration  string
-	Nodes       []NodeRequest
-	Groups      []GroupRequest
+
+	Nodes       []NodeRequest /*ko chứa story*/
 	Connections []ConnectionRequest
+
+	Stories []StoriesRequest
 }

@@ -1,6 +1,8 @@
 package requests
 
-type FormFieldsCreate struct {
+import "encoding/json"
+
+type FormTemplateFieldsCreate struct {
 	FieldID         string
 	Icon            string
 	Title           string
@@ -8,19 +10,18 @@ type FormFieldsCreate struct {
 	FieldName       string
 	FieldType       string
 	Required        bool
-	AdvancedOptions map[string]interface{}
+	AdvancedOptions *json.RawMessage
 	ColNum          int32
 	FormID          int32
 }
 
-type FormCreate struct {
+type FormTemplateCreate struct {
 	FileName    string
 	Title       string
 	CategoryID  *int32
-	Version     int32
 	TemplateID  *int32
-	DataSheet   *map[string]interface{}
+	DataSheet   *json.RawMessage
 	Description string
 	Decoration  string
-	FormFields  [][]FormFieldsCreate `json:"formFields"`
+	FormFields  [][]FormTemplateFieldsCreate `json:"formFields"`
 }

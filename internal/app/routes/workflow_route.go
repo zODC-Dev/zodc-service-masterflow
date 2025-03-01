@@ -10,17 +10,16 @@ import (
 )
 
 func WorkflowRoute(group *echo.Group, db *sql.DB) {
-	nodeRepo := repositories.NewNodeRepository()
 	workflowRepo := repositories.NewWorkflowRepository()
-	nodeConnectionRepo := repositories.NewNodeConnectionRepository()
+	formRepo := repositories.NewFormRepository()
 
-	workflowService := services.NewWorkflowService(db, nodeRepo, workflowRepo, nodeConnectionRepo)
-
+	workflowService := services.NewWorkflowService(db, workflowRepo, formRepo)
 	workflowController := controllers.NewWorkflowController(workflowService)
 
 	workflowRoute := group.Group("/workflows")
 	{
-		workflowRoute.POST("/create", workflowController.Create)
-		workflowRoute.GET("/all", workflowController.FindAll)
+		workflowRoute.GET("", workflowController.FindAllWorkflow)
+		workflowRoute.POST("/create", workflowController.CreateWorkflow)
+		workflowRoute.GET("/:id", workflowController.FindOneWorkflowDetail)
 	}
 }

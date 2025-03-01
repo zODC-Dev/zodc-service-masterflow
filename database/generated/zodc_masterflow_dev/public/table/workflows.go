@@ -24,10 +24,8 @@ type workflowsTable struct {
 	Title       postgres.ColumnString
 	Type        postgres.ColumnString
 	CategoryID  postgres.ColumnInteger
-	Version     postgres.ColumnInteger
 	Description postgres.ColumnString
 	Decoration  postgres.ColumnString
-	FormID      postgres.ColumnInteger
 
 	AllColumns     postgres.ColumnList
 	MutableColumns postgres.ColumnList
@@ -75,12 +73,10 @@ func newWorkflowsTableImpl(schemaName, tableName, alias string) workflowsTable {
 		TitleColumn       = postgres.StringColumn("title")
 		TypeColumn        = postgres.StringColumn("type")
 		CategoryIDColumn  = postgres.IntegerColumn("category_id")
-		VersionColumn     = postgres.IntegerColumn("version")
 		DescriptionColumn = postgres.StringColumn("description")
 		DecorationColumn  = postgres.StringColumn("decoration")
-		FormIDColumn      = postgres.IntegerColumn("form_id")
-		allColumns        = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, TitleColumn, TypeColumn, CategoryIDColumn, VersionColumn, DescriptionColumn, DecorationColumn, FormIDColumn}
-		mutableColumns    = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, TitleColumn, TypeColumn, CategoryIDColumn, VersionColumn, DescriptionColumn, DecorationColumn, FormIDColumn}
+		allColumns        = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, TitleColumn, TypeColumn, CategoryIDColumn, DescriptionColumn, DecorationColumn}
+		mutableColumns    = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, TitleColumn, TypeColumn, CategoryIDColumn, DescriptionColumn, DecorationColumn}
 	)
 
 	return workflowsTable{
@@ -94,10 +90,8 @@ func newWorkflowsTableImpl(schemaName, tableName, alias string) workflowsTable {
 		Title:       TitleColumn,
 		Type:        TypeColumn,
 		CategoryID:  CategoryIDColumn,
-		Version:     VersionColumn,
 		Description: DescriptionColumn,
 		Decoration:  DecorationColumn,
-		FormID:      FormIDColumn,
 
 		AllColumns:     allColumns,
 		MutableColumns: mutableColumns,

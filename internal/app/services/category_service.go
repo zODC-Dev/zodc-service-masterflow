@@ -21,10 +21,10 @@ func NewCategoryService(db *sql.DB, categoryRepo *repositories.CategoryRepositor
 	}
 }
 
-func (s *CategoryService) FindAll(ctx context.Context) ([]responses.CategoryFindAll, error) {
+func (s *CategoryService) FindAll(ctx context.Context, typeQueryParam string) ([]responses.CategoryFindAll, error) {
 	categoriesResponse := []responses.CategoryFindAll{}
 
-	categories, err := s.categoryRepo.FindAll(ctx, s.db)
+	categories, err := s.categoryRepo.FindAll(ctx, s.db, typeQueryParam)
 	if err != nil {
 		return categoriesResponse, err
 	}

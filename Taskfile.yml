@@ -42,3 +42,8 @@ tasks:
     cmds:
       - goose down
       - task: jet
+
+  cleardb:
+    cmds:
+      - goose reset
+      - goose up

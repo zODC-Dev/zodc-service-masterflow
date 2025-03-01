@@ -5,26 +5,28 @@ import "github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
 type CategoryResponse struct {
 	Id   int32  `json:"id"`
 	Name string `json:"name"`
+	Type string `json:"type"`
+	Key  string `json:"key"`
+}
+
+type NodeDataResponse struct {
+	Type       string  `json:"type"`
+	Title      string  `json:"title"`
+	DueIn      *int32  `json:"dueIn"`
+	AssigneeId int32   `json:"assigneeId"`
+	EndType    *string `json:"endType"`
 }
 
 type NodeResponse struct {
-	Id       string         `json:"id"`
-	Type     string         `json:"type"`
-	Summary  string         `json:"summary"`
-	Position types.Position `json:"position"`
-	Size     types.Size     `json:"size"`
-	EndType  string         `json:"endType"`
-	ParentId string         `json:"parentId"`
-	Key      string         `json:"key"`
-}
+	Id   string `json:"id"`
+	Type string `json:"type"`
 
-type GroupResponse struct {
-	Id       string         `json:"id"`
-	Summary  string         `json:"summary"`
 	Position types.Position `json:"position"`
 	Size     types.Size     `json:"size"`
-	Key      string         `json:"key"`
-	Type     string         `json:"type"`
+
+	Data NodeDataResponse `json:"data"`
+
+	ParentId *string `json:"parentId"`
 }
 
 type ConnectionResponse struct {
@@ -34,15 +36,36 @@ type ConnectionResponse struct {
 	Type string `json:"type"`
 }
 
-type WorkflowResponse struct {
-	Id          int32                `json:"id"`
-	Title       string               `json:"title"`
-	Type        string               `json:"type"`
-	Category    CategoryResponse     `json:"category"`
-	Version     int32                `json:"version"`
-	Description string               `json:"description"`
-	Decoration  string               `json:"decoration"`
+type StoryResponse struct {
+	Decoration  string `json:"decoration"`
+	Description string `json:"description"`
+	Title       string `json:"title"`
+	Type        string `json:"type"`
+	// CategoryId  int32 /* Tự xử lý */
+
+	Node NodeResponse `json:"node"`
+}
+
+type WorkflowDetailResponse struct {
+	Id          int32            `json:"id"`
+	Title       string           `json:"title"`
+	Type        string           `json:"type"`
+	Category    CategoryResponse `json:"category"`
+	Version     int32            `json:"version"`
+	Description string           `json:"description"`
+	Decoration  string           `json:"decoration"`
+
 	Nodes       []NodeResponse       `json:"nodes"`
-	Groups      []GroupResponse      `json:"groups"`
+	Stories     []StoryResponse      `json:"stories"`
 	Connections []ConnectionResponse `json:"connections"`
+}
+
+type WorkflowResponse struct {
+	Id          int32            `json:"id"`
+	Title       string           `json:"title"`
+	Type        string           `json:"type"`
+	Category    CategoryResponse `json:"category"`
+	Version     int32            `json:"version"`
+	Description string           `json:"description"`
+	Decoration  string           `json:"decoration"`
 }

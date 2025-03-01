@@ -11,19 +11,12 @@ import (
 	"time"
 )
 
-type Nodes struct {
-	ID         string `sql:"primary_key"`
+type WorkflowVersions struct {
+	ID         int32 `sql:"primary_key"`
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 	DeletedAt  *time.Time
-	X          float64
-	Y          float64
-	Width      float64
-	Height     float64
-	Type       string
-	ParentID   *string
-	Summary    *string
-	EndType    *string
-	Key        *string
+	Version    int32
+	IsArchived bool
 	WorkflowID int32
 }

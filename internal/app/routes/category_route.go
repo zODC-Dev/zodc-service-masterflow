@@ -16,6 +16,6 @@ func CategoryRoute(group *echo.Group, db *sql.DB) {
 
 	categoryRoute := group.Group("/categories")
 	{
-		categoryRoute.GET("/all", categoryController.FindAll)
+		categoryRoute.GET("", categoryController.FindAll)
 	}
 }

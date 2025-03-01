@@ -11,18 +11,12 @@ import (
 	"time"
 )
 
-type NodeGroups struct {
-	ID         string `sql:"primary_key"`
+type RequestNodes struct {
+	ID         int32 `sql:"primary_key"`
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 	DeletedAt  *time.Time
-	Summary    string
-	X          float64
-	Y          float64
-	Width      float64
-	Height     float64
-	TicketID   *string
-	Key        *string
-	Type       *string
-	WorkflowID int32
+	Status     string
+	RequestID  int32
+	FormDataID *int32
 }

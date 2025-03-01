@@ -20,7 +20,9 @@ func NewCategoryController(categoryService *services.CategoryService) *CategoryC
 func (c *CategoryController) FindAll(e echo.Context) error {
 	ctx := e.Request().Context()
 
-	categories, err := c.categoryService.FindAll(ctx)
+	typeQueryParam := e.QueryParam("type")
+
+	categories, err := c.categoryService.FindAll(ctx, typeQueryParam)
 	if err != nil {
 		return e.JSON(http.StatusBadGateway, err.Error())
 	}

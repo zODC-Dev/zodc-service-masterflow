@@ -3,11 +3,9 @@ package services
 import (
 	"context"
 	"database/sql"
-	"errors"
+	"fmt"
 
-	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow/public/model"
-	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/filters"
-	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
+	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/requests"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/responses"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
@@ -16,216 +14,452 @@ import (
 )
 
 type WorkflowService struct {
-	db                 *sql.DB
-	nodeRepo           *repositories.NodeRepository
-	workflowRepo       *repositories.WorkflowRepository
-	nodeConnectionRepo *repositories.NodeConnectionRepository
-	nodeGroupRepo      *repositories.NodeGroupRepository
+	db           *sql.DB
+	workflowRepo *repositories.WorkflowRepository
+	formRepo     *repositories.FormRepository
 }
 
-func NewWorkflowService(db *sql.DB, nodeRepo *repositories.NodeRepository, workflowRepo *repositories.WorkflowRepository, nodeConnectionRepository *repositories.NodeConnectionRepository) *WorkflowService {
+func NewWorkflowService(db *sql.DB, workflowRepo *repositories.WorkflowRepository, formRepo *repositories.FormRepository) *WorkflowService {
 	return &WorkflowService{
-		db:                 db,
-		nodeRepo:           nodeRepo,
-		workflowRepo:       workflowRepo,
-		nodeConnectionRepo: nodeConnectionRepository,
+		db:           db,
+		workflowRepo: workflowRepo,
+		formRepo:     formRepo,
 	}
 }
 
-func (s *WorkflowService) Create(ctx context.Context, req *requests.WorkflowRequest) error {
+func (s *WorkflowService) CreateWorkFlow(ctx context.Context, tx *sql.Tx, workflowData interface{}) (model.Workflows, error) {
+	workflow := model.Workflows{}
+	if err := utils.Mapper(workflowData, &workflow); err != nil {
+		return workflow, fmt.Errorf("mapping workflow failed: %w", err)
+	}
+
+	workflow, err := s.workflowRepo.CreateWorkflow(ctx, tx, workflow)
+	if err != nil {
+		return workflow, fmt.Errorf("create workflow failed: %w", err)
+	}
+
+	return workflow, nil
+}
+
+func (s *WorkflowService) CreateWorkFlowVersion(ctx context.Context, tx *sql.Tx, workflowId int32) (model.WorkflowVersions, error) {
+	workFlowVersion := model.WorkflowVersions{
+		Version:    1,
+		WorkflowID: workflowId,
+	}
+
+	workFlowVersion, err := s.workflowRepo.CreateWorkflowVersion(ctx, tx, workFlowVersion)
+	if err != nil {
+		return workFlowVersion, fmt.Errorf("create workflow template version failed: %w", err)
+	}
+
+	return workFlowVersion, nil
+
+}
+
+func (s *WorkflowService) MapToWorkflowNodeResponse(node model.WorkflowNodes) (responses.NodeResponse, error) {
+	nodeDataResponse := responses.NodeDataResponse{}
+	if err := utils.Mapper(node, &nodeDataResponse); err != nil {
+		return responses.NodeResponse{}, err
+	}
+
+	nodeResponse := responses.NodeResponse{
+		Id:   node.ID,
+		Type: node.Type,
+		Position: types.Position{
+			X: node.X,
+			Y: node.Y,
+		},
+		Size: types.Size{
+			Width:  node.Width,
+			Height: node.Height,
+		},
+		Data:     nodeDataResponse,
+		ParentId: node.ParentID,
+	}
+
+	return nodeResponse, nil
+}
+
+// Handlers
+func (s *WorkflowService) CreateWorkFlowHandler(ctx context.Context, req *requests.WorkflowRequest) error {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	//Workflow Create
-	workflowModel := model.Workflows{}
-	if err := utils.Mapper(req, &workflowModel); err != nil {
-		return err
-	}
-
-	workflow, err := s.workflowRepo.Create(ctx, tx, workflowModel)
+	// Prepare Form System
+	formSystems, err := s.formRepo.FindAllFormSystem(ctx, s.db)
 	if err != nil {
 		return err
 	}
 
-	//Node Create
-	if len(req.Nodes) == 0 {
-		return errors.New("requires at least 1 node")
-	}
-
-	nodesModel := []model.Nodes{}
-
-	for i := range req.Nodes {
-		node := req.Nodes[i]
-
-		nodeModel := model.Nodes{
-			WorkflowID: workflow.ID,
-			X:          node.Position.X,
-			Y:          node.Position.Y,
-			Width:      node.Size.Width,
-			Height:     node.Size.Height,
-		}
-		if err := utils.Mapper(node, &nodeModel); err != nil {
-			return err
-		}
-
-		nodesModel = append(nodesModel, nodeModel)
-	}
-
-	err = s.nodeRepo.Create(ctx, tx, nodesModel)
+	workflow, err := s.CreateWorkFlow(ctx, tx, req)
 	if err != nil {
-		return err
+		return fmt.Errorf("create Main Workflow Fail: %w", err)
 	}
 
-	//Connection Create
-	if len(req.Connections) == 0 {
-		return errors.New("requires at least 1 connection")
+	workflowVersion, err := s.CreateWorkFlowVersion(ctx, tx, workflow.ID)
+	if err != nil {
+		return fmt.Errorf("create Main Workflow Version Fail: %w", err)
 	}
 
-	connectionsModel := []model.NodeConnections{}
+	//Create Stories
+	for _, storyReq := range req.Stories {
 
-	for i := range req.Connections {
-		connectionReq := req.Connections[i]
+		storyReq.Decoration = workflow.Decoration
+		storyReq.Description = workflow.Description
 
-		connectionModel := model.NodeConnections{
-			ID:         connectionReq.Id,
-			FromNodeID: connectionReq.From,
-			ToNodeID:   connectionReq.To,
-			Type:       connectionReq.Type,
-			WorkflowID: workflow.ID,
+		storyWorkflow, err := s.CreateWorkFlow(ctx, tx, storyReq)
+		if err != nil {
+			return fmt.Errorf("create Story Workflow Fail: %w", err)
 		}
 
-		connectionsModel = append(connectionsModel, connectionModel)
-	}
+		storyWorkflowVersion, err := s.CreateWorkFlowVersion(ctx, tx, storyWorkflow.ID)
+		if err != nil {
+			return fmt.Errorf("create Story Workflow Version Fail: %w", err)
+		}
 
-	if err := s.nodeConnectionRepo.Create(ctx, tx, connectionsModel); err != nil {
-		return err
-	}
+		storyWorkflowNode := model.WorkflowNodes{
+			ID:                storyReq.Node.Id,
+			WorkflowVersionID: workflowVersion.ID,
 
-	//Group Create
-	if len(req.Groups) != 0 {
-		groupsModel := []model.NodeGroups{}
+			X:      storyReq.Node.Position.X,
+			Y:      storyReq.Node.Position.Y,
+			Width:  storyReq.Node.Size.Width,
+			Height: storyReq.Node.Size.Height,
 
-		for i := range req.Groups {
-			groupReq := req.Groups[i]
+			Type: storyReq.Node.Type,
 
-			groupModel := model.NodeGroups{
-				X:          groupReq.Position.X,
-				Y:          groupReq.Position.Y,
-				Width:      groupReq.Size.Width,
-				Height:     groupReq.Size.Height,
-				WorkflowID: workflow.ID,
+			// Data
+			Title: &storyReq.Node.Data.Title,
+
+			//subworkflow ??? // can delete if it wrong
+			SubWorkflowID: &storyWorkflow.ID,
+		}
+
+		err = s.workflowRepo.CreateWorkflowNodes(ctx, tx, []model.WorkflowNodes{storyWorkflowNode})
+		if err != nil {
+			return fmt.Errorf("create Story Workflow MAIN Node Fail: %w", err)
+		}
+
+		// Create Story Nodes
+		storyNodes := []model.WorkflowNodes{}
+
+		i := 0
+		for _, storyNodeReq := range req.Nodes {
+			if storyNodeReq.ParentId != storyReq.Node.Id {
+				req.Nodes[i] = storyNodeReq
+				i++
+				continue
 			}
 
-			if err := utils.Mapper(groupReq, &groupModel); err != nil {
-				return err
+			storyNode := model.WorkflowNodes{
+				ID:                storyNodeReq.Id,
+				WorkflowVersionID: storyWorkflowVersion.ID,
+
+				X:      storyNodeReq.Position.X,
+				Y:      storyNodeReq.Position.Y,
+				Width:  storyNodeReq.Size.Width,
+				Height: storyNodeReq.Size.Height,
+
+				Type: storyNodeReq.Type,
+
+				ParentID: &storyNodeReq.ParentId,
+
+				// Data
+				Title:   &storyNodeReq.Data.Title,
+				EndType: &storyNodeReq.Data.EndType,
+				DueIn:   &storyNodeReq.Data.DueIn,
 			}
 
-			groupsModel = append(groupsModel, groupModel)
+			// Form Type System Tag Story // Create Form Data
+			for _, formSystem := range formSystems {
+				if formSystem.Tag == storyNodeReq.Type {
+					// Create Form Data
+					formData := model.FormData{
+						FormTemplateVersionID: formSystem.Version.ID,
+					}
+
+					formData, err = s.formRepo.CreateFormData(ctx, tx, formData)
+					if err != nil {
+						return fmt.Errorf("create form data system Fail: %w", err)
+					}
+
+					formFieldDatas := []model.FormFieldData{}
+					for _, form := range storyNodeReq.Form {
+						for _, field := range formSystem.Fields {
+							if field.FieldID == form.FieldId {
+								formFieldData := model.FormFieldData{
+									Value:               form.Value,
+									FormDataID:          formData.ID,
+									FormTemplateFieldID: field.ID,
+								}
+
+								formFieldDatas = append(formFieldDatas, formFieldData)
+							}
+						}
+					}
+
+					if len(formFieldDatas) > 0 {
+						err := s.formRepo.CreateFormFieldDatas(ctx, tx, formFieldDatas)
+						if err != nil {
+							return fmt.Errorf("create form field datas  Fail: %w", err)
+						}
+					}
+
+					storyNode.FormDataID = &formData.ID
+
+					break
+				}
+			}
+
+			storyNodes = append(storyNodes, storyNode)
+
+		}
+		req.Nodes = req.Nodes[:i]
+
+		err = s.workflowRepo.CreateWorkflowNodes(ctx, tx, storyNodes)
+		if err != nil {
+			return fmt.Errorf("create Story Node Fail: %w", err)
 		}
 
-		if err := s.nodeGroupRepo.Create(ctx, tx, groupsModel); err != nil {
-			return err
+		// Create Story Connections
+		storyConnections := []model.WorkflowConnections{}
+
+		i = 0
+		for _, connReq := range req.Connections {
+			shouldKeepConnection := true
+
+			for _, storyNode := range storyNodes {
+
+				if storyNode.ID == connReq.From {
+					shouldKeepConnection = false
+
+					storyConnection := model.WorkflowConnections{
+						ID:                 connReq.Id,
+						FromWorkflowNodeID: connReq.From,
+						ToWorkflowNodeID:   connReq.To,
+						Type:               connReq.Type,
+						WorkflowVersionID:  storyWorkflowVersion.ID,
+					}
+
+					storyConnections = append(storyConnections, storyConnection)
+				}
+			}
+
+			if shouldKeepConnection {
+				req.Connections[i] = connReq
+				i++
+			}
 		}
+		req.Connections = req.Connections[:i]
+
+		err = s.workflowRepo.CreateWorkflowConnections(ctx, tx, storyConnections)
+		if err != nil {
+			return fmt.Errorf("create Story Connection Fail: %w", err)
+		}
+	}
+
+	// Create workflow node
+	workflowNodes := []model.WorkflowNodes{}
+
+	for _, workflowNodeReq := range req.Nodes {
+		workflowNode := model.WorkflowNodes{
+			ID:                workflowNodeReq.Id,
+			WorkflowVersionID: workflowVersion.ID,
+
+			X:      workflowNodeReq.Position.X,
+			Y:      workflowNodeReq.Position.Y,
+			Width:  workflowNodeReq.Size.Width,
+			Height: workflowNodeReq.Size.Height,
+
+			Type: workflowNodeReq.Type,
+
+			// ParentID: &workflowNodeReq.ParentId,
+
+			// Data
+			Title:   &workflowNodeReq.Data.Title,
+			EndType: &workflowNodeReq.Data.EndType,
+			DueIn:   &workflowNodeReq.Data.DueIn,
+		}
+
+		for _, formSystem := range formSystems {
+			if formSystem.Tag == workflowNodeReq.Type {
+				// Create Form Data
+				formData := model.FormData{
+					FormTemplateVersionID: formSystem.Version.ID,
+				}
+
+				formData, err = s.formRepo.CreateFormData(ctx, tx, formData)
+				if err != nil {
+					return fmt.Errorf("create form data fail: %w", err)
+				}
+
+				formFieldDatas := []model.FormFieldData{}
+				for _, form := range workflowNodeReq.Form {
+					for _, field := range formSystem.Fields {
+						if field.FieldID == form.FieldId {
+							formFieldData := model.FormFieldData{
+								Value:               form.Value,
+								FormDataID:          formData.ID,
+								FormTemplateFieldID: field.ID,
+							}
+
+							formFieldDatas = append(formFieldDatas, formFieldData)
+						}
+					}
+				}
+
+				// shuold remove len if check ?
+				if len(formFieldDatas) > 0 {
+					err := s.formRepo.CreateFormFieldDatas(ctx, tx, formFieldDatas)
+					if err != nil {
+						return fmt.Errorf("create form fields data fail: %w", err)
+					}
+				}
+
+				workflowNode.FormDataID = &formData.ID
+
+				break
+			}
+		}
+
+		workflowNodes = append(workflowNodes, workflowNode)
+	}
+
+	err = s.workflowRepo.CreateWorkflowNodes(ctx, tx, workflowNodes)
+	if err != nil {
+		return fmt.Errorf("create Workflow Nodes Fail: %w", err)
+	}
+
+	// Create workflow connection
+	workflowConnections := []model.WorkflowConnections{}
+
+	for _, workflowConnectionReq := range req.Connections {
+		workflowConnection := model.WorkflowConnections{
+			ID: workflowConnectionReq.Id,
+
+			Type: workflowConnectionReq.Type,
+
+			FromWorkflowNodeID: workflowConnectionReq.From,
+			ToWorkflowNodeID:   workflowConnectionReq.To,
+
+			WorkflowVersionID: workflowVersion.ID,
+		}
+
+		workflowConnections = append(workflowConnections, workflowConnection)
+	}
+
+	err = s.workflowRepo.CreateWorkflowConnections(ctx, tx, workflowConnections)
+	if err != nil {
+		return fmt.Errorf("create Workflow Connections Fail: %w", err)
 	}
 
 	//Commit
 	if err := tx.Commit(); err != nil {
-		return err
+		return fmt.Errorf("commit fail: %w", err)
 	}
 
 	return nil
 }
 
-func (s *WorkflowService) FindAll(ctx context.Context, workflowQueryParam *queryparams.WorkflowQueryParam) ([]responses.WorkflowResponse, error) {
-	workflowsResponse := []responses.WorkflowResponse{}
+func (s *WorkflowService) FindAllWorkflowHandler(ctx context.Context) ([]responses.WorkflowResponse, error) {
+	workflowResponses := []responses.WorkflowResponse{}
 
-	workflowFilter := filters.WorkflowFilter{}
-	if err := utils.Mapper(&workflowQueryParam, &workflowFilter); err != nil {
-		return workflowsResponse, err
-	}
-
-	workflows, err := s.workflowRepo.FindAll(ctx, s.db, workflowFilter)
+	workflows, err := s.workflowRepo.FindAllWorkflowTemplates(ctx, s.db)
 	if err != nil {
-		return workflowsResponse, err
+		return workflowResponses, err
 	}
 
-	for i := range workflows {
+	for _, workflow := range workflows {
+
+		//Mapping workflow response
 		workflowResponse := responses.WorkflowResponse{}
-		connectionsResponse := []responses.ConnectionResponse{}
-		nodesResponse := []responses.NodeResponse{}
-		groupsResponse := []responses.GroupResponse{}
-
-		for j := range workflows[i].Connections {
-			connection := workflows[i].Connections[j]
-
-			connectionResponse := responses.ConnectionResponse{
-				Id:   connection.ID,
-				From: connection.FromNodeID,
-				To:   connection.ToNodeID,
-				Type: connection.Type,
-			}
-
-			connectionsResponse = append(connectionsResponse, connectionResponse)
+		if err := utils.Mapper(workflow, &workflowResponse); err != nil {
+			return workflowResponses, err
 		}
 
-		for j := range workflows[i].Nodes {
-			node := workflows[i].Nodes[j]
+		workflowResponse.Version = workflow.Version.Version
 
-			nodeResponse := responses.NodeResponse{
-				Position: types.Position{
-					X: node.X,
-					Y: node.Y,
-				},
-				Size: types.Size{
-					Width:  node.Width,
-					Height: node.Height,
-				},
-			}
-			if err := utils.Mapper(node, &nodeResponse); err != nil {
-				return workflowsResponse, err
-			}
-
-			nodesResponse = append(nodesResponse, nodeResponse)
-		}
-
-		for j := range workflows[i].Groups {
-			group := &workflows[i].Groups[j]
-
-			if group.Type == nil {
-				group.Type = new(string)
-				*group.Type = ""
-			}
-
-			groupResponse := responses.GroupResponse{
-				Position: types.Position{
-					X: group.X,
-					Y: group.Y,
-				},
-				Size: types.Size{
-					Width:  group.Width,
-					Height: group.Height,
-				},
-			}
-			if err := utils.Mapper(group, &groupResponse); err != nil {
-				return workflowsResponse, err
-			}
-
-			groupsResponse = append(groupsResponse, groupResponse)
-		}
-
-		if err := utils.Mapper(workflows[i], &workflowResponse); err != nil {
-			return workflowsResponse, err
-		}
-
-		workflowResponse.Connections = connectionsResponse
-		workflowResponse.Nodes = nodesResponse
-		workflowResponse.Groups = groupsResponse
-
-		workflowsResponse = append(workflowsResponse, workflowResponse)
+		workflowResponses = append(workflowResponses, workflowResponse)
 	}
 
-	return workflowsResponse, nil
+	return workflowResponses, nil
+}
+
+func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, workflowVersionId int32) (responses.WorkflowDetailResponse, error) {
+	workflowResponse := responses.WorkflowDetailResponse{}
+
+	workflow, err := s.workflowRepo.FindOneWorkflowDetailByWorkflowVersionId(ctx, s.db, workflowVersionId)
+	if err != nil {
+		return workflowResponse, err
+	}
+
+	//Mapping workflow response
+	if err := utils.Mapper(workflow, &workflowResponse); err != nil {
+		return workflowResponse, err
+	}
+
+	workflowResponse.Version = workflow.Version.Version
+
+	// Stories
+	storiesResponse := []responses.StoryResponse{}
+
+	i := 0
+	for _, node := range workflow.Nodes {
+		if node.Type != "STORY" {
+			workflow.Nodes[i] = node
+			i++
+			continue
+		}
+
+		// Map Response
+		nodeResponse, err := s.MapToWorkflowNodeResponse(node)
+		if err != nil {
+			return workflowResponse, fmt.Errorf("map workflow node response fail: %w", err)
+		}
+
+		story := responses.StoryResponse{
+			Node: nodeResponse,
+
+			Type:        workflow.Type,
+			Decoration:  workflow.Decoration,
+			Description: workflow.Description,
+			Title:       workflow.Title,
+		}
+
+		storiesResponse = append(storiesResponse, story)
+	}
+	workflow.Nodes = workflow.Nodes[:i]
+	workflowResponse.Stories = storiesResponse
+
+	// Nodes
+	nodesResponse := []responses.NodeResponse{}
+	for _, node := range workflow.Nodes {
+
+		nodeResponse, err := s.MapToWorkflowNodeResponse(node)
+		if err != nil {
+			return workflowResponse, fmt.Errorf("map workflow node response fail: %w", err)
+		}
+
+		nodesResponse = append(nodesResponse, nodeResponse)
+	}
+	workflowResponse.Nodes = nodesResponse
+
+	// Connections
+	connectionsResponse := []responses.ConnectionResponse{}
+	for _, connection := range workflow.Connections {
+		connectionResponse := responses.ConnectionResponse{
+			Id:   connection.ID,
+			To:   connection.ToWorkflowNodeID,
+			From: connection.FromWorkflowNodeID,
+			Type: connection.Type,
+		}
+
+		connectionsResponse = append(connectionsResponse, connectionResponse)
+	}
+	workflowResponse.Connections = connectionsResponse
+
+	return workflowResponse, nil
 }
