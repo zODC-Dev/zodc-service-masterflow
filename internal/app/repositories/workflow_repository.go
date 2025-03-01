@@ -7,7 +7,6 @@ import (
 	"github.com/go-jet/jet/v2/postgres"
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/table"
-	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/constants"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/results"
 )
 
@@ -144,8 +143,6 @@ func (r *WorkflowRepository) FindOneWorkflowDetailByWorkflowVersionId(ctx contex
 			).
 			INNER_JOIN(WorkflowNodes, WorkflowNodes.WorkflowVersionID.EQ(WorkflowVersions.ID)).
 			INNER_JOIN(WorkflowConnections, WorkflowConnections.WorkflowVersionID.EQ(WorkflowVersions.ID)),
-	).WHERE(
-		Workflows.Type.EQ(postgres.String(string(constants.WorkflowGeneral))),
 	)
 
 	result := results.WorkflowDetailResult{}

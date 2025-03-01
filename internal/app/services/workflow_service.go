@@ -410,6 +410,8 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, work
 	}
 
 	workflowResponse.Version = workflow.Version.Version
+	workflowResponse.Connections = []responses.ConnectionResponse{}
+	workflowResponse.Nodes = []responses.NodeResponse{}
 
 	// Stories
 	storiesResponse := []responses.StoryResponse{}
