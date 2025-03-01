@@ -80,8 +80,6 @@ func (r *WorkflowRepository) FindAllWorkflowTemplates(ctx context.Context, db *s
 				AND(WorkflowVersions.IsArchived.EQ(postgres.Bool(false))),
 			).
 			INNER_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)),
-	).WHERE(
-		Workflows.Type.EQ(postgres.String(string(constants.WorkflowGeneral))),
 	)
 
 	result := []results.WorkflowTemplateResult{}

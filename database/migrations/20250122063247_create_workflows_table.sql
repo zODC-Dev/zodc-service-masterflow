@@ -22,6 +22,7 @@ CREATE TABLE workflow_versions (
      -- Version
     version INT NOT NULL,
     is_archived BOOLEAN NOT NULL DEFAULT FALSE,
+    status TEXT,
 
     workflow_id INT NOT NULL REFERENCES workflows (id) ON DELETE CASCADE
 );
@@ -44,7 +45,7 @@ CREATE TABLE workflow_nodes (
     assignee_id INT,
     due_in INT,
     end_type TEXT,
-    sub_workflow_id INT REFERENCES workflows (id) ON DELETE CASCADE,
+    sub_workflow_version_id INT REFERENCES workflow_versions (id) ON DELETE CASCADE,
     type TEXT NOT NULL, -- start, end, bug, task, approve, sub_workflow, story, input, noti, group, condition
 
     parent_id TEXT REFERENCES workflow_nodes (id) ON DELETE CASCADE,

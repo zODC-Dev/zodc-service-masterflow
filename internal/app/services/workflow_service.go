@@ -143,7 +143,7 @@ func (s *WorkflowService) CreateWorkFlowHandler(ctx context.Context, req *reques
 			Title: &storyReq.Node.Data.Title,
 
 			//subworkflow ??? // can delete if it wrong
-			SubWorkflowID: &storyWorkflow.ID,
+			SubWorkflowVersionID: &storyWorkflowVersion.ID,
 		}
 
 		err = s.workflowRepo.CreateWorkflowNodes(ctx, tx, []model.WorkflowNodes{storyWorkflowNode})
@@ -438,12 +438,49 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, work
 		}
 
 		storiesResponse = append(storiesResponse, story)
+
+		// Story nodes
+		if node.SubWorkflowVersionID != nil {
+			storyNodes, err := s.workflowRepo.FindAllNodeByWorkflowVersionId(ctx, s.db, *node.SubWorkflowVersionID)
+			if err != nil {
+				return workflowResponse, err
+			}
+
+			for _, storyNode := range storyNodes {
+				nodeResponse, err := s.MapToWorkflowNodeResponse(storyNode)
+				if err != nil {
+					return workflowResponse, fmt.Errorf("map workflow node response fail: %w", err)
+				}
+
+				workflowResponse.Nodes = append(workflowResponse.Nodes, nodeResponse)
+			}
+
+		}
+
+		// Story connections
+		if node.SubWorkflowVersionID != nil {
+			storyConnectionss, err := s.workflowRepo.FindAllConnectionByWorkflowVersionId(ctx, s.db, *node.SubWorkflowVersionID)
+			if err != nil {
+				return workflowResponse, err
+			}
+
+			for _, storyConnection := range storyConnectionss {
+				connectionResponse := responses.ConnectionResponse{
+					Id:   storyConnection.ID,
+					To:   storyConnection.ToWorkflowNodeID,
+					From: storyConnection.FromWorkflowNodeID,
+					Type: storyConnection.Type,
+				}
+
+				workflowResponse.Connections = append(workflowResponse.Connections, connectionResponse)
+			}
+
+		}
 	}
 	workflow.Nodes = workflow.Nodes[:i]
 	workflowResponse.Stories = storiesResponse
 
 	// Nodes
-	nodesResponse := []responses.NodeResponse{}
 	for _, node := range workflow.Nodes {
 
 		nodeResponse, err := s.MapToWorkflowNodeResponse(node)
@@ -451,9 +488,8 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, work
 			return workflowResponse, fmt.Errorf("map workflow node response fail: %w", err)
 		}
 
-		nodesResponse = append(nodesResponse, nodeResponse)
+		workflowResponse.Nodes = append(workflowResponse.Nodes, nodeResponse)
 	}
-	workflowResponse.Nodes = nodesResponse
 
 	// Connections
 	connectionsResponse := []responses.ConnectionResponse{}

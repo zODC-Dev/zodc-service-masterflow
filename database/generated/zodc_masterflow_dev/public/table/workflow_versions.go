@@ -23,6 +23,7 @@ type workflowVersionsTable struct {
 	DeletedAt  postgres.ColumnTimestamp
 	Version    postgres.ColumnInteger
 	IsArchived postgres.ColumnBool
+	Status     postgres.ColumnString
 	WorkflowID postgres.ColumnInteger
 
 	AllColumns     postgres.ColumnList
@@ -70,9 +71,10 @@ func newWorkflowVersionsTableImpl(schemaName, tableName, alias string) workflowV
 		DeletedAtColumn  = postgres.TimestampColumn("deleted_at")
 		VersionColumn    = postgres.IntegerColumn("version")
 		IsArchivedColumn = postgres.BoolColumn("is_archived")
+		StatusColumn     = postgres.StringColumn("status")
 		WorkflowIDColumn = postgres.IntegerColumn("workflow_id")
-		allColumns       = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, VersionColumn, IsArchivedColumn, WorkflowIDColumn}
-		mutableColumns   = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, VersionColumn, IsArchivedColumn, WorkflowIDColumn}
+		allColumns       = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, VersionColumn, IsArchivedColumn, StatusColumn, WorkflowIDColumn}
+		mutableColumns   = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, VersionColumn, IsArchivedColumn, StatusColumn, WorkflowIDColumn}
 	)
 
 	return workflowVersionsTable{
@@ -85,6 +87,7 @@ func newWorkflowVersionsTableImpl(schemaName, tableName, alias string) workflowV
 		DeletedAt:  DeletedAtColumn,
 		Version:    VersionColumn,
 		IsArchived: IsArchivedColumn,
+		Status:     StatusColumn,
 		WorkflowID: WorkflowIDColumn,
 
 		AllColumns:     allColumns,

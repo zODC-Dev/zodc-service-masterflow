@@ -17,24 +17,24 @@ type workflowNodesTable struct {
 	postgres.Table
 
 	// Columns
-	ID                postgres.ColumnString
-	CreatedAt         postgres.ColumnTimestamp
-	UpdatedAt         postgres.ColumnTimestamp
-	DeletedAt         postgres.ColumnTimestamp
-	X                 postgres.ColumnFloat
-	Y                 postgres.ColumnFloat
-	Width             postgres.ColumnFloat
-	Height            postgres.ColumnFloat
-	Title             postgres.ColumnString
-	AssigneeID        postgres.ColumnInteger
-	DueIn             postgres.ColumnInteger
-	EndType           postgres.ColumnString
-	SubWorkflowID     postgres.ColumnInteger
-	Type              postgres.ColumnString
-	ParentID          postgres.ColumnString
-	WorkflowVersionID postgres.ColumnInteger
-	FormTemplateID    postgres.ColumnInteger
-	FormDataID        postgres.ColumnInteger
+	ID                   postgres.ColumnString
+	CreatedAt            postgres.ColumnTimestamp
+	UpdatedAt            postgres.ColumnTimestamp
+	DeletedAt            postgres.ColumnTimestamp
+	X                    postgres.ColumnFloat
+	Y                    postgres.ColumnFloat
+	Width                postgres.ColumnFloat
+	Height               postgres.ColumnFloat
+	Title                postgres.ColumnString
+	AssigneeID           postgres.ColumnInteger
+	DueIn                postgres.ColumnInteger
+	EndType              postgres.ColumnString
+	SubWorkflowVersionID postgres.ColumnInteger
+	Type                 postgres.ColumnString
+	ParentID             postgres.ColumnString
+	WorkflowVersionID    postgres.ColumnInteger
+	FormTemplateID       postgres.ColumnInteger
+	FormDataID           postgres.ColumnInteger
 
 	AllColumns     postgres.ColumnList
 	MutableColumns postgres.ColumnList
@@ -75,50 +75,50 @@ func newWorkflowNodesTable(schemaName, tableName, alias string) *WorkflowNodesTa
 
 func newWorkflowNodesTableImpl(schemaName, tableName, alias string) workflowNodesTable {
 	var (
-		IDColumn                = postgres.StringColumn("id")
-		CreatedAtColumn         = postgres.TimestampColumn("created_at")
-		UpdatedAtColumn         = postgres.TimestampColumn("updated_at")
-		DeletedAtColumn         = postgres.TimestampColumn("deleted_at")
-		XColumn                 = postgres.FloatColumn("x")
-		YColumn                 = postgres.FloatColumn("y")
-		WidthColumn             = postgres.FloatColumn("width")
-		HeightColumn            = postgres.FloatColumn("height")
-		TitleColumn             = postgres.StringColumn("title")
-		AssigneeIDColumn        = postgres.IntegerColumn("assignee_id")
-		DueInColumn             = postgres.IntegerColumn("due_in")
-		EndTypeColumn           = postgres.StringColumn("end_type")
-		SubWorkflowIDColumn     = postgres.IntegerColumn("sub_workflow_id")
-		TypeColumn              = postgres.StringColumn("type")
-		ParentIDColumn          = postgres.StringColumn("parent_id")
-		WorkflowVersionIDColumn = postgres.IntegerColumn("workflow_version_id")
-		FormTemplateIDColumn    = postgres.IntegerColumn("form_template_id")
-		FormDataIDColumn        = postgres.IntegerColumn("form_data_id")
-		allColumns              = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, TitleColumn, AssigneeIDColumn, DueInColumn, EndTypeColumn, SubWorkflowIDColumn, TypeColumn, ParentIDColumn, WorkflowVersionIDColumn, FormTemplateIDColumn, FormDataIDColumn}
-		mutableColumns          = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, TitleColumn, AssigneeIDColumn, DueInColumn, EndTypeColumn, SubWorkflowIDColumn, TypeColumn, ParentIDColumn, WorkflowVersionIDColumn, FormTemplateIDColumn, FormDataIDColumn}
+		IDColumn                   = postgres.StringColumn("id")
+		CreatedAtColumn            = postgres.TimestampColumn("created_at")
+		UpdatedAtColumn            = postgres.TimestampColumn("updated_at")
+		DeletedAtColumn            = postgres.TimestampColumn("deleted_at")
+		XColumn                    = postgres.FloatColumn("x")
+		YColumn                    = postgres.FloatColumn("y")
+		WidthColumn                = postgres.FloatColumn("width")
+		HeightColumn               = postgres.FloatColumn("height")
+		TitleColumn                = postgres.StringColumn("title")
+		AssigneeIDColumn           = postgres.IntegerColumn("assignee_id")
+		DueInColumn                = postgres.IntegerColumn("due_in")
+		EndTypeColumn              = postgres.StringColumn("end_type")
+		SubWorkflowVersionIDColumn = postgres.IntegerColumn("sub_workflow_version_id")
+		TypeColumn                 = postgres.StringColumn("type")
+		ParentIDColumn             = postgres.StringColumn("parent_id")
+		WorkflowVersionIDColumn    = postgres.IntegerColumn("workflow_version_id")
+		FormTemplateIDColumn       = postgres.IntegerColumn("form_template_id")
+		FormDataIDColumn           = postgres.IntegerColumn("form_data_id")
+		allColumns                 = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, TitleColumn, AssigneeIDColumn, DueInColumn, EndTypeColumn, SubWorkflowVersionIDColumn, TypeColumn, ParentIDColumn, WorkflowVersionIDColumn, FormTemplateIDColumn, FormDataIDColumn}
+		mutableColumns             = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, TitleColumn, AssigneeIDColumn, DueInColumn, EndTypeColumn, SubWorkflowVersionIDColumn, TypeColumn, ParentIDColumn, WorkflowVersionIDColumn, FormTemplateIDColumn, FormDataIDColumn}
 	)
 
 	return workflowNodesTable{
 		Table: postgres.NewTable(schemaName, tableName, alias, allColumns...),
 
 		//Columns
-		ID:                IDColumn,
-		CreatedAt:         CreatedAtColumn,
-		UpdatedAt:         UpdatedAtColumn,
-		DeletedAt:         DeletedAtColumn,
-		X:                 XColumn,
-		Y:                 YColumn,
-		Width:             WidthColumn,
-		Height:            HeightColumn,
-		Title:             TitleColumn,
-		AssigneeID:        AssigneeIDColumn,
-		DueIn:             DueInColumn,
-		EndType:           EndTypeColumn,
-		SubWorkflowID:     SubWorkflowIDColumn,
-		Type:              TypeColumn,
-		ParentID:          ParentIDColumn,
-		WorkflowVersionID: WorkflowVersionIDColumn,
-		FormTemplateID:    FormTemplateIDColumn,
-		FormDataID:        FormDataIDColumn,
+		ID:                   IDColumn,
+		CreatedAt:            CreatedAtColumn,
+		UpdatedAt:            UpdatedAtColumn,
+		DeletedAt:            DeletedAtColumn,
+		X:                    XColumn,
+		Y:                    YColumn,
+		Width:                WidthColumn,
+		Height:               HeightColumn,
+		Title:                TitleColumn,
+		AssigneeID:           AssigneeIDColumn,
+		DueIn:                DueInColumn,
+		EndType:              EndTypeColumn,
+		SubWorkflowVersionID: SubWorkflowVersionIDColumn,
+		Type:                 TypeColumn,
+		ParentID:             ParentIDColumn,
+		WorkflowVersionID:    WorkflowVersionIDColumn,
+		FormTemplateID:       FormTemplateIDColumn,
+		FormDataID:           FormDataIDColumn,
 
 		AllColumns:     allColumns,
 		MutableColumns: mutableColumns,

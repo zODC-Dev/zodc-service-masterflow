@@ -12,22 +12,22 @@ import (
 )
 
 type WorkflowNodes struct {
-	ID                string `sql:"primary_key"`
-	CreatedAt         time.Time
-	UpdatedAt         time.Time
-	DeletedAt         *time.Time
-	X                 float64
-	Y                 float64
-	Width             float64
-	Height            float64
-	Title             *string
-	AssigneeID        *int32
-	DueIn             *int32
-	EndType           *string
-	SubWorkflowID     *int32
-	Type              string
-	ParentID          *string
-	WorkflowVersionID int32
-	FormTemplateID    *int32
-	FormDataID        *int32
+	ID                   string `sql:"primary_key"`
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
+	DeletedAt            *time.Time
+	X                    float64
+	Y                    float64
+	Width                float64
+	Height               float64
+	Title                *string
+	AssigneeID           *int32
+	DueIn                *int32
+	EndType              *string
+	SubWorkflowVersionID *int32
+	Type                 string
+	ParentID             *string
+	WorkflowVersionID    int32
+	FormTemplateID       *int32
+	FormDataID           *int32
 }

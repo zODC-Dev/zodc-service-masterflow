@@ -18,5 +18,6 @@ type WorkflowVersions struct {
 	DeletedAt  *time.Time
 	Version    int32
 	IsArchived bool
+	Status     *string
 	WorkflowID int32
 }
