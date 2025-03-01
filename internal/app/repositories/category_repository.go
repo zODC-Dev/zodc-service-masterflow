@@ -35,3 +35,20 @@ func (r *CategoryRepository) FindAll(ctx context.Context, db *sql.DB, typeQueryP
 
 	return categories, err
 }
+
+func (r *CategoryRepository) FindOneCategoryByKey(ctx context.Context, db *sql.DB, key string) (model.Categories, error) {
+	Categories := table.Categories
+
+	statement := postgres.SELECT(
+		Categories.AllColumns,
+	).FROM(
+		Categories,
+	).WHERE(
+		Categories.Key.EQ(postgres.String(key)),
+	)
+
+	category := model.Categories{}
+	err := statement.QueryContext(ctx, db, &category)
+
+	return category, err
+}

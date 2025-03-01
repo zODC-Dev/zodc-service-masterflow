@@ -17,13 +17,15 @@ type WorkflowService struct {
 	db           *sql.DB
 	workflowRepo *repositories.WorkflowRepository
 	formRepo     *repositories.FormRepository
+	categoryRepo *repositories.CategoryRepository
 }
 
-func NewWorkflowService(db *sql.DB, workflowRepo *repositories.WorkflowRepository, formRepo *repositories.FormRepository) *WorkflowService {
+func NewWorkflowService(db *sql.DB, workflowRepo *repositories.WorkflowRepository, formRepo *repositories.FormRepository, categoryRepo *repositories.CategoryRepository) *WorkflowService {
 	return &WorkflowService{
 		db:           db,
 		workflowRepo: workflowRepo,
 		formRepo:     formRepo,
+		categoryRepo: categoryRepo,
 	}
 }
 
@@ -109,6 +111,12 @@ func (s *WorkflowService) CreateWorkFlowHandler(ctx context.Context, req *reques
 
 		storyReq.Decoration = workflow.Decoration
 		storyReq.Description = workflow.Description
+
+		category, err := s.categoryRepo.FindOneCategoryByKey(ctx, s.db, storyReq.CategoryKey)
+		if err != nil {
+			return fmt.Errorf("category key not found: %w", err)
+		}
+		storyReq.CategoryId = category.ID
 
 		storyWorkflow, err := s.CreateWorkFlow(ctx, tx, storyReq)
 		if err != nil {

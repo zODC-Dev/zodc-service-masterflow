@@ -12,8 +12,9 @@ import (
 func WorkflowRoute(group *echo.Group, db *sql.DB) {
 	workflowRepo := repositories.NewWorkflowRepository()
 	formRepo := repositories.NewFormRepository()
+	categoryRepo := repositories.NewCategoryRepository()
 
-	workflowService := services.NewWorkflowService(db, workflowRepo, formRepo)
+	workflowService := services.NewWorkflowService(db, workflowRepo, formRepo, categoryRepo)
 	workflowController := controllers.NewWorkflowController(workflowService)
 
 	workflowRoute := group.Group("/workflows")

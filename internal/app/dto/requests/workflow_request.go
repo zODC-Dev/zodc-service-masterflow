@@ -42,7 +42,8 @@ type StoriesRequest struct {
 	Description string
 	Title       string
 	Type        string
-	// CategoryId  int32 /* Tự xử lý */
+	CategoryKey string
+	CategoryId  int32
 
 	Node NodeRequest
 }
