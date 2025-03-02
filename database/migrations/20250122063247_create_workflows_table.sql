@@ -72,7 +72,7 @@ CREATE TABLE workflow_connections (
     type TEXT NOT NULL,
 
     -- Foreign Key
-    workflow_version_id INT NOT NULL REFERENCES workflows (id) ON DELETE CASCADE
+    workflow_version_id INT NOT NULL REFERENCES workflow_versions (id) ON DELETE CASCADE
 );
 
 CREATE TABLE requests (

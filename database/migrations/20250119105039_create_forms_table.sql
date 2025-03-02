@@ -9,7 +9,6 @@ CREATE TABLE form_templates (
     file_name TEXT NOT NULL,
     title TEXT NOT NULL,
     category_id INT,
-    template_id INT,
     data_sheet JSONB,
     description TEXT NOT NULL,
     decoration TEXT NOT NULL,
@@ -25,6 +24,8 @@ CREATE TABLE form_template_versions (
     deleted_at TIMESTAMP,
 
     version INT NOT NULL,
+    is_archived BOOLEAN NOT NULL DEFAULT FALSE,
+    status TEXT,
 
     form_template_id INT NOT NULL REFERENCES form_templates (id) ON DELETE CASCADE
 );

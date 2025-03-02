@@ -2,14 +2,9 @@ package results
 
 import "github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 
-type FormTemplateVersionResult struct {
-	model.FormTemplateVersions
-	Fields []model.FormTemplateFields
-}
-
 type FormTemplateResult struct {
 	model.FormTemplates
-	Versions []FormTemplateVersionResult
+	Version model.FormTemplateVersions
 }
 
 type FormSystemResult struct {

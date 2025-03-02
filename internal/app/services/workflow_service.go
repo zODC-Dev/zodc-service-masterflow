@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/requests"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/responses"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
@@ -372,10 +373,10 @@ func (s *WorkflowService) CreateWorkFlowHandler(ctx context.Context, req *reques
 	return nil
 }
 
-func (s *WorkflowService) FindAllWorkflowHandler(ctx context.Context) ([]responses.WorkflowResponse, error) {
+func (s *WorkflowService) FindAllWorkflowHandler(ctx context.Context, workflowTemplateQueryParams queryparams.WorkflowQueryParam) ([]responses.WorkflowResponse, error) {
 	workflowResponses := []responses.WorkflowResponse{}
 
-	workflows, err := s.workflowRepo.FindAllWorkflowTemplates(ctx, s.db)
+	workflows, err := s.workflowRepo.FindAllWorkflowTemplates(ctx, s.db, workflowTemplateQueryParams)
 	if err != nil {
 		return workflowResponses, err
 	}

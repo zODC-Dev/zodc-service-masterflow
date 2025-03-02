@@ -17,5 +17,7 @@ type FormTemplateVersions struct {
 	UpdatedAt      time.Time
 	DeletedAt      *time.Time
 	Version        int32
+	IsArchived     bool
+	Status         *string
 	FormTemplateID int32
 }

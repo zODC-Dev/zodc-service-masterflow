@@ -3,10 +3,12 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"strconv"
 
 	"github.com/go-jet/jet/v2/postgres"
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/table"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/results"
 )
 
@@ -64,7 +66,7 @@ func (r *WorkflowRepository) CreateWorkflowConnections(ctx context.Context, tx *
 	return err
 }
 
-func (r *WorkflowRepository) FindAllWorkflowTemplates(ctx context.Context, db *sql.DB) ([]results.WorkflowTemplateResult, error) {
+func (r *WorkflowRepository) FindAllWorkflowTemplates(ctx context.Context, db *sql.DB, workflowTemplateQueryParams queryparams.WorkflowQueryParam) ([]results.WorkflowTemplateResult, error) {
 	Workflows := table.Workflows
 	WorkflowVersions := table.WorkflowVersions
 	Categories := table.Categories
@@ -80,6 +82,29 @@ func (r *WorkflowRepository) FindAllWorkflowTemplates(ctx context.Context, db *s
 			).
 			INNER_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)),
 	)
+
+	if workflowTemplateQueryParams.Search != "" {
+		statement.WHERE(
+			postgres.LOWER(Workflows.Title).LIKE(postgres.LOWER(postgres.String("%" + workflowTemplateQueryParams.Search + "%"))),
+		)
+	}
+
+	if workflowTemplateQueryParams.Type != "" {
+		statement.WHERE(
+			Workflows.Type.EQ(postgres.String(workflowTemplateQueryParams.Type)),
+		)
+	}
+
+	if workflowTemplateQueryParams.CategoryID != "" {
+		categoryIdInt, err := strconv.Atoi(workflowTemplateQueryParams.CategoryID)
+		if err != nil {
+			return []results.WorkflowTemplateResult{}, err
+		}
+
+		statement.WHERE(
+			Workflows.CategoryID.EQ(postgres.Int32(int32(categoryIdInt))),
+		)
+	}
 
 	result := []results.WorkflowTemplateResult{}
 

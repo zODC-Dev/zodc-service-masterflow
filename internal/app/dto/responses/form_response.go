@@ -19,22 +19,19 @@ type FormTemplateFieldsFindAll struct {
 	FormID          int32                  `json:"formId"`
 }
 
-type FormTemplateVersionFindAll struct {
-	Version    int32                         `json:"version"`
-	FormFields [][]FormTemplateFieldsFindAll `json:"formFields"`
-}
-
 type FormTemplateFindAll struct {
-	ID          int32                        `json:"id"`
-	CreatedAt   time.Time                    `json:"createdAt"`
-	UpdatedAt   time.Time                    `json:"updatedAt"`
-	DeletedAt   *time.Time                   `json:"deletedAt"`
-	FileName    string                       `json:"fileName"`
-	Title       string                       `json:"title"`
-	CategoryID  *int32                       `json:"categoryId"`
-	Versions    []FormTemplateVersionFindAll `json:"versions"`
-	TemplateID  *int32                       `json:"templateId"`
-	DataSheet   *map[string]interface{}      `json:"dataSheet"`
-	Description string                       `json:"description"`
-	Decoration  string                       `json:"decoration"`
+	ID         int32      `json:"id"`
+	CreatedAt  time.Time  `json:"createdAt"`
+	UpdatedAt  time.Time  `json:"updatedAt"`
+	DeletedAt  *time.Time `json:"deletedAt"`
+	FileName   string     `json:"fileName"`
+	Title      string     `json:"title"`
+	CategoryID *int32     `json:"categoryId"`
+
+	Version int32 `json:"version"`
+
+	TemplateID  *int32                  `json:"templateId"`
+	DataSheet   *map[string]interface{} `json:"dataSheet"`
+	Description string                  `json:"description"`
+	Decoration  string                  `json:"decoration"`
 }

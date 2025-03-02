@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/labstack/echo/v4"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/requests"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/services"
 )
@@ -40,7 +41,13 @@ func (c *WorkflowController) CreateWorkflow(e echo.Context) error {
 func (c *WorkflowController) FindAllWorkflow(e echo.Context) error {
 	ctx := e.Request().Context()
 
-	workflows, err := c.workflowService.FindAllWorkflowHandler(ctx)
+	workflowTemplateQueryParams := queryparams.WorkflowQueryParam{
+		CategoryID: e.QueryParam("categoryId"),
+		Search:     e.QueryParam("search"),
+		Type:       e.QueryParam("type"),
+	}
+
+	workflows, err := c.workflowService.FindAllWorkflowHandler(ctx, workflowTemplateQueryParams)
 	if err != nil {
 		return e.JSON(http.StatusInternalServerError, err.Error())
 	}

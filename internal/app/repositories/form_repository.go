@@ -19,16 +19,14 @@ func NewFormRepository() *FormRepository {
 func (r *FormRepository) FindAllFormTemplate(ctx context.Context, db *sql.DB) ([]results.FormTemplateResult, error) {
 	FormTemplates := table.FormTemplates
 	FormTemplateVersions := table.FormTemplateVersions
-	FormTemplateFields := table.FormTemplateFields
 
 	statement := postgres.SELECT(
 		FormTemplates.AllColumns,
 		FormTemplateVersions.AllColumns,
-		FormTemplateFields.AllColumns,
 	).FROM(
 		FormTemplates.
-			INNER_JOIN(FormTemplateVersions, FormTemplates.ID.EQ(FormTemplateVersions.FormTemplateID)).
-			INNER_JOIN(FormTemplateFields, FormTemplateVersions.ID.EQ(FormTemplateFields.FormTemplateVersionID)),
+			INNER_JOIN(FormTemplateVersions, FormTemplates.ID.EQ(FormTemplateVersions.FormTemplateID).
+				AND(FormTemplateVersions.IsArchived.EQ(postgres.Bool(false)))),
 	)
 
 	results := []results.FormTemplateResult{}
@@ -36,7 +34,24 @@ func (r *FormRepository) FindAllFormTemplate(ctx context.Context, db *sql.DB) ([
 	err := statement.QueryContext(ctx, db, &results)
 
 	return results, err
+}
 
+func (r *FormRepository) FindAllFormTemplateFieldsByFormTemplateVersionId(ctx context.Context, db *sql.DB, formTemplateVersionId int32) ([]model.FormTemplateFields, error) {
+	FormTemplateFields := table.FormTemplateFields
+
+	statement := postgres.SELECT(
+		FormTemplateFields.AllColumns,
+	).FROM(
+		FormTemplateFields,
+	).WHERE(
+		FormTemplateFields.FormTemplateVersionID.EQ(postgres.Int32(formTemplateVersionId)),
+	)
+
+	results := []model.FormTemplateFields{}
+
+	err := statement.QueryContext(ctx, db, &results)
+
+	return results, err
 }
 
 func (r *FormRepository) CreateFormTemplate(ctx context.Context, tx *sql.Tx, formTemplate model.FormTemplates) (model.FormTemplates, error) {
