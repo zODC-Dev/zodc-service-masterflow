@@ -293,6 +293,8 @@ func (s *WorkflowService) CreateWorkFlowHandler(ctx context.Context, req *reques
 
 			AssigneeID: &workflowNodeReq.Data.Assignee.Id,
 
+			SubWorkflowVersionID: workflowNodeReq.Data.SubWorkflowVersionID,
+
 			// ParentID: &workflowNodeReq.ParentId,
 
 			// Data
@@ -470,12 +472,13 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, work
 
 		// Story connections
 		if node.SubWorkflowVersionID != nil {
-			storyConnectionss, err := s.workflowRepo.FindAllConnectionByWorkflowVersionId(ctx, s.db, *node.SubWorkflowVersionID)
+			storyConnections, err := s.workflowRepo.FindAllConnectionByWorkflowVersionId(ctx, s.db, *node.SubWorkflowVersionID)
+			fmt.Println(storyConnections)
 			if err != nil {
 				return workflowResponse, err
 			}
 
-			for _, storyConnection := range storyConnectionss {
+			for _, storyConnection := range storyConnections {
 				connectionResponse := responses.ConnectionResponse{
 					Id:   storyConnection.ID,
 					To:   storyConnection.ToWorkflowNodeID,
@@ -503,7 +506,6 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, work
 	}
 
 	// Connections
-	connectionsResponse := []responses.ConnectionResponse{}
 	for _, connection := range workflow.Connections {
 		connectionResponse := responses.ConnectionResponse{
 			Id:   connection.ID,
@@ -512,9 +514,8 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, work
 			Type: connection.Type,
 		}
 
-		connectionsResponse = append(connectionsResponse, connectionResponse)
+		workflowResponse.Connections = append(workflowResponse.Connections, connectionResponse)
 	}
-	workflowResponse.Connections = connectionsResponse
 
 	return workflowResponse, nil
 }

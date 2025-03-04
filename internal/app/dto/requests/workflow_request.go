@@ -16,11 +16,12 @@ type NodeDataAssigneeRequest struct {
 }
 
 type NodeDataRequest struct {
-	Type     string
-	Title    string
-	DueIn    int32
-	Assignee NodeDataAssigneeRequest
-	EndType  string
+	Type                 string
+	Title                string
+	DueIn                int32
+	Assignee             NodeDataAssigneeRequest
+	EndType              string
+	SubWorkflowVersionID *int32
 }
 
 type NodeFormRequest struct {
