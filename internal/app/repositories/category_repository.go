@@ -7,6 +7,7 @@ import (
 	"github.com/go-jet/jet/v2/postgres"
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/table"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
 )
 
 type CategoryRepository struct{}
@@ -15,7 +16,7 @@ func NewCategoryRepository() *CategoryRepository {
 	return &CategoryRepository{}
 }
 
-func (r *CategoryRepository) FindAll(ctx context.Context, db *sql.DB, typeQueryParam string) ([]model.Categories, error) {
+func (r *CategoryRepository) FindAll(ctx context.Context, db *sql.DB, queryParam queryparams.CategoryQueryParam) ([]model.Categories, error) {
 	Categories := table.Categories
 
 	statement := postgres.SELECT(
@@ -24,9 +25,15 @@ func (r *CategoryRepository) FindAll(ctx context.Context, db *sql.DB, typeQueryP
 		Categories,
 	)
 
-	if typeQueryParam != "" {
+	if queryParam.Type != "" {
 		statement.WHERE(
-			postgres.LOWER(Categories.Type).EQ(postgres.LOWER(postgres.String(typeQueryParam))),
+			postgres.LOWER(Categories.Type).EQ(postgres.LOWER(postgres.String(queryParam.Type))),
+		)
+	}
+
+	if queryParam.Search != "" {
+		statement.WHERE(
+			postgres.LOWER(Categories.Name).EQ(postgres.LOWER(postgres.String(queryParam.Search))),
 		)
 	}
 

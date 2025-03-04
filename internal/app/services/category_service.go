@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/responses"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
 	"github.com/zODC-Dev/zodc-service-masterflow/pkg/utils"
@@ -21,10 +22,10 @@ func NewCategoryService(db *sql.DB, categoryRepo *repositories.CategoryRepositor
 	}
 }
 
-func (s *CategoryService) FindAll(ctx context.Context, typeQueryParam string) ([]responses.CategoryFindAll, error) {
+func (s *CategoryService) FindAll(ctx context.Context, queryParam queryparams.CategoryQueryParam) ([]responses.CategoryFindAll, error) {
 	categoriesResponse := []responses.CategoryFindAll{}
 
-	categories, err := s.categoryRepo.FindAll(ctx, s.db, typeQueryParam)
+	categories, err := s.categoryRepo.FindAll(ctx, s.db, queryParam)
 	if err != nil {
 		return categoriesResponse, err
 	}

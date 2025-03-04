@@ -56,11 +56,15 @@ func (s *WorkflowService) CreateWorkFlowVersion(ctx context.Context, tx *sql.Tx,
 	}
 
 	return workFlowVersion, nil
-
 }
 
 func (s *WorkflowService) MapToWorkflowNodeResponse(node model.WorkflowNodes) (responses.NodeResponse, error) {
-	nodeDataResponse := responses.NodeDataResponse{}
+	nodeDataResponse := responses.NodeDataResponse{
+		WorkflowVersionId: node.SubWorkflowVersionID,
+		Assignee: responses.NodeDataAssigneeResponse{
+			Id: *node.AssigneeID,
+		},
+	}
 	if err := utils.Mapper(node, &nodeDataResponse); err != nil {
 		return responses.NodeResponse{}, err
 	}
@@ -141,7 +145,8 @@ func (s *WorkflowService) CreateWorkFlowHandler(ctx context.Context, req *reques
 			Type: storyReq.Node.Type,
 
 			// Data
-			Title: &storyReq.Node.Data.Title,
+			Title:      &storyReq.Node.Data.Title,
+			AssigneeID: &storyReq.Node.Data.Assignee.Id,
 
 			//subworkflow ??? // can delete if it wrong
 			SubWorkflowVersionID: &storyWorkflowVersion.ID,
@@ -175,6 +180,8 @@ func (s *WorkflowService) CreateWorkFlowHandler(ctx context.Context, req *reques
 				Type: storyNodeReq.Type,
 
 				ParentID: &storyNodeReq.ParentId,
+
+				AssigneeID: &storyNodeReq.Data.Assignee.Id,
 
 				// Data
 				Title:   &storyNodeReq.Data.Title,
@@ -284,6 +291,8 @@ func (s *WorkflowService) CreateWorkFlowHandler(ctx context.Context, req *reques
 			Height: workflowNodeReq.Size.Height,
 
 			Type: workflowNodeReq.Type,
+
+			AssigneeID: &workflowNodeReq.Data.Assignee.Id,
 
 			// ParentID: &workflowNodeReq.ParentId,
 

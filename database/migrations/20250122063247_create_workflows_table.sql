@@ -10,7 +10,9 @@ CREATE TABLE workflows (
     type TEXT NOT NULL,
     category_id INT NOT NULL,
     description TEXT NOT NULL,
-    decoration TEXT NOT NULL
+    decoration TEXT NOT NULL,
+
+    project_key TEXT
 );
 
 CREATE TABLE workflow_versions (
@@ -42,7 +44,9 @@ CREATE TABLE workflow_nodes (
 
     -- Info
     title TEXT,
+
     assignee_id INT,
+
     due_in INT,
     end_type TEXT,
     sub_workflow_version_id INT REFERENCES workflow_versions (id) ON DELETE CASCADE,
@@ -52,7 +56,6 @@ CREATE TABLE workflow_nodes (
 
     -- Foreign Key
     workflow_version_id INT NOT NULL REFERENCES workflow_versions (id) ON DELETE CASCADE,
-
 
     -- Form
     form_template_id INT REFERENCES form_templates (id) ON DELETE CASCADE,

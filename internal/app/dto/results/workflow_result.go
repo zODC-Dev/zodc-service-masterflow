@@ -7,6 +7,7 @@ type WorkflowDetailResult struct {
 	Version     model.WorkflowVersions
 	Nodes       []model.WorkflowNodes
 	Connections []model.WorkflowConnections
+	Category    model.Categories
 }
 
 type WorkflowTemplateResult struct {

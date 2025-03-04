@@ -11,12 +11,16 @@ type ConnectionRequest struct {
 	Type string
 }
 
+type NodeDataAssigneeRequest struct {
+	Id int32
+}
+
 type NodeDataRequest struct {
-	Type       string
-	Title      string
-	DueIn      int32
-	AssigneeId int32
-	EndType    string
+	Type     string
+	Title    string
+	DueIn    int32
+	Assignee NodeDataAssigneeRequest
+	EndType  string
 }
 
 type NodeFormRequest struct {

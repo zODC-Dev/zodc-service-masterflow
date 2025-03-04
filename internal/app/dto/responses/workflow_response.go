@@ -9,12 +9,18 @@ type CategoryResponse struct {
 	Key  string `json:"key"`
 }
 
+type NodeDataAssigneeResponse struct {
+	Id int32 `json:"id"`
+}
+
 type NodeDataResponse struct {
-	Type       string  `json:"type"`
-	Title      string  `json:"title"`
-	DueIn      *int32  `json:"dueIn"`
-	AssigneeId int32   `json:"assigneeId"`
-	EndType    *string `json:"endType"`
+	Type     string                   `json:"type"`
+	Title    string                   `json:"title"`
+	DueIn    *int32                   `json:"dueIn"`
+	Assignee NodeDataAssigneeResponse `json:"assignee"`
+	EndType  *string                  `json:"endType"`
+
+	WorkflowVersionId *int32 `json:"workflowVersionId"`
 }
 
 type NodeResponse struct {

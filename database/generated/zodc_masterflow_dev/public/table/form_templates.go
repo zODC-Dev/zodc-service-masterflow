@@ -24,7 +24,6 @@ type formTemplatesTable struct {
 	FileName    postgres.ColumnString
 	Title       postgres.ColumnString
 	CategoryID  postgres.ColumnInteger
-	TemplateID  postgres.ColumnInteger
 	DataSheet   postgres.ColumnString
 	Description postgres.ColumnString
 	Decoration  postgres.ColumnString
@@ -77,14 +76,13 @@ func newFormTemplatesTableImpl(schemaName, tableName, alias string) formTemplate
 		FileNameColumn    = postgres.StringColumn("file_name")
 		TitleColumn       = postgres.StringColumn("title")
 		CategoryIDColumn  = postgres.IntegerColumn("category_id")
-		TemplateIDColumn  = postgres.IntegerColumn("template_id")
 		DataSheetColumn   = postgres.StringColumn("data_sheet")
 		DescriptionColumn = postgres.StringColumn("description")
 		DecorationColumn  = postgres.StringColumn("decoration")
 		TagColumn         = postgres.StringColumn("tag")
 		TypeColumn        = postgres.StringColumn("type")
-		allColumns        = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, FileNameColumn, TitleColumn, CategoryIDColumn, TemplateIDColumn, DataSheetColumn, DescriptionColumn, DecorationColumn, TagColumn, TypeColumn}
-		mutableColumns    = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, FileNameColumn, TitleColumn, CategoryIDColumn, TemplateIDColumn, DataSheetColumn, DescriptionColumn, DecorationColumn, TagColumn, TypeColumn}
+		allColumns        = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, FileNameColumn, TitleColumn, CategoryIDColumn, DataSheetColumn, DescriptionColumn, DecorationColumn, TagColumn, TypeColumn}
+		mutableColumns    = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, FileNameColumn, TitleColumn, CategoryIDColumn, DataSheetColumn, DescriptionColumn, DecorationColumn, TagColumn, TypeColumn}
 	)
 
 	return formTemplatesTable{
@@ -98,7 +96,6 @@ func newFormTemplatesTableImpl(schemaName, tableName, alias string) formTemplate
 		FileName:    FileNameColumn,
 		Title:       TitleColumn,
 		CategoryID:  CategoryIDColumn,
-		TemplateID:  TemplateIDColumn,
 		DataSheet:   DataSheetColumn,
 		Description: DescriptionColumn,
 		Decoration:  DecorationColumn,

@@ -26,6 +26,7 @@ type workflowsTable struct {
 	CategoryID  postgres.ColumnInteger
 	Description postgres.ColumnString
 	Decoration  postgres.ColumnString
+	ProjectKey  postgres.ColumnString
 
 	AllColumns     postgres.ColumnList
 	MutableColumns postgres.ColumnList
@@ -75,8 +76,9 @@ func newWorkflowsTableImpl(schemaName, tableName, alias string) workflowsTable {
 		CategoryIDColumn  = postgres.IntegerColumn("category_id")
 		DescriptionColumn = postgres.StringColumn("description")
 		DecorationColumn  = postgres.StringColumn("decoration")
-		allColumns        = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, TitleColumn, TypeColumn, CategoryIDColumn, DescriptionColumn, DecorationColumn}
-		mutableColumns    = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, TitleColumn, TypeColumn, CategoryIDColumn, DescriptionColumn, DecorationColumn}
+		ProjectKeyColumn  = postgres.StringColumn("project_key")
+		allColumns        = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, TitleColumn, TypeColumn, CategoryIDColumn, DescriptionColumn, DecorationColumn, ProjectKeyColumn}
+		mutableColumns    = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, TitleColumn, TypeColumn, CategoryIDColumn, DescriptionColumn, DecorationColumn, ProjectKeyColumn}
 	)
 
 	return workflowsTable{
@@ -92,6 +94,7 @@ func newWorkflowsTableImpl(schemaName, tableName, alias string) workflowsTable {
 		CategoryID:  CategoryIDColumn,
 		Description: DescriptionColumn,
 		Decoration:  DecorationColumn,
+		ProjectKey:  ProjectKeyColumn,
 
 		AllColumns:     allColumns,
 		MutableColumns: mutableColumns,

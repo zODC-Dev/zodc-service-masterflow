@@ -83,16 +83,14 @@ func (r *WorkflowRepository) FindAllWorkflowTemplates(ctx context.Context, db *s
 			INNER_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)),
 	)
 
+	conditions := []postgres.BoolExpression{}
+
 	if workflowTemplateQueryParams.Search != "" {
-		statement.WHERE(
-			postgres.LOWER(Workflows.Title).LIKE(postgres.LOWER(postgres.String("%" + workflowTemplateQueryParams.Search + "%"))),
-		)
+		conditions = append(conditions, postgres.LOWER(Workflows.Title).LIKE(postgres.LOWER(postgres.String("%"+workflowTemplateQueryParams.Search+"%"))))
 	}
 
 	if workflowTemplateQueryParams.Type != "" {
-		statement.WHERE(
-			Workflows.Type.EQ(postgres.String(workflowTemplateQueryParams.Type)),
-		)
+		conditions = append(conditions, Workflows.Type.EQ(postgres.String(workflowTemplateQueryParams.Type)))
 	}
 
 	if workflowTemplateQueryParams.CategoryID != "" {
@@ -101,9 +99,15 @@ func (r *WorkflowRepository) FindAllWorkflowTemplates(ctx context.Context, db *s
 			return []results.WorkflowTemplateResult{}, err
 		}
 
-		statement.WHERE(
-			Workflows.CategoryID.EQ(postgres.Int32(int32(categoryIdInt))),
-		)
+		conditions = append(conditions, Workflows.CategoryID.EQ(postgres.Int32(int32(categoryIdInt))))
+	}
+
+	if workflowTemplateQueryParams.ProjectKey != "" {
+		conditions = append(conditions, Workflows.ProjectKey.EQ(postgres.String(workflowTemplateQueryParams.ProjectKey)))
+	}
+
+	if len(conditions) > 0 {
+		statement = statement.WHERE(postgres.AND(conditions...))
 	}
 
 	result := []results.WorkflowTemplateResult{}
@@ -154,12 +158,14 @@ func (r *WorkflowRepository) FindOneWorkflowDetailByWorkflowVersionId(ctx contex
 	WorkflowVersions := table.WorkflowVersions
 	WorkflowNodes := table.WorkflowNodes
 	WorkflowConnections := table.WorkflowConnections
+	Categories := table.Categories
 
 	statement := postgres.SELECT(
 		Workflows.AllColumns,
 		WorkflowVersions.AllColumns,
 		WorkflowNodes.AllColumns,
 		WorkflowConnections.AllColumns,
+		Categories.AllColumns,
 	).FROM(
 		Workflows.
 			INNER_JOIN(WorkflowVersions, WorkflowVersions.WorkflowID.EQ(Workflows.ID).
@@ -167,7 +173,8 @@ func (r *WorkflowRepository) FindOneWorkflowDetailByWorkflowVersionId(ctx contex
 				AND(WorkflowVersions.ID.EQ(postgres.Int32(workflowVersionId))),
 			).
 			INNER_JOIN(WorkflowNodes, WorkflowNodes.WorkflowVersionID.EQ(WorkflowVersions.ID)).
-			INNER_JOIN(WorkflowConnections, WorkflowConnections.WorkflowVersionID.EQ(WorkflowVersions.ID)),
+			INNER_JOIN(WorkflowConnections, WorkflowConnections.WorkflowVersionID.EQ(WorkflowVersions.ID)).
+			INNER_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)),
 	)
 
 	result := results.WorkflowDetailResult{}

@@ -21,4 +21,5 @@ type Workflows struct {
 	CategoryID  int32
 	Description string
 	Decoration  string
+	ProjectKey  *string
 }

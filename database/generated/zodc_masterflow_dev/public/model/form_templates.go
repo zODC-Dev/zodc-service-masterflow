@@ -19,7 +19,6 @@ type FormTemplates struct {
 	FileName    string
 	Title       string
 	CategoryID  *int32
-	TemplateID  *int32
 	DataSheet   *string
 	Description string
 	Decoration  string

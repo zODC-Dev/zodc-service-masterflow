@@ -1,9 +1,9 @@
 -- +goose Up
 -- Jira Form Template
 INSERT INTO public.form_templates 
-    (id, file_name, title, category_id, template_id, data_sheet, description, decoration, tag, "type") 
+    (id, file_name, title, category_id, data_sheet, description, decoration, tag, "type") 
 VALUES
-    (1, 'Jira System Form', 'Jira System Form', null, NULL, NULL, 'Jira System Form', 'settings|--primary-40', 'TASK', 'SYSTEM');
+    (1, 'Jira System Form', 'Jira System Form', null, NULL, 'Jira System Form', 'settings|--primary-40', 'TASK', 'SYSTEM');
 
 SELECT setval('form_templates_id_seq', (SELECT MAX(id) FROM form_templates));
 
