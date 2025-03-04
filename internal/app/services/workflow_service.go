@@ -59,14 +59,17 @@ func (s *WorkflowService) CreateWorkFlowVersion(ctx context.Context, tx *sql.Tx,
 }
 
 func (s *WorkflowService) MapToWorkflowNodeResponse(node model.WorkflowNodes) (responses.NodeResponse, error) {
+	// assigneeId := *node.AssigneeID
+
 	nodeDataResponse := responses.NodeDataResponse{
 		WorkflowVersionId: node.SubWorkflowVersionID,
-		Assignee: responses.NodeDataAssigneeResponse{
-			Id: *node.AssigneeID,
-		},
 	}
 	if err := utils.Mapper(node, &nodeDataResponse); err != nil {
 		return responses.NodeResponse{}, err
+	}
+
+	if node.AssigneeID != nil {
+		nodeDataResponse.Assignee.Id = *node.AssigneeID
 	}
 
 	nodeResponse := responses.NodeResponse{
