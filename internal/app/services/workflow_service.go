@@ -44,10 +44,11 @@ func (s *WorkflowService) CreateWorkFlow(ctx context.Context, tx *sql.Tx, workfl
 	return workflow, nil
 }
 
-func (s *WorkflowService) CreateWorkFlowVersion(ctx context.Context, tx *sql.Tx, workflowId int32) (model.WorkflowVersions, error) {
+func (s *WorkflowService) CreateWorkFlowVersion(ctx context.Context, tx *sql.Tx, workflowId int32, hasSubWorkflow bool) (model.WorkflowVersions, error) {
 	workFlowVersion := model.WorkflowVersions{
-		Version:    1,
-		WorkflowID: workflowId,
+		Version:        1,
+		WorkflowID:     workflowId,
+		HasSubWorkflow: hasSubWorkflow,
 	}
 
 	workFlowVersion, err := s.workflowRepo.CreateWorkflowVersion(ctx, tx, workFlowVersion)
@@ -105,7 +106,14 @@ func (s *WorkflowService) CreateWorkFlowHandler(ctx context.Context, req *reques
 		return fmt.Errorf("create Main Workflow Fail: %w", err)
 	}
 
-	workflowVersion, err := s.CreateWorkFlowVersion(ctx, tx, workflow.ID)
+	hasSubWorkflow := len(req.Stories) > 0
+	for i := range req.Nodes {
+		if req.Nodes[i].Type == "SUB_WORKFLOW" {
+			hasSubWorkflow = true
+		}
+	}
+
+	workflowVersion, err := s.CreateWorkFlowVersion(ctx, tx, workflow.ID, hasSubWorkflow)
 	if err != nil {
 		return fmt.Errorf("create Main Workflow Version Fail: %w", err)
 	}
@@ -127,7 +135,7 @@ func (s *WorkflowService) CreateWorkFlowHandler(ctx context.Context, req *reques
 			return fmt.Errorf("create Story Workflow Fail: %w", err)
 		}
 
-		storyWorkflowVersion, err := s.CreateWorkFlowVersion(ctx, tx, storyWorkflow.ID)
+		storyWorkflowVersion, err := s.CreateWorkFlowVersion(ctx, tx, storyWorkflow.ID, false)
 		if err != nil {
 			return fmt.Errorf("create Story Workflow Version Fail: %w", err)
 		}
@@ -234,9 +242,11 @@ func (s *WorkflowService) CreateWorkFlowHandler(ctx context.Context, req *reques
 		}
 		req.Nodes = req.Nodes[:i]
 
-		err = s.workflowRepo.CreateWorkflowNodes(ctx, tx, storyNodes)
-		if err != nil {
-			return fmt.Errorf("create Story Node Fail: %w", err)
+		if len(storyNodes) > 0 {
+			err = s.workflowRepo.CreateWorkflowNodes(ctx, tx, storyNodes)
+			if err != nil {
+				return fmt.Errorf("create Story Node Fail: %w", err)
+			}
 		}
 
 		// Create Story Connections
@@ -270,10 +280,13 @@ func (s *WorkflowService) CreateWorkFlowHandler(ctx context.Context, req *reques
 		}
 		req.Connections = req.Connections[:i]
 
-		err = s.workflowRepo.CreateWorkflowConnections(ctx, tx, storyConnections)
-		if err != nil {
-			return fmt.Errorf("create Story Connection Fail: %w", err)
+		if len(storyConnections) > 0 {
+			err = s.workflowRepo.CreateWorkflowConnections(ctx, tx, storyConnections)
+			if err != nil {
+				return fmt.Errorf("create Story Connection Fail: %w", err)
+			}
 		}
+
 	}
 
 	// Create workflow node
@@ -347,9 +360,11 @@ func (s *WorkflowService) CreateWorkFlowHandler(ctx context.Context, req *reques
 		workflowNodes = append(workflowNodes, workflowNode)
 	}
 
-	err = s.workflowRepo.CreateWorkflowNodes(ctx, tx, workflowNodes)
-	if err != nil {
-		return fmt.Errorf("create Workflow Nodes Fail: %w", err)
+	if len(workflowNodes) > 0 {
+		err = s.workflowRepo.CreateWorkflowNodes(ctx, tx, workflowNodes)
+		if err != nil {
+			return fmt.Errorf("create Workflow Nodes Fail: %w", err)
+		}
 	}
 
 	// Create workflow connection
@@ -398,6 +413,8 @@ func (s *WorkflowService) FindAllWorkflowHandler(ctx context.Context, workflowTe
 		if err := utils.Mapper(workflow, &workflowResponse); err != nil {
 			return workflowResponses, err
 		}
+
+		workflowResponse.Id = workflow.Version.ID
 
 		workflowResponse.Version = workflow.Version.Version
 

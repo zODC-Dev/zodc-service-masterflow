@@ -75,3 +75,17 @@ type WorkflowResponse struct {
 	Description string           `json:"description"`
 	Decoration  string           `json:"decoration"`
 }
+
+type RequestResponse struct {
+	Id           int32
+	Key          int32
+	Title        int32
+	Parent_id    int32
+	Task         string
+	Participants []struct {
+		avatar string
+		name   string
+	}
+	UpdatedAt string
+	CreatedAt string
+}

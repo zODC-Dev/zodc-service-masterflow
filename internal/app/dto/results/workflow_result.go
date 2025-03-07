@@ -15,3 +15,10 @@ type WorkflowTemplateResult struct {
 	Version  model.WorkflowVersions
 	Category model.Categories
 }
+
+type RequestResult struct {
+	model.RequestNodes
+	Request         model.Requests
+	WorkflowVersion model.WorkflowVersions
+	Workflow        model.Workflows
+}

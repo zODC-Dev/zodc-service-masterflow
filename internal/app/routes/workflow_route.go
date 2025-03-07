@@ -22,5 +22,8 @@ func WorkflowRoute(group *echo.Group, db *sql.DB) {
 		workflowRoute.GET("", workflowController.FindAllWorkflow)
 		workflowRoute.POST("/create", workflowController.CreateWorkflow)
 		workflowRoute.GET("/:id", workflowController.FindOneWorkflowDetail)
+
+		//Request
+
 	}
 }

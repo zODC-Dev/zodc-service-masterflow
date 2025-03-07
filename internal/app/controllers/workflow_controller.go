@@ -42,10 +42,11 @@ func (c *WorkflowController) FindAllWorkflow(e echo.Context) error {
 	ctx := e.Request().Context()
 
 	workflowTemplateQueryParams := queryparams.WorkflowQueryParam{
-		CategoryID: e.QueryParam("categoryId"),
-		Search:     e.QueryParam("search"),
-		Type:       e.QueryParam("type"),
-		ProjectKey: e.QueryParam("projectKey"),
+		CategoryID:     e.QueryParam("categoryId"),
+		Search:         e.QueryParam("search"),
+		Type:           e.QueryParam("type"),
+		ProjectId:      e.QueryParam("projectId"),
+		HasSubWorkflow: e.QueryParam("hasSubWorkflow"),
 	}
 
 	workflows, err := c.workflowService.FindAllWorkflowHandler(ctx, workflowTemplateQueryParams)

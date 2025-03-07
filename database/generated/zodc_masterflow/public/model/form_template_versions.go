@@ -11,14 +11,13 @@ import (
 	"time"
 )
 
-type WorkflowVersions struct {
+type FormTemplateVersions struct {
 	ID             int32 `sql:"primary_key"`
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 	DeletedAt      *time.Time
 	Version        int32
 	IsArchived     bool
-	HasSubWorkflow bool
 	Status         *string
-	WorkflowID     int32
+	FormTemplateID int32
 }

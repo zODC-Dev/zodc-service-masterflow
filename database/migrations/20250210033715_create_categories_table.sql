@@ -3,7 +3,8 @@ CREATE TABLE categories (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
     type TEXT NOT NULL,
-    key TEXT NOT NULL
+    key TEXT NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 ALTER TABLE workflows

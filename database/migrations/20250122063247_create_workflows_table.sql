@@ -23,7 +23,10 @@ CREATE TABLE workflow_versions (
 
      -- Version
     version INT NOT NULL,
+
     is_archived BOOLEAN NOT NULL DEFAULT FALSE,
+    has_sub_workflow BOOLEAN NOT NULL,
+
     status TEXT,
 
     workflow_id INT NOT NULL REFERENCES workflows (id) ON DELETE CASCADE
@@ -49,7 +52,9 @@ CREATE TABLE workflow_nodes (
 
     due_in INT,
     end_type TEXT,
+
     sub_workflow_version_id INT REFERENCES workflow_versions (id) ON DELETE CASCADE,
+    
     type TEXT NOT NULL, -- start, end, bug, task, approve, sub_workflow, story, input, noti, group, condition
 
     parent_id TEXT REFERENCES workflow_nodes (id) ON DELETE CASCADE,
@@ -85,6 +90,7 @@ CREATE TABLE requests (
     deleted_at TIMESTAMP,
 
     status TEXT NOT NULL, -- IN_PROCESS , COMPLETED, CANCELED, TERMINATED
+    title TEXT NOT NULL,
 
     -- Foreign Key
     workflow_version_id INT NOT NULL REFERENCES workflows (id) ON DELETE CASCADE
@@ -96,12 +102,22 @@ CREATE TABLE request_nodes (
     updated_at TIMESTAMP DEFAULT now () NOT NULL,
     deleted_at TIMESTAMP,
 
-    -- COPY OF workflow_nodes
+    key SERIAL NOT NULL,
+
+    -- COPY OF workflow_nodes,
+    title TEXT,
+
+    assignee_id INT,
+
+    due_in INT,
+    end_type TEXT,
 
 
     status TEXT NOT NULL, -- TO_DO, IN_PROCESS, COMPLETED
 
     request_id INT NOT NULL REFERENCES requests (id) ON DELETE CASCADE,
+
+    workflow_node_id INT NOT NULL,
 
     --
     form_data_id INT REFERENCES form_data (id) ON DELETE CASCADE

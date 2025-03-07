@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strconv"
 
 	"github.com/go-jet/jet/v2/postgres"
@@ -63,6 +64,10 @@ func (r *WorkflowRepository) CreateWorkflowConnections(ctx context.Context, tx *
 
 	err := statement.QueryContext(ctx, tx, &workflowConnections)
 
+	if err != nil {
+		fmt.Println(statement.DebugSql())
+	}
+
 	return err
 }
 
@@ -102,8 +107,26 @@ func (r *WorkflowRepository) FindAllWorkflowTemplates(ctx context.Context, db *s
 		conditions = append(conditions, Workflows.CategoryID.EQ(postgres.Int32(int32(categoryIdInt))))
 	}
 
-	if workflowTemplateQueryParams.ProjectKey != "" {
-		conditions = append(conditions, Workflows.ProjectKey.EQ(postgres.String(workflowTemplateQueryParams.ProjectKey)))
+	if workflowTemplateQueryParams.ProjectId != "" {
+		conditions = append(conditions, Workflows.ProjectKey.EQ(postgres.String(workflowTemplateQueryParams.ProjectId)))
+	}
+
+	if workflowTemplateQueryParams.HasSubWorkflow != "" {
+		hasSubWorkflowBool, err := strconv.ParseBool(workflowTemplateQueryParams.HasSubWorkflow)
+		if err != nil {
+			return []results.WorkflowTemplateResult{}, err
+		}
+
+		conditions = append(conditions, WorkflowVersions.HasSubWorkflow.EQ(postgres.Bool(hasSubWorkflowBool)))
+	}
+
+	if workflowTemplateQueryParams.IsArchived != "" {
+		hasIsArchivedBool, err := strconv.ParseBool(workflowTemplateQueryParams.IsArchived)
+		if err != nil {
+			return []results.WorkflowTemplateResult{}, err
+		}
+
+		conditions = append(conditions, WorkflowVersions.IsArchived.EQ(postgres.Bool(hasIsArchivedBool)))
 	}
 
 	if len(conditions) > 0 {
@@ -180,6 +203,28 @@ func (r *WorkflowRepository) FindOneWorkflowDetailByWorkflowVersionId(ctx contex
 	result := results.WorkflowDetailResult{}
 
 	err := statement.QueryContext(ctx, db, &result)
+
+	return result, err
+}
+
+func (r *WorkflowRepository) FindAllTask(ctx context.Context, db *sql.DB) (results.RequestResult, error) {
+	RequestNodes := table.RequestNodes
+	Requests := table.Requests
+	WorkflowVersions := table.WorkflowVersions
+	Workflow := table.Workflows
+
+	statment := postgres.SELECT(
+		RequestNodes.AllColumns,
+	).FROM(
+		RequestNodes.
+			INNER_JOIN(Requests, RequestNodes.RequestID.EQ(Requests.ID)).
+			INNER_JOIN(WorkflowVersions, Requests.WorkflowVersionID.EQ(WorkflowVersions.ID)).
+			INNER_JOIN(Workflow, WorkflowVersions.WorkflowID.EQ(Workflow.ID)),
+	)
+
+	result := results.RequestResult{}
+
+	err := statment.QueryContext(ctx, db, &result)
 
 	return result, err
 }
