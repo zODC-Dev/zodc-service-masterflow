@@ -25,7 +25,7 @@ func (r *FormRepository) FindAllFormTemplate(ctx context.Context, db *sql.DB) ([
 		FormTemplateVersions.AllColumns,
 	).FROM(
 		FormTemplates.
-			INNER_JOIN(FormTemplateVersions, FormTemplates.ID.EQ(FormTemplateVersions.FormTemplateID).
+			LEFT_JOIN(FormTemplateVersions, FormTemplates.ID.EQ(FormTemplateVersions.FormTemplateID).
 				AND(FormTemplateVersions.IsArchived.EQ(postgres.Bool(false)))),
 	)
 
@@ -101,8 +101,8 @@ func (r *FormRepository) FindAllFormSystem(ctx context.Context, db *sql.DB) ([]r
 		FormTemplateFields.AllColumns,
 	).FROM(
 		FormTemplates.
-			INNER_JOIN(FormTemplateVersions, FormTemplateVersions.FormTemplateID.EQ(FormTemplates.ID)).
-			INNER_JOIN(FormTemplateFields, FormTemplateFields.FormTemplateVersionID.EQ(FormTemplateVersions.ID)),
+			LEFT_JOIN(FormTemplateVersions, FormTemplateVersions.FormTemplateID.EQ(FormTemplates.ID)).
+			LEFT_JOIN(FormTemplateFields, FormTemplateFields.FormTemplateVersionID.EQ(FormTemplateVersions.ID)),
 	).WHERE(
 		FormTemplates.Type.EQ(postgres.String("SYSTEM")),
 	)

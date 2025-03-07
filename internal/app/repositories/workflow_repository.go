@@ -82,10 +82,10 @@ func (r *WorkflowRepository) FindAllWorkflowTemplates(ctx context.Context, db *s
 		Categories.AllColumns,
 	).FROM(
 		Workflows.
-			INNER_JOIN(WorkflowVersions, WorkflowVersions.WorkflowID.EQ(Workflows.ID).
+			LEFT_JOIN(WorkflowVersions, WorkflowVersions.WorkflowID.EQ(Workflows.ID).
 				AND(WorkflowVersions.IsArchived.EQ(postgres.Bool(false))),
 			).
-			INNER_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)),
+			LEFT_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)),
 	)
 
 	conditions := []postgres.BoolExpression{}
@@ -191,13 +191,13 @@ func (r *WorkflowRepository) FindOneWorkflowDetailByWorkflowVersionId(ctx contex
 		Categories.AllColumns,
 	).FROM(
 		Workflows.
-			INNER_JOIN(WorkflowVersions, WorkflowVersions.WorkflowID.EQ(Workflows.ID).
+			LEFT_JOIN(WorkflowVersions, WorkflowVersions.WorkflowID.EQ(Workflows.ID).
 				AND(WorkflowVersions.IsArchived.EQ(postgres.Bool(false))).
 				AND(WorkflowVersions.ID.EQ(postgres.Int32(workflowVersionId))),
 			).
-			INNER_JOIN(WorkflowNodes, WorkflowNodes.WorkflowVersionID.EQ(WorkflowVersions.ID)).
-			INNER_JOIN(WorkflowConnections, WorkflowConnections.WorkflowVersionID.EQ(WorkflowVersions.ID)).
-			INNER_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)),
+			LEFT_JOIN(WorkflowNodes, WorkflowNodes.WorkflowVersionID.EQ(WorkflowVersions.ID)).
+			LEFT_JOIN(WorkflowConnections, WorkflowConnections.WorkflowVersionID.EQ(WorkflowVersions.ID)).
+			LEFT_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)),
 	)
 
 	result := results.WorkflowDetailResult{}
@@ -217,9 +217,9 @@ func (r *WorkflowRepository) FindAllTask(ctx context.Context, db *sql.DB) (resul
 		RequestNodes.AllColumns,
 	).FROM(
 		RequestNodes.
-			INNER_JOIN(Requests, RequestNodes.RequestID.EQ(Requests.ID)).
-			INNER_JOIN(WorkflowVersions, Requests.WorkflowVersionID.EQ(WorkflowVersions.ID)).
-			INNER_JOIN(Workflow, WorkflowVersions.WorkflowID.EQ(Workflow.ID)),
+			LEFT_JOIN(Requests, RequestNodes.RequestID.EQ(Requests.ID)).
+			LEFT_JOIN(WorkflowVersions, Requests.WorkflowVersionID.EQ(WorkflowVersions.ID)).
+			LEFT_JOIN(Workflow, WorkflowVersions.WorkflowID.EQ(Workflow.ID)),
 	)
 
 	result := results.RequestResult{}
