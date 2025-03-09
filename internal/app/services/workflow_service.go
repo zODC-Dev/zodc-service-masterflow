@@ -431,92 +431,112 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, work
 		return workflowResponse, err
 	}
 
+	//Mapping workflow response
 	if err := utils.Mapper(workflow, &workflowResponse); err != nil {
 		return workflowResponse, err
 	}
 
-	var (
-		nodes       []responses.NodeResponse
-		connections []responses.ConnectionResponse
-		stories     []responses.StoryResponse
-	)
+	workflowResponse.Version = workflow.Version.Version
+	workflowResponse.Connections = []responses.ConnectionResponse{}
+	workflowResponse.Nodes = []responses.NodeResponse{}
 
-	nonStoryNodes := make([]model.WorkflowNodes, 0, len(workflow.Nodes))
+	// Stories
+	storiesResponse := []responses.StoryResponse{}
 
+	i := 0
 	for _, node := range workflow.Nodes {
-		if node.Type == "STORY" {
-
-			nodeResp, err := s.MapToWorkflowNodeResponse(node)
-			if err != nil {
-				return workflowResponse, fmt.Errorf("map workflow node response fail: %w", err)
-			}
-			story := responses.StoryResponse{
-				Node:        nodeResp,
-				Type:        workflow.Type,
-				Decoration:  workflow.Decoration,
-				Description: workflow.Description,
-				Title:       workflow.Title,
-			}
-			stories = append(stories, story)
-
-			if node.SubWorkflowVersionID != nil {
-				subWorkflowID := *node.SubWorkflowVersionID
-
-				storyNodes, err := s.workflowRepo.FindAllNodeByWorkflowVersionId(ctx, s.db, subWorkflowID)
-				if err != nil {
-					return workflowResponse, err
-				}
-				for _, storyNode := range storyNodes {
-					snodeResp, err := s.MapToWorkflowNodeResponse(storyNode)
-					if err != nil {
-						return workflowResponse, fmt.Errorf("map workflow node response fail: %w", err)
-					}
-					nodes = append(nodes, snodeResp)
-				}
-
-				storyConnections, err := s.workflowRepo.FindAllConnectionByWorkflowVersionId(ctx, s.db, subWorkflowID)
-				if err != nil {
-					return workflowResponse, err
-				}
-				for _, sconn := range storyConnections {
-					connections = append(connections, responses.ConnectionResponse{
-						Id:   sconn.ID,
-						To:   sconn.ToWorkflowNodeID,
-						From: sconn.FromWorkflowNodeID,
-						Type: sconn.Type,
-					})
-				}
-			}
-		} else {
-			nonStoryNodes = append(nonStoryNodes, node)
+		if node.Type != "STORY" {
+			workflow.Nodes[i] = node
+			i++
+			continue
 		}
-	}
 
-	for _, node := range nonStoryNodes {
-		nodeResp, err := s.MapToWorkflowNodeResponse(node)
+		// Map Response
+		nodeResponse, err := s.MapToWorkflowNodeResponse(node)
 		if err != nil {
 			return workflowResponse, fmt.Errorf("map workflow node response fail: %w", err)
 		}
-		nodes = append(nodes, nodeResp)
+
+		story := responses.StoryResponse{
+			Node: nodeResponse,
+
+			Type:        workflow.Type,
+			Decoration:  workflow.Decoration,
+			Description: workflow.Description,
+			Title:       workflow.Title,
+		}
+
+		storiesResponse = append(storiesResponse, story)
+
+		// Story nodes
+		if node.SubWorkflowVersionID != nil {
+			storyNodes, err := s.workflowRepo.FindAllNodeByWorkflowVersionId(ctx, s.db, *node.SubWorkflowVersionID)
+			if err != nil {
+				return workflowResponse, err
+			}
+
+			for _, storyNode := range storyNodes {
+				nodeResponse, err := s.MapToWorkflowNodeResponse(storyNode)
+				if err != nil {
+					return workflowResponse, fmt.Errorf("map workflow node response fail: %w", err)
+				}
+
+				workflowResponse.Nodes = append(workflowResponse.Nodes, nodeResponse)
+			}
+
+		}
+
+		// Story connections
+		if node.SubWorkflowVersionID != nil {
+			storyConnections, err := s.workflowRepo.FindAllConnectionByWorkflowVersionId(ctx, s.db, *node.SubWorkflowVersionID)
+
+			if err != nil {
+				return workflowResponse, err
+			}
+
+			for _, storyConnection := range storyConnections {
+				connectionResponse := responses.ConnectionResponse{
+					Id:   storyConnection.ID,
+					To:   storyConnection.ToWorkflowNodeID,
+					From: storyConnection.FromWorkflowNodeID,
+					Type: storyConnection.Type,
+				}
+
+				workflowResponse.Connections = append(workflowResponse.Connections, connectionResponse)
+			}
+
+		}
+	}
+	workflow.Nodes = workflow.Nodes[:i]
+	workflowResponse.Stories = storiesResponse
+
+	// Nodes
+	for _, node := range workflow.Nodes {
+
+		nodeResponse, err := s.MapToWorkflowNodeResponse(node)
+		if err != nil {
+			return workflowResponse, fmt.Errorf("map workflow node response fail: %w", err)
+		}
+
+		workflowResponse.Nodes = append(workflowResponse.Nodes, nodeResponse)
 	}
 
-	for _, conn := range workflow.Connections {
-		connections = append(connections, responses.ConnectionResponse{
-			Id:   conn.ID,
-			To:   conn.ToWorkflowNodeID,
-			From: conn.FromWorkflowNodeID,
-			Type: conn.Type,
-		})
+	// Connections
+	for _, connection := range workflow.Connections {
+		connectionResponse := responses.ConnectionResponse{
+			Id:   connection.ID,
+			To:   connection.ToWorkflowNodeID,
+			From: connection.FromWorkflowNodeID,
+			Type: connection.Type,
+		}
+
+		workflowResponse.Connections = append(workflowResponse.Connections, connectionResponse)
 	}
 
-	workflowResponse.Version = workflow.Version.Version
-	workflowResponse.Stories = stories
-	workflowResponse.Nodes = nodes
-	workflowResponse.Connections = connections
-
-	userIds := make([]int32, 0, len(nodes))
-	for _, nodeResp := range nodes {
-		userIds = append(userIds, nodeResp.Data.Assignee.Id)
+	// Add assignee
+	userIds := make([]int32, 0, len(workflowResponse.Nodes))
+	for _, node := range workflowResponse.Nodes {
+		userIds = append(userIds, node.Data.Assignee.Id)
 	}
 
 	results, err := s.userAPI.FindUsersByUserIds(userIds)
@@ -541,11 +561,11 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, work
 		}
 	}
 
-	for i, nodeResp := range nodes {
-		if user, exists := userMap[nodeResp.Data.Assignee.Id]; exists {
-			nodes[i].Data.Assignee.Email = user.Email
-			nodes[i].Data.Assignee.AvatarUrl = user.AvatarUrl
-			nodes[i].Data.Assignee.IsSystemUser = user.IsSystemUser
+	for i, node := range workflowResponse.Nodes {
+		if user, exists := userMap[node.Data.Assignee.Id]; exists {
+			workflowResponse.Nodes[i].Data.Assignee.Email = user.Email
+			workflowResponse.Nodes[i].Data.Assignee.AvatarUrl = user.AvatarUrl
+			workflowResponse.Nodes[i].Data.Assignee.IsSystemUser = user.IsSystemUser
 		}
 	}
 

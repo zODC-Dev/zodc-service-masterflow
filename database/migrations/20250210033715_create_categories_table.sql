@@ -4,8 +4,7 @@ CREATE TABLE categories (
     name TEXT NOT NULL,
     type TEXT NOT NULL,
     key TEXT NOT NULL,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    type TEXT NOT NULL
+    is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 ALTER TABLE workflows

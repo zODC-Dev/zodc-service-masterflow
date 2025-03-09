@@ -82,9 +82,7 @@ func (r *WorkflowRepository) FindAllWorkflowTemplates(ctx context.Context, db *s
 		Categories.AllColumns,
 	).FROM(
 		Workflows.
-			LEFT_JOIN(WorkflowVersions, WorkflowVersions.WorkflowID.EQ(Workflows.ID).
-				AND(WorkflowVersions.IsArchived.EQ(postgres.Bool(false))),
-			).
+			LEFT_JOIN(WorkflowVersions, WorkflowVersions.WorkflowID.EQ(Workflows.ID)).
 			LEFT_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)),
 	)
 
@@ -191,13 +189,12 @@ func (r *WorkflowRepository) FindOneWorkflowDetailByWorkflowVersionId(ctx contex
 		Categories.AllColumns,
 	).FROM(
 		Workflows.
-			LEFT_JOIN(WorkflowVersions, WorkflowVersions.WorkflowID.EQ(Workflows.ID).
-				AND(WorkflowVersions.IsArchived.EQ(postgres.Bool(false))).
+			INNER_JOIN(WorkflowVersions, WorkflowVersions.WorkflowID.EQ(Workflows.ID).
 				AND(WorkflowVersions.ID.EQ(postgres.Int32(workflowVersionId))),
 			).
-			LEFT_JOIN(WorkflowNodes, WorkflowNodes.WorkflowVersionID.EQ(WorkflowVersions.ID)).
-			LEFT_JOIN(WorkflowConnections, WorkflowConnections.WorkflowVersionID.EQ(WorkflowVersions.ID)).
-			LEFT_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)),
+			INNER_JOIN(WorkflowNodes, WorkflowNodes.WorkflowVersionID.EQ(WorkflowVersions.ID)).
+			INNER_JOIN(WorkflowConnections, WorkflowConnections.WorkflowVersionID.EQ(WorkflowVersions.ID)).
+			INNER_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)),
 	)
 
 	result := results.WorkflowDetailResult{}

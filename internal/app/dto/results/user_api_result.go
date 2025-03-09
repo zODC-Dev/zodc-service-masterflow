@@ -1,7 +1,5 @@
 package results
 
-import "time"
-
 type UserApiResult struct {
 	Message string              `json:"message"`
 	Data    []UserApiDataResult `json:"data"`
@@ -13,7 +11,7 @@ type UserApiDataResult struct {
 	Name            string                     `json:"name"`
 	SystemRole      string                     `json:"systemRole"`
 	IsActive        bool                       `json:"isActive"`
-	CreatedAt       time.Time                  `json:"createdAt"`
+	CreatedAt       string                     `json:"createdAt"`
 	IsJiraLinked    bool                       `json:"isJiraLinked"`
 	IsSystemUser    bool                       `json:"isSystemUser"`
 	PermissionNames []string                   `json:"permissionNames"`

@@ -14,9 +14,9 @@ func NewUserAPI() *UserAPI {
 func (u *UserAPI) FindUsersByUserIds(userIds []int32) (results.UserApiResult, error) {
 
 	var body struct {
-		userIds []int32
+		UserIds []int32 `json:"userIds"`
 	}
-	body.userIds = userIds
+	body.UserIds = userIds
 
 	result := results.UserApiResult{}
 

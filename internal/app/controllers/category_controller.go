@@ -22,8 +22,9 @@ func (c *CategoryController) FindAll(e echo.Context) error {
 	ctx := e.Request().Context()
 
 	queryParam := queryparams.CategoryQueryParam{
-		Search: e.QueryParam("search"),
-		Type:   e.QueryParam("type"),
+		Search:   e.QueryParam("search"),
+		Type:     e.QueryParam("type"),
+		IsActive: e.QueryParam("isActive"),
 	}
 
 	categories, err := c.categoryService.FindAll(ctx, queryParam)
