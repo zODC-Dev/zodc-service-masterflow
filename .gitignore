@@ -8,3 +8,7 @@ temp/*
 # Auto Created
 # database/generated/*
 docs/*
+
+# 
+database/*
+!database/zodc_masterflow_dev

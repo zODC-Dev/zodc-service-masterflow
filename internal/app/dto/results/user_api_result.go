@@ -18,7 +18,7 @@ type UserApiDataResult struct {
 	IsSystemUser    bool                       `json:"isSystemUser"`
 	PermissionNames []string                   `json:"permissionNames"`
 	ProjectRoles    []UserApiProjectRoleResult `json:"projectRoles"`
-	AvatarURL       string                     `json:"avatarUrl"`
+	AvatarUrl       string                     `json:"avatarUrl"`
 }
 
 type UserApiProjectRoleResult struct {

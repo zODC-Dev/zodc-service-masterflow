@@ -9,3 +9,9 @@ type Size struct {
 	Width  float64 `json:"width"`
 	Height float64 `json:"height"`
 }
+
+type Metadata struct {
+	CreatedAt string  `json:"createdAt"`
+	UpdatedAt string  `json:"UpdatedAt"`
+	DeletedAt *string `json:"DeletedAt"`
+}

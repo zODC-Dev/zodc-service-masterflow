@@ -11,14 +11,14 @@ func NewUserAPI() *UserAPI {
 	return &UserAPI{}
 }
 
-func (u *UserAPI) FindUsersByUserIds(userIds []int32) ([]results.UserApiResult, error) {
+func (u *UserAPI) FindUsersByUserIds(userIds []int32) (results.UserApiResult, error) {
 
 	var body struct {
 		userIds []int32
 	}
 	body.userIds = userIds
 
-	result := []results.UserApiResult{}
+	result := results.UserApiResult{}
 
 	client := resty.New()
 

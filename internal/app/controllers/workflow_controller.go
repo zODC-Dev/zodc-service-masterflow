@@ -45,7 +45,7 @@ func (c *WorkflowController) FindAllWorkflow(e echo.Context) error {
 		CategoryID:     e.QueryParam("categoryId"),
 		Search:         e.QueryParam("search"),
 		Type:           e.QueryParam("type"),
-		ProjectId:      e.QueryParam("projectId"),
+		ProjectKey:     e.QueryParam("projectKey"),
 		HasSubWorkflow: e.QueryParam("hasSubWorkflow"),
 	}
 

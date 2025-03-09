@@ -17,10 +17,11 @@ type categoriesTable struct {
 	postgres.Table
 
 	// Columns
-	ID   postgres.ColumnInteger
-	Name postgres.ColumnString
-	Type postgres.ColumnString
-	Key  postgres.ColumnString
+	ID       postgres.ColumnInteger
+	Name     postgres.ColumnString
+	Type     postgres.ColumnString
+	Key      postgres.ColumnString
+	IsActive postgres.ColumnBool
 
 	AllColumns     postgres.ColumnList
 	MutableColumns postgres.ColumnList
@@ -65,18 +66,20 @@ func newCategoriesTableImpl(schemaName, tableName, alias string) categoriesTable
 		NameColumn     = postgres.StringColumn("name")
 		TypeColumn     = postgres.StringColumn("type")
 		KeyColumn      = postgres.StringColumn("key")
-		allColumns     = postgres.ColumnList{IDColumn, NameColumn, TypeColumn, KeyColumn}
-		mutableColumns = postgres.ColumnList{NameColumn, TypeColumn, KeyColumn}
+		IsActiveColumn = postgres.BoolColumn("is_active")
+		allColumns     = postgres.ColumnList{IDColumn, NameColumn, TypeColumn, KeyColumn, IsActiveColumn}
+		mutableColumns = postgres.ColumnList{NameColumn, TypeColumn, KeyColumn, IsActiveColumn}
 	)
 
 	return categoriesTable{
 		Table: postgres.NewTable(schemaName, tableName, alias, allColumns...),
 
 		//Columns
-		ID:   IDColumn,
-		Name: NameColumn,
-		Type: TypeColumn,
-		Key:  KeyColumn,
+		ID:       IDColumn,
+		Name:     NameColumn,
+		Type:     TypeColumn,
+		Key:      KeyColumn,
+		IsActive: IsActiveColumn,
 
 		AllColumns:     allColumns,
 		MutableColumns: mutableColumns,

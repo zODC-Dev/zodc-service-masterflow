@@ -107,8 +107,8 @@ func (r *WorkflowRepository) FindAllWorkflowTemplates(ctx context.Context, db *s
 		conditions = append(conditions, Workflows.CategoryID.EQ(postgres.Int32(int32(categoryIdInt))))
 	}
 
-	if workflowTemplateQueryParams.ProjectId != "" {
-		conditions = append(conditions, Workflows.ProjectKey.EQ(postgres.String(workflowTemplateQueryParams.ProjectId)))
+	if workflowTemplateQueryParams.ProjectKey != "" {
+		conditions = append(conditions, Workflows.ProjectKey.EQ(postgres.String(workflowTemplateQueryParams.ProjectKey)))
 	}
 
 	if workflowTemplateQueryParams.HasSubWorkflow != "" {

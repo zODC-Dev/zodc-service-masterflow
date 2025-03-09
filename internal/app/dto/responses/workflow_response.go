@@ -10,7 +10,10 @@ type CategoryResponse struct {
 }
 
 type NodeDataAssigneeResponse struct {
-	Id int32 `json:"id"`
+	Id           int32  `json:"id"`
+	Email        string `json:"email"`
+	AvatarUrl    string `json:"avatarUrl"`
+	IsSystemUser bool   `json:"isSystemUser"`
 }
 
 type NodeDataResponse struct {
@@ -74,6 +77,8 @@ type WorkflowResponse struct {
 	Version     int32            `json:"version"`
 	Description string           `json:"description"`
 	Decoration  string           `json:"decoration"`
+
+	types.Metadata
 }
 
 type RequestResponse struct {
