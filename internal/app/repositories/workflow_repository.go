@@ -189,12 +189,12 @@ func (r *WorkflowRepository) FindOneWorkflowDetailByWorkflowVersionId(ctx contex
 		Categories.AllColumns,
 	).FROM(
 		Workflows.
-			INNER_JOIN(WorkflowVersions, WorkflowVersions.WorkflowID.EQ(Workflows.ID).
-				AND(WorkflowVersions.ID.EQ(postgres.Int32(workflowVersionId))),
-			).
-			INNER_JOIN(WorkflowNodes, WorkflowNodes.WorkflowVersionID.EQ(WorkflowVersions.ID)).
-			INNER_JOIN(WorkflowConnections, WorkflowConnections.WorkflowVersionID.EQ(WorkflowVersions.ID)).
-			INNER_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)),
+			LEFT_JOIN(WorkflowVersions, WorkflowVersions.WorkflowID.EQ(Workflows.ID)).
+			LEFT_JOIN(WorkflowNodes, WorkflowNodes.WorkflowVersionID.EQ(WorkflowVersions.ID)).
+			LEFT_JOIN(WorkflowConnections, WorkflowConnections.WorkflowVersionID.EQ(WorkflowVersions.ID)).
+			LEFT_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)),
+	).WHERE(
+		WorkflowVersions.ID.EQ(postgres.Int32(workflowVersionId)),
 	)
 
 	result := results.WorkflowDetailResult{}
