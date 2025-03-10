@@ -197,6 +197,8 @@ func (r *WorkflowRepository) FindOneWorkflowDetailByWorkflowVersionId(ctx contex
 		WorkflowVersions.ID.EQ(postgres.Int32(workflowVersionId)),
 	)
 
+	fmt.Println(statement.DebugSql())
+
 	result := results.WorkflowDetailResult{}
 
 	err := statement.QueryContext(ctx, db, &result)

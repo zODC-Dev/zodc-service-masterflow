@@ -408,7 +408,9 @@ func (s *WorkflowService) FindAllWorkflowHandler(ctx context.Context, workflowTe
 	for _, workflow := range workflows {
 
 		//Mapping workflow response
-		workflowResponse := responses.WorkflowResponse{}
+		workflowResponse := responses.WorkflowResponse{
+			IsArchived: workflow.Version.IsArchived,
+		}
 		if err := utils.Mapper(workflow, &workflowResponse); err != nil {
 			return workflowResponses, err
 		}
@@ -437,6 +439,8 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, work
 	}
 
 	workflowResponse.Version = workflow.Version.Version
+	workflowResponse.IsArchived = workflow.Version.IsArchived
+
 	workflowResponse.Connections = []responses.ConnectionResponse{}
 	workflowResponse.Nodes = []responses.NodeResponse{}
 

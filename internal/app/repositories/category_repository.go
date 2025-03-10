@@ -31,11 +31,11 @@ func (r *CategoryRepository) FindAll(ctx context.Context, db *sql.DB, queryParam
 	conditions := []postgres.BoolExpression{}
 
 	if queryParam.Type != "" {
-		conditions = append(conditions, postgres.LOWER(Categories.Type).EQ(postgres.LOWER(postgres.String(queryParam.Type))))
+		conditions = append(conditions, Categories.Type.EQ(postgres.String(queryParam.Type)))
 	}
 
 	if queryParam.Search != "" {
-		conditions = append(conditions, postgres.LOWER(Categories.Name).EQ(postgres.LOWER(postgres.String(queryParam.Search))))
+		conditions = append(conditions, postgres.LOWER(Categories.Name).LIKE(postgres.LOWER(postgres.String("%"+queryParam.Search+"%"))))
 	}
 
 	if queryParam.IsActive != "" {

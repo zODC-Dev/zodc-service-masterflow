@@ -47,6 +47,7 @@ func (c *WorkflowController) FindAllWorkflow(e echo.Context) error {
 		Type:           e.QueryParam("type"),
 		ProjectKey:     e.QueryParam("projectKey"),
 		HasSubWorkflow: e.QueryParam("hasSubWorkflow"),
+		IsArchived:     e.QueryParam("isArchived"),
 	}
 
 	workflows, err := c.workflowService.FindAllWorkflowHandler(ctx, workflowTemplateQueryParams)

@@ -56,13 +56,7 @@ type StoryResponse struct {
 }
 
 type WorkflowDetailResponse struct {
-	Id          int32            `json:"id"`
-	Title       string           `json:"title"`
-	Type        string           `json:"type"`
-	Category    CategoryResponse `json:"category"`
-	Version     int32            `json:"version"`
-	Description string           `json:"description"`
-	Decoration  string           `json:"decoration"`
+	WorkflowResponse
 
 	Nodes       []NodeResponse       `json:"nodes"`
 	Stories     []StoryResponse      `json:"stories"`
@@ -77,6 +71,8 @@ type WorkflowResponse struct {
 	Version     int32            `json:"version"`
 	Description string           `json:"description"`
 	Decoration  string           `json:"decoration"`
+	IsArchived  bool             `json:"isArchived"`
+	ProjectKey  string           `json:"procjectKey"`
 
 	types.Metadata
 }

@@ -59,6 +59,7 @@ type WorkflowRequest struct {
 	Title       string
 	Type        string
 	CategoryId  int32
+	ProjectKey  string
 
 	Nodes       []NodeRequest /*ko chứa story*/
 	Connections []ConnectionRequest

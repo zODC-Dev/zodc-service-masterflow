@@ -12,6 +12,6 @@ type Size struct {
 
 type Metadata struct {
 	CreatedAt string  `json:"createdAt"`
-	UpdatedAt string  `json:"UpdatedAt"`
-	DeletedAt *string `json:"DeletedAt"`
+	UpdatedAt string  `json:"updatedAt"`
+	DeletedAt *string `json:"deletedAt"`
 }
