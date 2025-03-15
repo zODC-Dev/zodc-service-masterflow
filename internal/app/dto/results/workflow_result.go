@@ -2,23 +2,22 @@ package results
 
 import "github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 
-type WorkflowDetailResult struct {
-	model.Workflows
+type RequestDetail struct {
+	model.Requests
+	Workflow    model.Workflows
 	Version     model.WorkflowVersions
-	Nodes       []model.WorkflowNodes
-	Connections []model.WorkflowConnections
+	Nodes       []model.Nodes
+	Connections []model.Connections
 	Category    model.Categories
 }
 
-type WorkflowTemplateResult struct {
+type WorkflowTemplate struct {
 	model.Workflows
 	Version  model.WorkflowVersions
 	Category model.Categories
 }
 
-type RequestResult struct {
-	model.RequestNodes
-	Request         model.Requests
-	WorkflowVersion model.WorkflowVersions
-	Workflow        model.Workflows
+type ConnectionWithNode struct {
+	model.Connections
+	Node model.Nodes
 }

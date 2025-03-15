@@ -29,7 +29,7 @@ func (c *WorkflowController) CreateWorkflow(e echo.Context) error {
 		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	if err := c.workflowService.CreateWorkFlowHandler(ctx, req); err != nil {
+	if err := c.workflowService.CreateWorkflowHandler(ctx, req); err != nil {
 		return e.JSON(http.StatusInternalServerError, err.Error())
 	}
 

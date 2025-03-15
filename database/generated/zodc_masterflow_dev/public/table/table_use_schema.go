@@ -11,16 +11,15 @@ package table
 // this method only once at the beginning of the program.
 func UseSchema(schema string) {
 	Categories = Categories.FromSchema(schema)
+	Connections = Connections.FromSchema(schema)
 	FormData = FormData.FromSchema(schema)
 	FormFieldData = FormFieldData.FromSchema(schema)
 	FormTemplateFields = FormTemplateFields.FromSchema(schema)
 	FormTemplateVersions = FormTemplateVersions.FromSchema(schema)
 	FormTemplates = FormTemplates.FromSchema(schema)
 	GooseDbVersion = GooseDbVersion.FromSchema(schema)
-	RequestNodes = RequestNodes.FromSchema(schema)
+	Nodes = Nodes.FromSchema(schema)
 	Requests = Requests.FromSchema(schema)
-	WorkflowConnections = WorkflowConnections.FromSchema(schema)
-	WorkflowNodes = WorkflowNodes.FromSchema(schema)
 	WorkflowVersions = WorkflowVersions.FromSchema(schema)
 	Workflows = Workflows.FromSchema(schema)
 }

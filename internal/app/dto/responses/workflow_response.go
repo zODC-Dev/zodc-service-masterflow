@@ -11,6 +11,7 @@ type CategoryResponse struct {
 
 type NodeDataAssigneeResponse struct {
 	Id           int32  `json:"id"`
+	Name         string `json:"name"`
 	Email        string `json:"email"`
 	AvatarUrl    string `json:"avatarUrl"`
 	IsSystemUser bool   `json:"isSystemUser"`
@@ -72,7 +73,7 @@ type WorkflowResponse struct {
 	Description string           `json:"description"`
 	Decoration  string           `json:"decoration"`
 	IsArchived  bool             `json:"isArchived"`
-	ProjectKey  string           `json:"procjectKey"`
+	ProjectKey  string           `json:"projectKey"`
 
 	types.Metadata
 }

@@ -18,5 +18,7 @@ type Requests struct {
 	DeletedAt         *time.Time
 	Status            string
 	Title             string
+	Description       string
+	IsTemplate        bool
 	WorkflowVersionID int32
 }

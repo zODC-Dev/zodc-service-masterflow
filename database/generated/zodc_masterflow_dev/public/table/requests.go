@@ -23,6 +23,8 @@ type requestsTable struct {
 	DeletedAt         postgres.ColumnTimestamp
 	Status            postgres.ColumnString
 	Title             postgres.ColumnString
+	Description       postgres.ColumnString
+	IsTemplate        postgres.ColumnBool
 	WorkflowVersionID postgres.ColumnInteger
 
 	AllColumns     postgres.ColumnList
@@ -70,9 +72,11 @@ func newRequestsTableImpl(schemaName, tableName, alias string) requestsTable {
 		DeletedAtColumn         = postgres.TimestampColumn("deleted_at")
 		StatusColumn            = postgres.StringColumn("status")
 		TitleColumn             = postgres.StringColumn("title")
+		DescriptionColumn       = postgres.StringColumn("description")
+		IsTemplateColumn        = postgres.BoolColumn("is_template")
 		WorkflowVersionIDColumn = postgres.IntegerColumn("workflow_version_id")
-		allColumns              = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, StatusColumn, TitleColumn, WorkflowVersionIDColumn}
-		mutableColumns          = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, StatusColumn, TitleColumn, WorkflowVersionIDColumn}
+		allColumns              = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, StatusColumn, TitleColumn, DescriptionColumn, IsTemplateColumn, WorkflowVersionIDColumn}
+		mutableColumns          = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, StatusColumn, TitleColumn, DescriptionColumn, IsTemplateColumn, WorkflowVersionIDColumn}
 	)
 
 	return requestsTable{
@@ -85,6 +89,8 @@ func newRequestsTableImpl(schemaName, tableName, alias string) requestsTable {
 		DeletedAt:         DeletedAtColumn,
 		Status:            StatusColumn,
 		Title:             TitleColumn,
+		Description:       DescriptionColumn,
+		IsTemplate:        IsTemplateColumn,
 		WorkflowVersionID: WorkflowVersionIDColumn,
 
 		AllColumns:     allColumns,
