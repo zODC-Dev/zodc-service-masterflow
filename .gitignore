@@ -9,8 +9,6 @@ temp/*
 # database/generated/*
 docs/*
 
-# 
-database/*
-!database/zodc_masterflow_dev
+#
 
 .cursor/*
