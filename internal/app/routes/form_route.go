@@ -5,14 +5,15 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/controllers"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/nats"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/services"
 )
 
 func FormRoute(group *echo.Group, db *sql.DB) {
 	formRepo := repositories.NewFormRepository()
-
-	formService := services.NewFormService(db, formRepo)
+	natsClient := nats.GetNATSClient()
+	formService := services.NewFormService(db, formRepo, natsClient)
 
 	formController := controllers.NewFormController(formService)
 
