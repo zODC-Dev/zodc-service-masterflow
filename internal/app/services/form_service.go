@@ -5,23 +5,27 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/requests"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/responses"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
+	"github.com/zODC-Dev/zodc-service-masterflow/pkg/nats"
 	"github.com/zODC-Dev/zodc-service-masterflow/pkg/utils"
 )
 
 type FormService struct {
-	db       *sql.DB
-	formRepo *repositories.FormRepository
+	db         *sql.DB
+	formRepo   *repositories.FormRepository
+	natsClient *nats.NATSClient
 }
 
-func NewFormService(db *sql.DB, formRepo *repositories.FormRepository) *FormService {
+func NewFormService(db *sql.DB, formRepo *repositories.FormRepository, natsClient *nats.NATSClient) *FormService {
 	return &FormService{
-		db:       db,
-		formRepo: formRepo,
+		db:         db,
+		formRepo:   formRepo,
+		natsClient: natsClient,
 	}
 }
 
@@ -102,6 +106,7 @@ func (s *FormService) CreateFormTemplate(ctx context.Context, req *requests.Form
 
 func (s *FormService) FindAllFormTemplate(ctx context.Context) ([]responses.FormTemplateFindAll, error) {
 	formTemplatesResponse := []responses.FormTemplateFindAll{}
+	slog.Info("Finding all form templates")
 
 	formTemplates, err := s.formRepo.FindAllFormTemplate(ctx, s.db)
 
@@ -119,8 +124,39 @@ func (s *FormService) FindAllFormTemplate(ctx context.Context) ([]responses.Form
 		formTemplateResponse.Version = formTemplate.Version.Version
 
 		formTemplatesResponse = append(formTemplatesResponse, formTemplateResponse)
-
 	}
+
+	// Sử dụng request-reply với NATS thay vì chỉ publish
+	// if s.natsClient != nil && s.natsClient.IsConnected() {
+	// 	data, err := json.Marshal(formTemplatesResponse)
+	// 	if err != nil {
+	// 		slog.Error("Failed to marshal form templates for NATS", "error", err)
+	// 	} else {
+	// 		// Tạo context với timeout
+	// 		reqCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	// 		defer cancel()
+
+	// 		// Gửi request và đợi reply
+	// 		reply, err := s.natsClient.RequestWithContext(reqCtx, "form.templates.request", data)
+	// 		if err != nil {
+	// 			slog.Error("Failed to send request to NATS", "error", err)
+	// 		} else {
+	// 			// Log data từ reply
+	// 			slog.Info("Received reply from NATS",
+	// 				"subject", reply.Subject,
+	// 				"reply", string(reply.Data),
+	// 				"headers", reply.Header)
+
+	// 			// Nếu muốn parse reply data thành struct
+	// 			var replyData map[string]interface{}
+	// 			if err := json.Unmarshal(reply.Data, &replyData); err != nil {
+	// 				slog.Error("Failed to unmarshal reply data", "error", err)
+	// 			} else {
+	// 				slog.Info("Parsed reply data", "data", replyData)
+	// 			}
+	// 		}
+	// 	}
+	// }
 
 	return formTemplatesResponse, nil
 }

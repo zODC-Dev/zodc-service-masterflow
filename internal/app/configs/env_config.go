@@ -13,6 +13,7 @@ type envConfig struct {
 	POSTGRE_DSN    string `env:"POSTGRE_DSN,required"`
 	DB_DSN         string `env:"DB_DSN,required"`
 	REDIS_URL      string `env:"REDIS_URL,required"`
+	NATS_URL       string `env:"NATS_URL,required"`
 }
 
 // Export global
