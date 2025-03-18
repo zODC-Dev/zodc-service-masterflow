@@ -12,14 +12,16 @@ import (
 )
 
 type Workflows struct {
-	ID          int32 `sql:"primary_key"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	DeletedAt   *time.Time
-	Title       string
-	Type        string
-	CategoryID  int32
-	Description string
-	Decoration  string
-	ProjectKey  *string
+	ID             int32 `sql:"primary_key"`
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	DeletedAt      *time.Time
+	Title          string
+	Type           string
+	CategoryID     int32
+	Description    string
+	Decoration     string
+	ProjectKey     *string
+	Currentversion int32
+	IsArchived     bool
 }

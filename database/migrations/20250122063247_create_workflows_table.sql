@@ -12,7 +12,11 @@ CREATE TABLE workflows (
     description TEXT NOT NULL,
     decoration TEXT NOT NULL,
 
-    project_key TEXT
+    project_key TEXT,
+
+    currentVersion INT NOT NULL,
+
+    is_archived BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE workflow_versions (
@@ -23,11 +27,7 @@ CREATE TABLE workflow_versions (
 
      -- Version
     version INT NOT NULL,
-
-    is_archived BOOLEAN NOT NULL DEFAULT FALSE,
     has_sub_workflow BOOLEAN NOT NULL,
-
-    status TEXT,
 
     workflow_id INT NOT NULL REFERENCES workflows (id) ON DELETE CASCADE
 );
@@ -38,9 +38,10 @@ CREATE TABLE requests (
     updated_at TIMESTAMP DEFAULT now () NOT NULL,
     deleted_at TIMESTAMP,
 
+    last_update_user_id INT NOT NULL,
+
     status TEXT NOT NULL, -- TO_DO, IN_PROCESS , COMPLETED, CANCELED, TERMINATED
     title TEXT NOT NULL,
-    description TEXT NOT NULL,
 
     is_template BOOLEAN NOT NULL DEFAULT FALSE,
 

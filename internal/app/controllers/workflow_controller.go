@@ -23,7 +23,7 @@ func NewWorkflowController(workflowService *services.WorkflowService) *WorkflowC
 func (c *WorkflowController) CreateWorkflow(e echo.Context) error {
 	ctx := e.Request().Context()
 
-	req := new(requests.WorkflowRequest)
+	req := new(requests.CreateWorkflow)
 
 	if err := e.Bind(req); err != nil {
 		return e.JSON(http.StatusBadRequest, err.Error())
@@ -55,7 +55,7 @@ func (c *WorkflowController) FindAllWorkflow(e echo.Context) error {
 		return e.JSON(http.StatusInternalServerError, err.Error())
 	}
 
-	return e.JSON(http.StatusCreated, workflows)
+	return e.JSON(http.StatusOK, workflows)
 }
 
 func (c *WorkflowController) FindOneWorkflowDetail(e echo.Context) error {
@@ -71,5 +71,42 @@ func (c *WorkflowController) FindOneWorkflowDetail(e echo.Context) error {
 		return e.JSON(http.StatusInternalServerError, err.Error())
 	}
 
-	return e.JSON(http.StatusCreated, workflowDetail)
+	return e.JSON(http.StatusOK, workflowDetail)
+}
+
+func (c *WorkflowController) StartWorkflow(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	req := new(requests.StartWorkflow)
+	if err := e.Bind(req); err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	if err := c.workflowService.StartWorkflowHandler(ctx, *req); err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, nil)
+}
+
+func (c *WorkflowController) StartNode(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	nodeId := e.Param("id")
+	if err := c.workflowService.StartNodeHandler(ctx, nodeId); err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, nil)
+}
+
+func (c *WorkflowController) CompleteNode(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	nodeId := e.Param("id")
+	if err := c.workflowService.CompleteNodeHandler(ctx, nodeId); err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, nil)
 }

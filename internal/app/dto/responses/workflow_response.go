@@ -24,7 +24,7 @@ type NodeDataResponse struct {
 	Assignee NodeDataAssigneeResponse `json:"assignee"`
 	EndType  *string                  `json:"endType"`
 
-	SubWorkflowVersionId *int32 `json:"subWorkflowVersionId"`
+	SubRequestID *int32 `json:"subRequestId"`
 }
 
 type NodeResponse struct {

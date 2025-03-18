@@ -17,16 +17,18 @@ type workflowsTable struct {
 	postgres.Table
 
 	// Columns
-	ID          postgres.ColumnInteger
-	CreatedAt   postgres.ColumnTimestamp
-	UpdatedAt   postgres.ColumnTimestamp
-	DeletedAt   postgres.ColumnTimestamp
-	Title       postgres.ColumnString
-	Type        postgres.ColumnString
-	CategoryID  postgres.ColumnInteger
-	Description postgres.ColumnString
-	Decoration  postgres.ColumnString
-	ProjectKey  postgres.ColumnString
+	ID             postgres.ColumnInteger
+	CreatedAt      postgres.ColumnTimestamp
+	UpdatedAt      postgres.ColumnTimestamp
+	DeletedAt      postgres.ColumnTimestamp
+	Title          postgres.ColumnString
+	Type           postgres.ColumnString
+	CategoryID     postgres.ColumnInteger
+	Description    postgres.ColumnString
+	Decoration     postgres.ColumnString
+	ProjectKey     postgres.ColumnString
+	Currentversion postgres.ColumnInteger
+	IsArchived     postgres.ColumnBool
 
 	AllColumns     postgres.ColumnList
 	MutableColumns postgres.ColumnList
@@ -67,34 +69,38 @@ func newWorkflowsTable(schemaName, tableName, alias string) *WorkflowsTable {
 
 func newWorkflowsTableImpl(schemaName, tableName, alias string) workflowsTable {
 	var (
-		IDColumn          = postgres.IntegerColumn("id")
-		CreatedAtColumn   = postgres.TimestampColumn("created_at")
-		UpdatedAtColumn   = postgres.TimestampColumn("updated_at")
-		DeletedAtColumn   = postgres.TimestampColumn("deleted_at")
-		TitleColumn       = postgres.StringColumn("title")
-		TypeColumn        = postgres.StringColumn("type")
-		CategoryIDColumn  = postgres.IntegerColumn("category_id")
-		DescriptionColumn = postgres.StringColumn("description")
-		DecorationColumn  = postgres.StringColumn("decoration")
-		ProjectKeyColumn  = postgres.StringColumn("project_key")
-		allColumns        = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, TitleColumn, TypeColumn, CategoryIDColumn, DescriptionColumn, DecorationColumn, ProjectKeyColumn}
-		mutableColumns    = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, TitleColumn, TypeColumn, CategoryIDColumn, DescriptionColumn, DecorationColumn, ProjectKeyColumn}
+		IDColumn             = postgres.IntegerColumn("id")
+		CreatedAtColumn      = postgres.TimestampColumn("created_at")
+		UpdatedAtColumn      = postgres.TimestampColumn("updated_at")
+		DeletedAtColumn      = postgres.TimestampColumn("deleted_at")
+		TitleColumn          = postgres.StringColumn("title")
+		TypeColumn           = postgres.StringColumn("type")
+		CategoryIDColumn     = postgres.IntegerColumn("category_id")
+		DescriptionColumn    = postgres.StringColumn("description")
+		DecorationColumn     = postgres.StringColumn("decoration")
+		ProjectKeyColumn     = postgres.StringColumn("project_key")
+		CurrentversionColumn = postgres.IntegerColumn("currentversion")
+		IsArchivedColumn     = postgres.BoolColumn("is_archived")
+		allColumns           = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, TitleColumn, TypeColumn, CategoryIDColumn, DescriptionColumn, DecorationColumn, ProjectKeyColumn, CurrentversionColumn, IsArchivedColumn}
+		mutableColumns       = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, TitleColumn, TypeColumn, CategoryIDColumn, DescriptionColumn, DecorationColumn, ProjectKeyColumn, CurrentversionColumn, IsArchivedColumn}
 	)
 
 	return workflowsTable{
 		Table: postgres.NewTable(schemaName, tableName, alias, allColumns...),
 
 		//Columns
-		ID:          IDColumn,
-		CreatedAt:   CreatedAtColumn,
-		UpdatedAt:   UpdatedAtColumn,
-		DeletedAt:   DeletedAtColumn,
-		Title:       TitleColumn,
-		Type:        TypeColumn,
-		CategoryID:  CategoryIDColumn,
-		Description: DescriptionColumn,
-		Decoration:  DecorationColumn,
-		ProjectKey:  ProjectKeyColumn,
+		ID:             IDColumn,
+		CreatedAt:      CreatedAtColumn,
+		UpdatedAt:      UpdatedAtColumn,
+		DeletedAt:      DeletedAtColumn,
+		Title:          TitleColumn,
+		Type:           TypeColumn,
+		CategoryID:     CategoryIDColumn,
+		Description:    DescriptionColumn,
+		Decoration:     DecorationColumn,
+		ProjectKey:     ProjectKeyColumn,
+		Currentversion: CurrentversionColumn,
+		IsArchived:     IsArchivedColumn,
 
 		AllColumns:     allColumns,
 		MutableColumns: mutableColumns,

@@ -4,32 +4,32 @@ import (
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
 )
 
-type ConnectionRequest struct {
+type Connection struct {
 	Id   string
 	From string
 	To   string
 	Type string
 }
 
-type NodeDataAssigneeRequest struct {
+type NodeDataAssignee struct {
 	Id int32
 }
 
-type NodeDataRequest struct {
+type NodeData struct {
 	Type                 string
 	Title                string
 	DueIn                int32
-	Assignee             NodeDataAssigneeRequest
+	Assignee             NodeDataAssignee
 	EndType              string
 	SubWorkflowVersionID *int32
 }
 
-type NodeFormRequest struct {
+type NodeForm struct {
 	FieldId string
 	Value   string
 }
 
-type NodeRequest struct {
+type Node struct {
 	Id       string
 	Position types.Position
 	Size     types.Size
@@ -37,12 +37,12 @@ type NodeRequest struct {
 
 	Type string
 
-	Data NodeDataRequest
+	Data NodeData
 
-	Form []NodeFormRequest
+	Form []NodeForm
 }
 
-type StoriesRequest struct {
+type Story struct {
 	Decoration  string
 	Description string
 	Title       string
@@ -50,10 +50,16 @@ type StoriesRequest struct {
 	CategoryKey string
 	CategoryId  int32
 
-	Node NodeRequest
+	Node Node
 }
 
-type WorkflowRequest struct {
+type NodesConnectionsStories struct {
+	Nodes       []Node /*ko chứa story*/
+	Connections []Connection
+	Stories     []Story
+}
+
+type CreateWorkflow struct {
 	Decoration  string
 	Description string
 	Title       string
@@ -61,8 +67,12 @@ type WorkflowRequest struct {
 	CategoryId  int32
 	ProjectKey  string
 
-	Nodes       []NodeRequest /*ko chứa story*/
-	Connections []ConnectionRequest
+	NodesConnectionsStories
+}
 
-	Stories []StoriesRequest
+type StartWorkflow struct {
+	Title             string
+	WorkflowVersionId int32
+
+	NodesConnectionsStories
 }

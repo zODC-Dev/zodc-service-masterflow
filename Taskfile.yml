@@ -42,6 +42,11 @@ tasks:
     cmds:
       - goose down
       - task: jet
+  
+  migrate-reset:
+    cmds:
+      - task: cleardb
+      - task: jet
 
   cleardb:
     cmds:

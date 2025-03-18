@@ -17,8 +17,6 @@ type WorkflowVersions struct {
 	UpdatedAt      time.Time
 	DeletedAt      *time.Time
 	Version        int32
-	IsArchived     bool
 	HasSubWorkflow bool
-	Status         *string
 	WorkflowID     int32
 }

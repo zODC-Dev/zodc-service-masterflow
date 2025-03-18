@@ -16,9 +16,9 @@ type Requests struct {
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
 	DeletedAt         *time.Time
+	LastUpdateUserID  int32
 	Status            string
 	Title             string
-	Description       string
 	IsTemplate        bool
 	WorkflowVersionID int32
 }

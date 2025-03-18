@@ -37,7 +37,7 @@ func (r *WorkflowRepository) CreateWorkflow(ctx context.Context, tx *sql.Tx, wor
 func (r *WorkflowRepository) CreateWorkflowVersion(ctx context.Context, tx *sql.Tx, workflowVersion model.WorkflowVersions) (model.WorkflowVersions, error) {
 	WorkflowVersions := table.WorkflowVersions
 
-	columns := WorkflowVersions.AllColumns.Except(WorkflowVersions.ID, WorkflowVersions.CreatedAt, WorkflowVersions.UpdatedAt, WorkflowVersions.DeletedAt, WorkflowVersions.IsArchived)
+	columns := WorkflowVersions.AllColumns.Except(WorkflowVersions.ID, WorkflowVersions.CreatedAt, WorkflowVersions.UpdatedAt, WorkflowVersions.DeletedAt)
 
 	statement := WorkflowVersions.INSERT(columns).MODEL(workflowVersion).RETURNING(WorkflowVersions.ID)
 
@@ -141,7 +141,7 @@ func (r *WorkflowRepository) FindAllWorkflowTemplates(ctx context.Context, db *s
 			return []results.WorkflowTemplate{}, err
 		}
 
-		conditions = append(conditions, WorkflowVersions.IsArchived.EQ(postgres.Bool(hasIsArchivedBool)))
+		conditions = append(conditions, Workflows.IsArchived.EQ(postgres.Bool(hasIsArchivedBool)))
 	}
 
 	if len(conditions) > 0 {

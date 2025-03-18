@@ -21,9 +21,9 @@ type requestsTable struct {
 	CreatedAt         postgres.ColumnTimestamp
 	UpdatedAt         postgres.ColumnTimestamp
 	DeletedAt         postgres.ColumnTimestamp
+	LastUpdateUserID  postgres.ColumnInteger
 	Status            postgres.ColumnString
 	Title             postgres.ColumnString
-	Description       postgres.ColumnString
 	IsTemplate        postgres.ColumnBool
 	WorkflowVersionID postgres.ColumnInteger
 
@@ -70,13 +70,13 @@ func newRequestsTableImpl(schemaName, tableName, alias string) requestsTable {
 		CreatedAtColumn         = postgres.TimestampColumn("created_at")
 		UpdatedAtColumn         = postgres.TimestampColumn("updated_at")
 		DeletedAtColumn         = postgres.TimestampColumn("deleted_at")
+		LastUpdateUserIDColumn  = postgres.IntegerColumn("last_update_user_id")
 		StatusColumn            = postgres.StringColumn("status")
 		TitleColumn             = postgres.StringColumn("title")
-		DescriptionColumn       = postgres.StringColumn("description")
 		IsTemplateColumn        = postgres.BoolColumn("is_template")
 		WorkflowVersionIDColumn = postgres.IntegerColumn("workflow_version_id")
-		allColumns              = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, StatusColumn, TitleColumn, DescriptionColumn, IsTemplateColumn, WorkflowVersionIDColumn}
-		mutableColumns          = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, StatusColumn, TitleColumn, DescriptionColumn, IsTemplateColumn, WorkflowVersionIDColumn}
+		allColumns              = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, LastUpdateUserIDColumn, StatusColumn, TitleColumn, IsTemplateColumn, WorkflowVersionIDColumn}
+		mutableColumns          = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, LastUpdateUserIDColumn, StatusColumn, TitleColumn, IsTemplateColumn, WorkflowVersionIDColumn}
 	)
 
 	return requestsTable{
@@ -87,9 +87,9 @@ func newRequestsTableImpl(schemaName, tableName, alias string) requestsTable {
 		CreatedAt:         CreatedAtColumn,
 		UpdatedAt:         UpdatedAtColumn,
 		DeletedAt:         DeletedAtColumn,
+		LastUpdateUserID:  LastUpdateUserIDColumn,
 		Status:            StatusColumn,
 		Title:             TitleColumn,
-		Description:       DescriptionColumn,
 		IsTemplate:        IsTemplateColumn,
 		WorkflowVersionID: WorkflowVersionIDColumn,
 
