@@ -27,6 +27,7 @@ type Nodes struct {
 	SubRequestID     *int32
 	Type             string
 	Status           string
+	IsCurrent        bool
 	EstimatePoint    *int32
 	PlanStartTime    *time.Time
 	PlanFinishTime   *time.Time

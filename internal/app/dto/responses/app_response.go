@@ -6,3 +6,11 @@ type Response struct {
 	Data     interface{} `json:"data"`
 	Metadata interface{} `json:"metadata"`
 }
+
+type Paginate[T any] struct {
+	Items      T
+	Total      int
+	Page       int
+	PageSize   int
+	TotalPages int
+}

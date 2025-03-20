@@ -21,10 +21,12 @@ type requestsTable struct {
 	CreatedAt         postgres.ColumnTimestamp
 	UpdatedAt         postgres.ColumnTimestamp
 	DeletedAt         postgres.ColumnTimestamp
+	Key               postgres.ColumnInteger
 	LastUpdateUserID  postgres.ColumnInteger
 	Status            postgres.ColumnString
 	Title             postgres.ColumnString
 	IsTemplate        postgres.ColumnBool
+	ParentID          postgres.ColumnInteger
 	WorkflowVersionID postgres.ColumnInteger
 
 	AllColumns     postgres.ColumnList
@@ -70,13 +72,15 @@ func newRequestsTableImpl(schemaName, tableName, alias string) requestsTable {
 		CreatedAtColumn         = postgres.TimestampColumn("created_at")
 		UpdatedAtColumn         = postgres.TimestampColumn("updated_at")
 		DeletedAtColumn         = postgres.TimestampColumn("deleted_at")
+		KeyColumn               = postgres.IntegerColumn("key")
 		LastUpdateUserIDColumn  = postgres.IntegerColumn("last_update_user_id")
 		StatusColumn            = postgres.StringColumn("status")
 		TitleColumn             = postgres.StringColumn("title")
 		IsTemplateColumn        = postgres.BoolColumn("is_template")
+		ParentIDColumn          = postgres.IntegerColumn("parent_id")
 		WorkflowVersionIDColumn = postgres.IntegerColumn("workflow_version_id")
-		allColumns              = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, LastUpdateUserIDColumn, StatusColumn, TitleColumn, IsTemplateColumn, WorkflowVersionIDColumn}
-		mutableColumns          = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, LastUpdateUserIDColumn, StatusColumn, TitleColumn, IsTemplateColumn, WorkflowVersionIDColumn}
+		allColumns              = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, KeyColumn, LastUpdateUserIDColumn, StatusColumn, TitleColumn, IsTemplateColumn, ParentIDColumn, WorkflowVersionIDColumn}
+		mutableColumns          = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, KeyColumn, LastUpdateUserIDColumn, StatusColumn, TitleColumn, IsTemplateColumn, ParentIDColumn, WorkflowVersionIDColumn}
 	)
 
 	return requestsTable{
@@ -87,10 +91,12 @@ func newRequestsTableImpl(schemaName, tableName, alias string) requestsTable {
 		CreatedAt:         CreatedAtColumn,
 		UpdatedAt:         UpdatedAtColumn,
 		DeletedAt:         DeletedAtColumn,
+		Key:               KeyColumn,
 		LastUpdateUserID:  LastUpdateUserIDColumn,
 		Status:            StatusColumn,
 		Title:             TitleColumn,
 		IsTemplate:        IsTemplateColumn,
+		ParentID:          ParentIDColumn,
 		WorkflowVersionID: WorkflowVersionIDColumn,
 
 		AllColumns:     allColumns,

@@ -15,9 +15,15 @@ type WorkflowTemplate struct {
 	model.Workflows
 	Version  model.WorkflowVersions
 	Category model.Categories
+	Request  model.Requests
 }
 
 type ConnectionWithNode struct {
 	model.Connections
 	Node model.Nodes
+}
+
+type Request struct {
+	model.Requests
+	Nodes []model.Nodes
 }

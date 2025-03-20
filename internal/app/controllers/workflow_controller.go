@@ -110,3 +110,24 @@ func (c *WorkflowController) CompleteNode(e echo.Context) error {
 
 	return e.JSON(http.StatusOK, nil)
 }
+
+func (c *WorkflowController) FindAllRequest(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	search := e.QueryParam("search")
+	page, _ := strconv.Atoi(e.QueryParam("page"))
+	pageSize, _ := strconv.Atoi(e.QueryParam("pageSize"))
+
+	requestQueryParams := queryparams.RequestQueryParam{
+		Search:   search,
+		Page:     page,
+		PageSize: pageSize,
+	}
+
+	requests, err := c.workflowService.FindAllRequest(ctx, requestQueryParams)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, requests)
+}

@@ -8,3 +8,9 @@ type WorkflowQueryParam struct {
 	HasSubWorkflow string
 	IsArchived     string
 }
+
+type RequestQueryParam struct {
+	Search   string
+	Page     int
+	PageSize int
+}

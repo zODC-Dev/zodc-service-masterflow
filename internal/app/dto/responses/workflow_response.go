@@ -1,6 +1,10 @@
 package responses
 
-import "github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
+import (
+	"time"
+
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
+)
 
 type CategoryResponse struct {
 	Id   int32  `json:"id"`
@@ -18,18 +22,26 @@ type NodeDataAssigneeResponse struct {
 }
 
 type NodeDataResponse struct {
-	Type     string                   `json:"type"`
-	Title    string                   `json:"title"`
-	DueIn    *int32                   `json:"dueIn"`
+	Type  string `json:"type"`
+	Title string `json:"title"`
+
 	Assignee NodeDataAssigneeResponse `json:"assignee"`
 	EndType  *string                  `json:"endType"`
 
 	SubRequestID *int32 `json:"subRequestId"`
+
+	EstimatePoint int32 `json:"estimatePoint"`
 }
 
 type NodeResponse struct {
 	Id   string `json:"id"`
 	Type string `json:"type"`
+
+	Status    string `json:"status"`
+	IsCurrent bool   `json:"isCurrent"`
+
+	StartedAt   *time.Time `json:"startedAt"`
+	CompletedAt *time.Time `json:"completedAt"`
 
 	Position types.Position `json:"position"`
 	Size     types.Size     `json:"size"`
@@ -75,19 +87,31 @@ type WorkflowResponse struct {
 	IsArchived  bool             `json:"isArchived"`
 	ProjectKey  string           `json:"projectKey"`
 
+	RequestId         int32 `json:"requestId"`
+	WorkflowVersionId int32 `json:"workflowVersionId"`
+
 	types.Metadata
+}
+
+type ParticipantResponse struct {
+	Avatar string
+	Name   string
+}
+
+type TaskResponse struct {
+	Name      string
+	UpdatedAt time.Time
+	Status    string
 }
 
 type RequestResponse struct {
 	Id           int32
 	Key          int32
 	Title        int32
-	Parent_id    int32
-	Task         string
-	Participants []struct {
-		avatar string
-		name   string
-	}
-	UpdatedAt string
-	CreatedAt string
+	ParentId     int32
+	Tasks        []TaskResponse
+	Participants []ParticipantResponse
+	Process      int32
+	CreatedAt    time.Time
+	CompletedAt  *time.Time
 }

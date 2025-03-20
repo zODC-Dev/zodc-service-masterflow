@@ -80,6 +80,10 @@ func (s *WorkflowService) MapToWorkflowNodeResponse(node model.Nodes) (responses
 		},
 		Data:     nodeDataResponse,
 		ParentId: node.ParentID,
+
+		Status: node.Status,
+
+		StartedAt: node.ActualStartTime,
 	}
 
 	return nodeResponse, nil
@@ -198,6 +202,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			WorkflowVersionID: storyWorkflowVersion.ID,
 			IsTemplate:        false,
 			Status:            "IN_ACTIVE",
+			ParentID:          &requestId,
 		}
 		storyRequest, err := s.workflowRepo.CreateRequest(ctx, tx, storyRequestModel)
 		if err != nil {
@@ -207,7 +212,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 		// Create Story Node
 		storyNode := model.Nodes{
 			ID:        storyReq.Node.Id,
-			RequestID: storyRequest.ID,
+			RequestID: requestId,
 
 			X:      storyReq.Node.Position.X,
 			Y:      storyReq.Node.Position.Y,
@@ -221,6 +226,8 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			AssigneeID: &storyReq.Node.Data.Assignee.Id,
 
 			SubRequestID: &storyRequest.ID,
+
+			Status: string(constants.NodeStatusTodo),
 		}
 
 		if err := s.workflowRepo.CreateWorkflowNodes(ctx, tx, []model.Nodes{storyNode}); err != nil {
@@ -257,6 +264,10 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 				Title:   &storyNodeReq.Data.Title,
 				EndType: &storyNodeReq.Data.EndType,
 				DueIn:   &storyNodeReq.Data.DueIn,
+
+				Status: string(constants.NodeStatusTodo),
+
+				EstimatePoint: storyNodeReq.EstimatePoint,
 			}
 
 			// Form Type System Tag Story // Create Form Data
@@ -367,12 +378,14 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 			AssigneeID: &workflowNodeReq.Data.Assignee.Id,
 
-			SubRequestID: workflowNodeReq.Data.SubWorkflowVersionID,
+			SubRequestID: workflowNodeReq.Data.SubRequestID,
 
 			// Data
 			Title:   &workflowNodeReq.Data.Title,
 			EndType: &workflowNodeReq.Data.EndType,
 			DueIn:   &workflowNodeReq.Data.DueIn,
+
+			Status: string(constants.NodeStatusTodo),
 		}
 
 		for _, formSystem := range formSystems {
@@ -519,15 +532,14 @@ func (s *WorkflowService) FindAllWorkflowHandler(ctx context.Context, workflowTe
 
 		//Mapping workflow response
 		workflowResponse := responses.WorkflowResponse{
-			IsArchived: workflow.IsArchived,
+			IsArchived:        workflow.IsArchived,
+			RequestId:         workflow.Request.ID,
+			WorkflowVersionId: workflow.Version.ID,
+			Version:           workflow.Currentversion,
 		}
 		if err := utils.Mapper(workflow, &workflowResponse); err != nil {
 			return workflowResponses, err
 		}
-
-		workflowResponse.Id = workflow.Version.ID
-
-		workflowResponse.Version = workflow.Version.Version
 
 		workflowResponses = append(workflowResponses, workflowResponse)
 	}
@@ -548,15 +560,27 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 		return workflowResponse, err
 	}
 
+	categoryResponse := responses.CategoryResponse{}
+	if err := utils.Mapper(request.Category, &categoryResponse); err != nil {
+		return workflowResponse, err
+	}
+	workflowResponse.Category = categoryResponse
+
 	workflowResponse.Version = request.Version.Version
 	workflowResponse.IsArchived = request.Workflow.IsArchived
+
+	workflowResponse.RequestId = requestId
+	workflowResponse.WorkflowVersionId = request.Version.ID
+
+	if request.Workflow.ProjectKey != nil {
+		workflowResponse.ProjectKey = *request.Workflow.ProjectKey
+	}
 
 	workflowResponse.Connections = []responses.ConnectionResponse{}
 	workflowResponse.Nodes = []responses.NodeResponse{}
 
 	// Stories
 	storiesResponse := []responses.StoryResponse{}
-
 	i := 0
 	for _, node := range request.Nodes {
 		if node.Type != "STORY" {
@@ -581,45 +605,6 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 		}
 
 		storiesResponse = append(storiesResponse, story)
-
-		// Story nodes
-		if node.SubRequestID != nil {
-			storyNodes, err := s.workflowRepo.FindAllNodeByRequestId(ctx, s.db, *node.SubRequestID)
-			if err != nil {
-				return workflowResponse, err
-			}
-
-			for _, storyNode := range storyNodes {
-				nodeResponse, err := s.MapToWorkflowNodeResponse(storyNode)
-				if err != nil {
-					return workflowResponse, fmt.Errorf("map workflow node response fail: %w", err)
-				}
-
-				workflowResponse.Nodes = append(workflowResponse.Nodes, nodeResponse)
-			}
-
-		}
-
-		// Story connections
-		if node.SubRequestID != nil {
-			storyConnections, err := s.workflowRepo.FindAllConnectionByREquestId(ctx, s.db, *node.SubRequestID)
-
-			if err != nil {
-				return workflowResponse, err
-			}
-
-			for _, storyConnection := range storyConnections {
-				connectionResponse := responses.ConnectionResponse{
-					Id:   storyConnection.ID,
-					To:   storyConnection.ToNodeID,
-					From: storyConnection.FromNodeID,
-					Type: storyConnection.Type,
-				}
-
-				workflowResponse.Connections = append(workflowResponse.Connections, connectionResponse)
-			}
-
-		}
 	}
 	request.Nodes = request.Nodes[:i]
 	workflowResponse.Stories = storiesResponse
@@ -854,4 +839,93 @@ func (s *WorkflowService) CompleteNodeHandler(ctx context.Context, nodeId string
 	}
 
 	return nil
+}
+
+func (s *WorkflowService) FindAllRequest(ctx context.Context, requestQueryParam queryparams.RequestQueryParam) (responses.Paginate[[]responses.RequestResponse], error) {
+	paginatedResponse := responses.Paginate[[]responses.RequestResponse]{}
+
+	requests, err := s.workflowRepo.FindAllRequest(ctx, s.db, requestQueryParam)
+	if err != nil {
+		return paginatedResponse, err
+	}
+
+	total, err := s.workflowRepo.FindAllRequestCount(ctx, s.db)
+	if err != nil {
+		return paginatedResponse, err
+	}
+
+	userIds := []int32{}
+	for _, req := range requests {
+		for _, node := range req.Nodes {
+			userIds = append(userIds, *node.AssigneeID)
+		}
+	}
+
+	users, err := s.userAPI.FindUsersByUserIds(userIds)
+	if err != nil {
+		return paginatedResponse, err
+	}
+
+	requestsResponse := []responses.RequestResponse{}
+	for _, request := range requests {
+		requestResponse := responses.RequestResponse{}
+
+		if err := utils.Mapper(request, &requestResponse); err != nil {
+			return paginatedResponse, err
+		}
+
+		//  Participants
+		for _, user := range users.Data {
+			requestResponse.Participants = append(requestResponse.Participants, responses.ParticipantResponse{
+				Avatar: user.AvatarUrl,
+				Name:   user.Name,
+			})
+		}
+
+		// Tasks and Process
+		completedNodes := 0
+		totalNodes := len(request.Nodes)
+
+		for _, node := range request.Nodes {
+			requestResponse.Tasks = append(requestResponse.Tasks, responses.TaskResponse{
+				Name:      *node.Title,
+				UpdatedAt: node.UpdatedAt,
+				Status:    node.Status,
+			})
+
+			if node.Status == string(constants.NodeStatusCompleted) {
+				completedNodes++
+			}
+
+			if node.Type == string(constants.NodeTypeStart) || node.Type == string(constants.NodeTypeEnd) {
+				totalNodes--
+			}
+		}
+
+		//  Process %
+		if totalNodes == 0 {
+			requestResponse.Process = 100
+		} else {
+			requestResponse.Process = int32(float64(completedNodes) / float64(totalNodes) * 100)
+		}
+
+		// Set CompletedAt
+		if request.Status == string(constants.RequestStatusCompleted) {
+			requestResponse.CompletedAt = &request.UpdatedAt
+		}
+
+		requestsResponse = append(requestsResponse, requestResponse)
+	}
+
+	totalPages := (total + requestQueryParam.PageSize - 1) / requestQueryParam.PageSize
+
+	paginatedResponse = responses.Paginate[[]responses.RequestResponse]{
+		Items:      requestsResponse,
+		Total:      total,
+		Page:       requestQueryParam.Page,
+		PageSize:   requestQueryParam.PageSize,
+		TotalPages: totalPages,
+	}
+
+	return paginatedResponse, nil
 }

@@ -49,7 +49,7 @@ func (r *WorkflowRepository) CreateWorkflowVersion(ctx context.Context, tx *sql.
 func (r *WorkflowRepository) CreateRequest(ctx context.Context, tx *sql.Tx, request model.Requests) (model.Requests, error) {
 	Requests := table.Requests
 
-	columns := Requests.AllColumns.Except(Requests.ID, Requests.CreatedAt, Requests.UpdatedAt, Requests.DeletedAt)
+	columns := Requests.AllColumns.Except(Requests.ID, Requests.CreatedAt, Requests.UpdatedAt, Requests.DeletedAt, Requests.Key)
 
 	statement := Requests.INSERT(columns).MODEL(request).RETURNING(Requests.ID)
 
@@ -91,16 +91,21 @@ func (r *WorkflowRepository) CreateWorkflowConnections(ctx context.Context, tx *
 func (r *WorkflowRepository) FindAllWorkflowTemplates(ctx context.Context, db *sql.DB, workflowTemplateQueryParams queryparams.WorkflowQueryParam) ([]results.WorkflowTemplate, error) {
 	Workflows := table.Workflows
 	WorkflowVersions := table.WorkflowVersions
+	Requests := table.Requests
 	Categories := table.Categories
 
 	statement := postgres.SELECT(
 		Workflows.AllColumns,
 		WorkflowVersions.AllColumns,
 		Categories.AllColumns,
+		Requests.AllColumns,
 	).FROM(
 		Workflows.
 			LEFT_JOIN(WorkflowVersions, WorkflowVersions.WorkflowID.EQ(Workflows.ID)).
-			LEFT_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)),
+			LEFT_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)).
+			LEFT_JOIN(Requests, Requests.WorkflowVersionID.EQ(WorkflowVersions.ID)),
+	).WHERE(
+		WorkflowVersions.Version.EQ(Workflows.Currentversion),
 	)
 
 	conditions := []postgres.BoolExpression{}
@@ -284,7 +289,50 @@ func (r *WorkflowRepository) FindRequestByNodeId(ctx context.Context, db *sql.DB
 	err := statement.QueryContext(ctx, db, &result)
 
 	return result, err
+}
 
+func (r *WorkflowRepository) FindAllRequest(ctx context.Context, db *sql.DB, requestQueryParam queryparams.RequestQueryParam) ([]results.Request, error) {
+	Nodes := table.Nodes
+	Requests := table.Requests
+
+	statement := postgres.SELECT(
+		Requests.AllColumns,
+	).FROM(
+		Nodes.INNER_JOIN(
+			Requests, Requests.ID.EQ(Nodes.RequestID),
+		),
+	).LIMIT(int64(requestQueryParam.PageSize)).OFFSET(int64(requestQueryParam.Page))
+
+	conditions := []postgres.BoolExpression{}
+
+	if requestQueryParam.Search != "" {
+		conditions = append(conditions, postgres.LOWER(Requests.Title).LIKE(postgres.LOWER(postgres.String("%"+requestQueryParam.Search+"%"))))
+	}
+
+	if len(conditions) > 0 {
+		statement = statement.WHERE(postgres.AND(conditions...))
+	}
+
+	result := []results.Request{}
+	err := statement.QueryContext(ctx, db, &result)
+
+	return result, err
+}
+
+func (r *WorkflowRepository) FindAllRequestCount(ctx context.Context, db *sql.DB) (int, error) {
+	Requests := table.Requests
+
+	statement := postgres.SELECT(
+		postgres.COUNT(Requests.ID),
+	).FROM(Requests)
+
+	var count int
+	err := statement.QueryContext(ctx, db, &count)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
 
 // Update

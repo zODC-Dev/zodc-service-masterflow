@@ -16,12 +16,12 @@ type NodeDataAssignee struct {
 }
 
 type NodeData struct {
-	Type                 string
-	Title                string
-	DueIn                int32
-	Assignee             NodeDataAssignee
-	EndType              string
-	SubWorkflowVersionID *int32
+	Type         string
+	Title        string
+	DueIn        int32
+	Assignee     NodeDataAssignee
+	EndType      string
+	SubRequestID *int32
 }
 
 type NodeForm struct {
@@ -38,6 +38,8 @@ type Node struct {
 	Type string
 
 	Data NodeData
+
+	EstimatePoint *int32
 
 	Form []NodeForm
 }

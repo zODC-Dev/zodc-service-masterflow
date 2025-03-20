@@ -32,6 +32,7 @@ type nodesTable struct {
 	SubRequestID     postgres.ColumnInteger
 	Type             postgres.ColumnString
 	Status           postgres.ColumnString
+	IsCurrent        postgres.ColumnBool
 	EstimatePoint    postgres.ColumnInteger
 	PlanStartTime    postgres.ColumnTimestamp
 	PlanFinishTime   postgres.ColumnTimestamp
@@ -96,6 +97,7 @@ func newNodesTableImpl(schemaName, tableName, alias string) nodesTable {
 		SubRequestIDColumn     = postgres.IntegerColumn("sub_request_id")
 		TypeColumn             = postgres.StringColumn("type")
 		StatusColumn           = postgres.StringColumn("status")
+		IsCurrentColumn        = postgres.BoolColumn("is_current")
 		EstimatePointColumn    = postgres.IntegerColumn("estimate_point")
 		PlanStartTimeColumn    = postgres.TimestampColumn("plan_start_time")
 		PlanFinishTimeColumn   = postgres.TimestampColumn("plan_finish_time")
@@ -105,8 +107,8 @@ func newNodesTableImpl(schemaName, tableName, alias string) nodesTable {
 		RequestIDColumn        = postgres.IntegerColumn("request_id")
 		FormTemplateIDColumn   = postgres.IntegerColumn("form_template_id")
 		FormDataIDColumn       = postgres.IntegerColumn("form_data_id")
-		allColumns             = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, TitleColumn, AssigneeIDColumn, DueInColumn, EndTypeColumn, SubRequestIDColumn, TypeColumn, StatusColumn, EstimatePointColumn, PlanStartTimeColumn, PlanFinishTimeColumn, ActualStartTimeColumn, ActualFinishTimeColumn, ParentIDColumn, RequestIDColumn, FormTemplateIDColumn, FormDataIDColumn}
-		mutableColumns         = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, TitleColumn, AssigneeIDColumn, DueInColumn, EndTypeColumn, SubRequestIDColumn, TypeColumn, StatusColumn, EstimatePointColumn, PlanStartTimeColumn, PlanFinishTimeColumn, ActualStartTimeColumn, ActualFinishTimeColumn, ParentIDColumn, RequestIDColumn, FormTemplateIDColumn, FormDataIDColumn}
+		allColumns             = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, TitleColumn, AssigneeIDColumn, DueInColumn, EndTypeColumn, SubRequestIDColumn, TypeColumn, StatusColumn, IsCurrentColumn, EstimatePointColumn, PlanStartTimeColumn, PlanFinishTimeColumn, ActualStartTimeColumn, ActualFinishTimeColumn, ParentIDColumn, RequestIDColumn, FormTemplateIDColumn, FormDataIDColumn}
+		mutableColumns         = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, TitleColumn, AssigneeIDColumn, DueInColumn, EndTypeColumn, SubRequestIDColumn, TypeColumn, StatusColumn, IsCurrentColumn, EstimatePointColumn, PlanStartTimeColumn, PlanFinishTimeColumn, ActualStartTimeColumn, ActualFinishTimeColumn, ParentIDColumn, RequestIDColumn, FormTemplateIDColumn, FormDataIDColumn}
 	)
 
 	return nodesTable{
@@ -128,6 +130,7 @@ func newNodesTableImpl(schemaName, tableName, alias string) nodesTable {
 		SubRequestID:     SubRequestIDColumn,
 		Type:             TypeColumn,
 		Status:           StatusColumn,
+		IsCurrent:        IsCurrentColumn,
 		EstimatePoint:    EstimatePointColumn,
 		PlanStartTime:    PlanStartTimeColumn,
 		PlanFinishTime:   PlanFinishTimeColumn,

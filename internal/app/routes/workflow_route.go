@@ -29,5 +29,7 @@ func WorkflowRoute(group *echo.Group, db *sql.DB) {
 		workflowRoute.POST("/start", workflowController.StartWorkflow)
 		workflowRoute.POST("/node/:id/start", workflowController.StartNode)
 		workflowRoute.POST("/node/:id/complete", workflowController.CompleteNode)
+
+		workflowRoute.GET("/requests", workflowController.FindAllRequest)
 	}
 }

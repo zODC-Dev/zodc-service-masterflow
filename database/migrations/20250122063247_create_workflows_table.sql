@@ -38,12 +38,16 @@ CREATE TABLE requests (
     updated_at TIMESTAMP DEFAULT now () NOT NULL,
     deleted_at TIMESTAMP,
 
+    key SERIAL NOT NULL,
+
     last_update_user_id INT NOT NULL,
 
     status TEXT NOT NULL, -- TO_DO, IN_PROCESS , COMPLETED, CANCELED, TERMINATED
     title TEXT NOT NULL,
 
     is_template BOOLEAN NOT NULL DEFAULT FALSE,
+
+    parent_id INT,
 
     -- Foreign Key
     workflow_version_id INT NOT NULL REFERENCES workflows (id) ON DELETE CASCADE
@@ -67,13 +71,14 @@ CREATE TABLE nodes (
 
     assignee_id INT,
 
-    due_in INT,
     end_type TEXT,
 
     sub_request_id INT REFERENCES requests (id) ON DELETE CASCADE,    
     
     type TEXT NOT NULL, -- start, end, bug, task, approve, sub_workflow, story, input, noti, group, condition
     status TEXT NOT NULL, -- TO_DO, IN_PROCESSING, COMPLETED, OVERDUE
+
+    is_current BOOLEAN NOT NULL DEFAULT false,
 
     -- estimate
     estimate_point INT,
