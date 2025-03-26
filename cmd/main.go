@@ -7,6 +7,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/configs"
 	db "github.com/zODC-Dev/zodc-service-masterflow/internal/app/database"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/middlewares"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/routes"
 )
 
@@ -28,6 +29,9 @@ func main() {
 
 	//Database Setup
 	db := db.ConnectDatabase()
+
+	// Middleware Setup
+	e.Use(middlewares.ExtractUserMiddleware())
 
 	//Route Setup
 	routes.RegisterRoutes(e, db)

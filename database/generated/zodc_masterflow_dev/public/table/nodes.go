@@ -27,17 +27,17 @@ type nodesTable struct {
 	Height           postgres.ColumnFloat
 	Title            postgres.ColumnString
 	AssigneeID       postgres.ColumnInteger
-	DueIn            postgres.ColumnInteger
 	EndType          postgres.ColumnString
 	SubRequestID     postgres.ColumnInteger
 	Type             postgres.ColumnString
 	Status           postgres.ColumnString
+	DueIn            postgres.ColumnInteger
 	IsCurrent        postgres.ColumnBool
 	EstimatePoint    postgres.ColumnInteger
-	PlanStartTime    postgres.ColumnTimestamp
-	PlanFinishTime   postgres.ColumnTimestamp
+	PlannedStartTime postgres.ColumnTimestamp
+	PlannedEndTime   postgres.ColumnTimestamp
 	ActualStartTime  postgres.ColumnTimestamp
-	ActualFinishTime postgres.ColumnTimestamp
+	ActualEndTime    postgres.ColumnTimestamp
 	ParentID         postgres.ColumnString
 	RequestID        postgres.ColumnInteger
 	FormTemplateID   postgres.ColumnInteger
@@ -92,23 +92,23 @@ func newNodesTableImpl(schemaName, tableName, alias string) nodesTable {
 		HeightColumn           = postgres.FloatColumn("height")
 		TitleColumn            = postgres.StringColumn("title")
 		AssigneeIDColumn       = postgres.IntegerColumn("assignee_id")
-		DueInColumn            = postgres.IntegerColumn("due_in")
 		EndTypeColumn          = postgres.StringColumn("end_type")
 		SubRequestIDColumn     = postgres.IntegerColumn("sub_request_id")
 		TypeColumn             = postgres.StringColumn("type")
 		StatusColumn           = postgres.StringColumn("status")
+		DueInColumn            = postgres.IntegerColumn("due_in")
 		IsCurrentColumn        = postgres.BoolColumn("is_current")
 		EstimatePointColumn    = postgres.IntegerColumn("estimate_point")
-		PlanStartTimeColumn    = postgres.TimestampColumn("plan_start_time")
-		PlanFinishTimeColumn   = postgres.TimestampColumn("plan_finish_time")
+		PlannedStartTimeColumn = postgres.TimestampColumn("planned_start_time")
+		PlannedEndTimeColumn   = postgres.TimestampColumn("planned_end_time")
 		ActualStartTimeColumn  = postgres.TimestampColumn("actual_start_time")
-		ActualFinishTimeColumn = postgres.TimestampColumn("actual_finish_time")
+		ActualEndTimeColumn    = postgres.TimestampColumn("actual_end_time")
 		ParentIDColumn         = postgres.StringColumn("parent_id")
 		RequestIDColumn        = postgres.IntegerColumn("request_id")
 		FormTemplateIDColumn   = postgres.IntegerColumn("form_template_id")
 		FormDataIDColumn       = postgres.IntegerColumn("form_data_id")
-		allColumns             = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, TitleColumn, AssigneeIDColumn, DueInColumn, EndTypeColumn, SubRequestIDColumn, TypeColumn, StatusColumn, IsCurrentColumn, EstimatePointColumn, PlanStartTimeColumn, PlanFinishTimeColumn, ActualStartTimeColumn, ActualFinishTimeColumn, ParentIDColumn, RequestIDColumn, FormTemplateIDColumn, FormDataIDColumn}
-		mutableColumns         = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, TitleColumn, AssigneeIDColumn, DueInColumn, EndTypeColumn, SubRequestIDColumn, TypeColumn, StatusColumn, IsCurrentColumn, EstimatePointColumn, PlanStartTimeColumn, PlanFinishTimeColumn, ActualStartTimeColumn, ActualFinishTimeColumn, ParentIDColumn, RequestIDColumn, FormTemplateIDColumn, FormDataIDColumn}
+		allColumns             = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, TitleColumn, AssigneeIDColumn, EndTypeColumn, SubRequestIDColumn, TypeColumn, StatusColumn, DueInColumn, IsCurrentColumn, EstimatePointColumn, PlannedStartTimeColumn, PlannedEndTimeColumn, ActualStartTimeColumn, ActualEndTimeColumn, ParentIDColumn, RequestIDColumn, FormTemplateIDColumn, FormDataIDColumn}
+		mutableColumns         = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, TitleColumn, AssigneeIDColumn, EndTypeColumn, SubRequestIDColumn, TypeColumn, StatusColumn, DueInColumn, IsCurrentColumn, EstimatePointColumn, PlannedStartTimeColumn, PlannedEndTimeColumn, ActualStartTimeColumn, ActualEndTimeColumn, ParentIDColumn, RequestIDColumn, FormTemplateIDColumn, FormDataIDColumn}
 	)
 
 	return nodesTable{
@@ -125,17 +125,17 @@ func newNodesTableImpl(schemaName, tableName, alias string) nodesTable {
 		Height:           HeightColumn,
 		Title:            TitleColumn,
 		AssigneeID:       AssigneeIDColumn,
-		DueIn:            DueInColumn,
 		EndType:          EndTypeColumn,
 		SubRequestID:     SubRequestIDColumn,
 		Type:             TypeColumn,
 		Status:           StatusColumn,
+		DueIn:            DueInColumn,
 		IsCurrent:        IsCurrentColumn,
 		EstimatePoint:    EstimatePointColumn,
-		PlanStartTime:    PlanStartTimeColumn,
-		PlanFinishTime:   PlanFinishTimeColumn,
+		PlannedStartTime: PlannedStartTimeColumn,
+		PlannedEndTime:   PlannedEndTimeColumn,
 		ActualStartTime:  ActualStartTimeColumn,
-		ActualFinishTime: ActualFinishTimeColumn,
+		ActualEndTime:    ActualEndTimeColumn,
 		ParentID:         ParentIDColumn,
 		RequestID:        RequestIDColumn,
 		FormTemplateID:   FormTemplateIDColumn,

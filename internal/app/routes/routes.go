@@ -18,5 +18,7 @@ func RegisterRoutes(e *echo.Echo, db *sql.DB) {
 		WorkflowRoute(apiV1Group, db)
 		UtilRoute(apiV1Group)
 		CategoryRoute(apiV1Group, db)
+		RequestRoute(apiV1Group, db)
+		NodeRoute(apiV1Group, db)
 	}
 }

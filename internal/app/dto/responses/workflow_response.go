@@ -13,20 +13,12 @@ type CategoryResponse struct {
 	Key  string `json:"key"`
 }
 
-type NodeDataAssigneeResponse struct {
-	Id           int32  `json:"id"`
-	Name         string `json:"name"`
-	Email        string `json:"email"`
-	AvatarUrl    string `json:"avatarUrl"`
-	IsSystemUser bool   `json:"isSystemUser"`
-}
-
 type NodeDataResponse struct {
 	Type  string `json:"type"`
 	Title string `json:"title"`
 
-	Assignee NodeDataAssigneeResponse `json:"assignee"`
-	EndType  *string                  `json:"endType"`
+	Assignee types.Assignee `json:"assignee"`
+	EndType  *string        `json:"endType"`
 
 	SubRequestID *int32 `json:"subRequestId"`
 
@@ -87,31 +79,7 @@ type WorkflowResponse struct {
 	IsArchived  bool             `json:"isArchived"`
 	ProjectKey  string           `json:"projectKey"`
 
-	RequestId         int32 `json:"requestId"`
-	WorkflowVersionId int32 `json:"workflowVersionId"`
+	RequestId int32 `json:"requestId"`
 
 	types.Metadata
-}
-
-type ParticipantResponse struct {
-	Avatar string
-	Name   string
-}
-
-type TaskResponse struct {
-	Name      string
-	UpdatedAt time.Time
-	Status    string
-}
-
-type RequestResponse struct {
-	Id           int32
-	Key          int32
-	Title        int32
-	ParentId     int32
-	Tasks        []TaskResponse
-	Participants []ParticipantResponse
-	Process      int32
-	CreatedAt    time.Time
-	CompletedAt  *time.Time
 }

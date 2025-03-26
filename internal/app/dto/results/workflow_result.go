@@ -24,6 +24,11 @@ type ConnectionWithNode struct {
 }
 
 type Request struct {
+	Count int64 `sql:"count"`
 	model.Requests
 	Nodes []model.Nodes
+}
+
+type Count struct {
+	Count int64 `sql:"count"`
 }

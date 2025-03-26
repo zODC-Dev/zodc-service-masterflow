@@ -15,3 +15,11 @@ type Metadata struct {
 	UpdatedAt string  `json:"updatedAt"`
 	DeletedAt *string `json:"deletedAt"`
 }
+
+type Assignee struct {
+	Id           int32  `json:"id"`
+	Name         string `json:"name"`
+	Email        string `json:"email"`
+	AvatarUrl    string `json:"avatarUrl"`
+	IsSystemUser bool   `json:"isSystemUser"`
+}

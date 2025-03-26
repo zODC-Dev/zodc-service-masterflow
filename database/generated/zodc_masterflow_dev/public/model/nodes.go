@@ -22,17 +22,17 @@ type Nodes struct {
 	Height           float64
 	Title            *string
 	AssigneeID       *int32
-	DueIn            *int32
 	EndType          *string
 	SubRequestID     *int32
 	Type             string
 	Status           string
+	DueIn            *int32
 	IsCurrent        bool
 	EstimatePoint    *int32
-	PlanStartTime    *time.Time
-	PlanFinishTime   *time.Time
+	PlannedStartTime *time.Time
+	PlannedEndTime   *time.Time
 	ActualStartTime  *time.Time
-	ActualFinishTime *time.Time
+	ActualEndTime    *time.Time
 	ParentID         *string
 	RequestID        int32
 	FormTemplateID   *int32

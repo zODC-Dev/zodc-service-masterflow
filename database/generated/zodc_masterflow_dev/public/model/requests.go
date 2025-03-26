@@ -16,11 +16,18 @@ type Requests struct {
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
 	DeletedAt         *time.Time
+	UserID            int32
 	Key               int32
 	LastUpdateUserID  int32
 	Status            string
 	Title             string
 	IsTemplate        bool
+	SprintID          *int32
 	ParentID          *int32
+	Progress          float32
+	StartedAt         *time.Time
+	CompletedAt       *time.Time
+	CanceledAt        *time.Time
+	TerminatedAt      *time.Time
 	WorkflowVersionID int32
 }

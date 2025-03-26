@@ -73,8 +73,10 @@ type CreateWorkflow struct {
 }
 
 type StartWorkflow struct {
-	Title             string
-	WorkflowVersionId int32
+	Title      string
+	RequestID  int32
+	SprintID   *int32
+	IsTemplate bool
 
 	NodesConnectionsStories
 }

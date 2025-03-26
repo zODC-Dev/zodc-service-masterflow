@@ -2,6 +2,8 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
+	"strconv"
 )
 
 func Mapper(source interface{}, dest interface{}) error {
@@ -20,4 +22,12 @@ func Mapper(source interface{}, dest interface{}) error {
 	}
 
 	return nil
+}
+
+func StringToInt32(value string) (int32, error) {
+	if value == "" {
+		return 0, fmt.Errorf("value is empty")
+	}
+	valueInt, _ := strconv.Atoi(value)
+	return int32(valueInt), nil
 }

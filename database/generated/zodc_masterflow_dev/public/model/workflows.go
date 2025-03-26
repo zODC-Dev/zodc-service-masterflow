@@ -16,6 +16,7 @@ type Workflows struct {
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 	DeletedAt      *time.Time
+	UserID         *int32
 	Title          string
 	Type           string
 	CategoryID     int32

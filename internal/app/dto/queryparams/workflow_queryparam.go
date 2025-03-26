@@ -10,7 +10,9 @@ type WorkflowQueryParam struct {
 }
 
 type RequestQueryParam struct {
-	Search   string
-	Page     int
-	PageSize int
+	Search     string
+	Page       int
+	PageSize   int
+	ProjectKey string
+	Status     string
 }

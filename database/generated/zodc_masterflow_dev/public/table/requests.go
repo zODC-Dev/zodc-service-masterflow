@@ -21,12 +21,19 @@ type requestsTable struct {
 	CreatedAt         postgres.ColumnTimestamp
 	UpdatedAt         postgres.ColumnTimestamp
 	DeletedAt         postgres.ColumnTimestamp
+	UserID            postgres.ColumnInteger
 	Key               postgres.ColumnInteger
 	LastUpdateUserID  postgres.ColumnInteger
 	Status            postgres.ColumnString
 	Title             postgres.ColumnString
 	IsTemplate        postgres.ColumnBool
+	SprintID          postgres.ColumnInteger
 	ParentID          postgres.ColumnInteger
+	Progress          postgres.ColumnFloat
+	StartedAt         postgres.ColumnTimestamp
+	CompletedAt       postgres.ColumnTimestamp
+	CanceledAt        postgres.ColumnTimestamp
+	TerminatedAt      postgres.ColumnTimestamp
 	WorkflowVersionID postgres.ColumnInteger
 
 	AllColumns     postgres.ColumnList
@@ -72,15 +79,22 @@ func newRequestsTableImpl(schemaName, tableName, alias string) requestsTable {
 		CreatedAtColumn         = postgres.TimestampColumn("created_at")
 		UpdatedAtColumn         = postgres.TimestampColumn("updated_at")
 		DeletedAtColumn         = postgres.TimestampColumn("deleted_at")
+		UserIDColumn            = postgres.IntegerColumn("user_id")
 		KeyColumn               = postgres.IntegerColumn("key")
 		LastUpdateUserIDColumn  = postgres.IntegerColumn("last_update_user_id")
 		StatusColumn            = postgres.StringColumn("status")
 		TitleColumn             = postgres.StringColumn("title")
 		IsTemplateColumn        = postgres.BoolColumn("is_template")
+		SprintIDColumn          = postgres.IntegerColumn("sprint_id")
 		ParentIDColumn          = postgres.IntegerColumn("parent_id")
+		ProgressColumn          = postgres.FloatColumn("progress")
+		StartedAtColumn         = postgres.TimestampColumn("started_at")
+		CompletedAtColumn       = postgres.TimestampColumn("completed_at")
+		CanceledAtColumn        = postgres.TimestampColumn("canceled_at")
+		TerminatedAtColumn      = postgres.TimestampColumn("terminated_at")
 		WorkflowVersionIDColumn = postgres.IntegerColumn("workflow_version_id")
-		allColumns              = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, KeyColumn, LastUpdateUserIDColumn, StatusColumn, TitleColumn, IsTemplateColumn, ParentIDColumn, WorkflowVersionIDColumn}
-		mutableColumns          = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, KeyColumn, LastUpdateUserIDColumn, StatusColumn, TitleColumn, IsTemplateColumn, ParentIDColumn, WorkflowVersionIDColumn}
+		allColumns              = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, UserIDColumn, KeyColumn, LastUpdateUserIDColumn, StatusColumn, TitleColumn, IsTemplateColumn, SprintIDColumn, ParentIDColumn, ProgressColumn, StartedAtColumn, CompletedAtColumn, CanceledAtColumn, TerminatedAtColumn, WorkflowVersionIDColumn}
+		mutableColumns          = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, UserIDColumn, KeyColumn, LastUpdateUserIDColumn, StatusColumn, TitleColumn, IsTemplateColumn, SprintIDColumn, ParentIDColumn, ProgressColumn, StartedAtColumn, CompletedAtColumn, CanceledAtColumn, TerminatedAtColumn, WorkflowVersionIDColumn}
 	)
 
 	return requestsTable{
@@ -91,12 +105,19 @@ func newRequestsTableImpl(schemaName, tableName, alias string) requestsTable {
 		CreatedAt:         CreatedAtColumn,
 		UpdatedAt:         UpdatedAtColumn,
 		DeletedAt:         DeletedAtColumn,
+		UserID:            UserIDColumn,
 		Key:               KeyColumn,
 		LastUpdateUserID:  LastUpdateUserIDColumn,
 		Status:            StatusColumn,
 		Title:             TitleColumn,
 		IsTemplate:        IsTemplateColumn,
+		SprintID:          SprintIDColumn,
 		ParentID:          ParentIDColumn,
+		Progress:          ProgressColumn,
+		StartedAt:         StartedAtColumn,
+		CompletedAt:       CompletedAtColumn,
+		CanceledAt:        CanceledAtColumn,
+		TerminatedAt:      TerminatedAtColumn,
 		WorkflowVersionID: WorkflowVersionIDColumn,
 
 		AllColumns:     allColumns,

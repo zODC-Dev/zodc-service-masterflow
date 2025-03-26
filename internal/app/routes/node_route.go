@@ -10,7 +10,7 @@ import (
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/services"
 )
 
-func WorkflowRoute(group *echo.Group, db *sql.DB) {
+func NodeRoute(group *echo.Group, db *sql.DB) {
 	// Repositories
 	workflowRepo := repositories.NewWorkflowRepository()
 	formRepo := repositories.NewFormRepository()
@@ -22,9 +22,9 @@ func WorkflowRoute(group *echo.Group, db *sql.DB) {
 	// Apis
 	userApi := externals.NewUserAPI()
 
-	// External Services
+	//
+
 	nodeService := services.NewNodeService(services.NodeService{
-		DB:             db,
 		NodeRepo:       nodeRepo,
 		ConnectionRepo: connectionRepo,
 		RequestRepo:    requestRepo,
@@ -44,15 +44,11 @@ func WorkflowRoute(group *echo.Group, db *sql.DB) {
 
 	nodeService.WorkflowService = workflowService
 
-	workflowController := controllers.NewWorkflowController(workflowService)
+	nodeController := controllers.NewNodeController(nodeService)
 
-	workflowRoute := group.Group("/workflows")
+	nodeRoute := group.Group("/nodes")
 	{
-		workflowRoute.GET("", workflowController.FindAllWorkflow)
-		workflowRoute.POST("/create", workflowController.CreateWorkflow)
-		workflowRoute.GET("/:id", workflowController.FindOneWorkflowDetail)
-
-		workflowRoute.POST("/start", workflowController.StartWorkflow)
-
+		nodeRoute.POST("/:id/complete", nodeController.CompleteNode)
+		nodeRoute.POST("/:id/start", nodeController.StartNode)
 	}
 }

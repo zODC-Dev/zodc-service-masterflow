@@ -5,6 +5,8 @@ CREATE TABLE workflows (
     updated_at TIMESTAMP DEFAULT now () NOT NULL,
     deleted_at TIMESTAMP,
 
+    user_id INT,
+
     -- Info
     title TEXT NOT NULL,
     type TEXT NOT NULL,
@@ -38,6 +40,8 @@ CREATE TABLE requests (
     updated_at TIMESTAMP DEFAULT now () NOT NULL,
     deleted_at TIMESTAMP,
 
+    user_id INT NOT NULL,
+
     key SERIAL NOT NULL,
 
     last_update_user_id INT NOT NULL,
@@ -47,7 +51,17 @@ CREATE TABLE requests (
 
     is_template BOOLEAN NOT NULL DEFAULT FALSE,
 
+    sprint_id INT,
+
     parent_id INT,
+
+    progress REAL NOT NULL DEFAULT 0.0,
+
+    started_at TIMESTAMP,
+    completed_at TIMESTAMP,
+    canceled_at TIMESTAMP,
+    terminated_at TIMESTAMP,
+
 
     -- Foreign Key
     workflow_version_id INT NOT NULL REFERENCES workflows (id) ON DELETE CASCADE
@@ -78,14 +92,16 @@ CREATE TABLE nodes (
     type TEXT NOT NULL, -- start, end, bug, task, approve, sub_workflow, story, input, noti, group, condition
     status TEXT NOT NULL, -- TO_DO, IN_PROCESSING, COMPLETED, OVERDUE
 
+    due_in int, -- Need remove when fix due_in in code
+
     is_current BOOLEAN NOT NULL DEFAULT false,
 
     -- estimate
     estimate_point INT,
-    plan_start_time TIMESTAMP,
-    plan_finish_time TIMESTAMP,
+    planned_start_time TIMESTAMP,
+    planned_end_time TIMESTAMP,
     actual_start_time TIMESTAMP,
-    actual_finish_time TIMESTAMP,
+    actual_end_time TIMESTAMP,
 
 
     parent_id TEXT REFERENCES nodes (id) ON DELETE CASCADE,

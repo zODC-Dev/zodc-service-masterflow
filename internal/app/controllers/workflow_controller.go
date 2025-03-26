@@ -7,6 +7,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/requests"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/middlewares"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/services"
 )
 
@@ -23,13 +24,15 @@ func NewWorkflowController(workflowService *services.WorkflowService) *WorkflowC
 func (c *WorkflowController) CreateWorkflow(e echo.Context) error {
 	ctx := e.Request().Context()
 
+	userId, _ := middlewares.GetUserID(e)
+
 	req := new(requests.CreateWorkflow)
 
 	if err := e.Bind(req); err != nil {
 		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	if err := c.workflowService.CreateWorkflowHandler(ctx, req); err != nil {
+	if err := c.workflowService.CreateWorkflowHandler(ctx, req, userId); err != nil {
 		return e.JSON(http.StatusInternalServerError, err.Error())
 	}
 
@@ -41,6 +44,8 @@ func (c *WorkflowController) CreateWorkflow(e echo.Context) error {
 func (c *WorkflowController) FindAllWorkflow(e echo.Context) error {
 	ctx := e.Request().Context()
 
+	userId, _ := middlewares.GetUserID(e)
+
 	workflowTemplateQueryParams := queryparams.WorkflowQueryParam{
 		CategoryID:     e.QueryParam("categoryId"),
 		Search:         e.QueryParam("search"),
@@ -50,7 +55,7 @@ func (c *WorkflowController) FindAllWorkflow(e echo.Context) error {
 		IsArchived:     e.QueryParam("isArchived"),
 	}
 
-	workflows, err := c.workflowService.FindAllWorkflowHandler(ctx, workflowTemplateQueryParams)
+	workflows, err := c.workflowService.FindAllWorkflowHandler(ctx, workflowTemplateQueryParams, userId)
 	if err != nil {
 		return e.JSON(http.StatusInternalServerError, err.Error())
 	}
@@ -77,57 +82,16 @@ func (c *WorkflowController) FindOneWorkflowDetail(e echo.Context) error {
 func (c *WorkflowController) StartWorkflow(e echo.Context) error {
 	ctx := e.Request().Context()
 
+	userId, _ := middlewares.GetUserID(e)
+
 	req := new(requests.StartWorkflow)
 	if err := e.Bind(req); err != nil {
 		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	if err := c.workflowService.StartWorkflowHandler(ctx, *req); err != nil {
+	if err := c.workflowService.StartWorkflowHandler(ctx, *req, userId); err != nil {
 		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, nil)
-}
-
-func (c *WorkflowController) StartNode(e echo.Context) error {
-	ctx := e.Request().Context()
-
-	nodeId := e.Param("id")
-	if err := c.workflowService.StartNodeHandler(ctx, nodeId); err != nil {
-		return e.JSON(http.StatusBadRequest, err.Error())
-	}
-
-	return e.JSON(http.StatusOK, nil)
-}
-
-func (c *WorkflowController) CompleteNode(e echo.Context) error {
-	ctx := e.Request().Context()
-
-	nodeId := e.Param("id")
-	if err := c.workflowService.CompleteNodeHandler(ctx, nodeId); err != nil {
-		return e.JSON(http.StatusBadRequest, err.Error())
-	}
-
-	return e.JSON(http.StatusOK, nil)
-}
-
-func (c *WorkflowController) FindAllRequest(e echo.Context) error {
-	ctx := e.Request().Context()
-
-	search := e.QueryParam("search")
-	page, _ := strconv.Atoi(e.QueryParam("page"))
-	pageSize, _ := strconv.Atoi(e.QueryParam("pageSize"))
-
-	requestQueryParams := queryparams.RequestQueryParam{
-		Search:   search,
-		Page:     page,
-		PageSize: pageSize,
-	}
-
-	requests, err := c.workflowService.FindAllRequest(ctx, requestQueryParams)
-	if err != nil {
-		return e.JSON(http.StatusBadRequest, err.Error())
-	}
-
-	return e.JSON(http.StatusOK, requests)
 }

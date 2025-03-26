@@ -21,6 +21,7 @@ type workflowsTable struct {
 	CreatedAt      postgres.ColumnTimestamp
 	UpdatedAt      postgres.ColumnTimestamp
 	DeletedAt      postgres.ColumnTimestamp
+	UserID         postgres.ColumnInteger
 	Title          postgres.ColumnString
 	Type           postgres.ColumnString
 	CategoryID     postgres.ColumnInteger
@@ -73,6 +74,7 @@ func newWorkflowsTableImpl(schemaName, tableName, alias string) workflowsTable {
 		CreatedAtColumn      = postgres.TimestampColumn("created_at")
 		UpdatedAtColumn      = postgres.TimestampColumn("updated_at")
 		DeletedAtColumn      = postgres.TimestampColumn("deleted_at")
+		UserIDColumn         = postgres.IntegerColumn("user_id")
 		TitleColumn          = postgres.StringColumn("title")
 		TypeColumn           = postgres.StringColumn("type")
 		CategoryIDColumn     = postgres.IntegerColumn("category_id")
@@ -81,8 +83,8 @@ func newWorkflowsTableImpl(schemaName, tableName, alias string) workflowsTable {
 		ProjectKeyColumn     = postgres.StringColumn("project_key")
 		CurrentversionColumn = postgres.IntegerColumn("currentversion")
 		IsArchivedColumn     = postgres.BoolColumn("is_archived")
-		allColumns           = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, TitleColumn, TypeColumn, CategoryIDColumn, DescriptionColumn, DecorationColumn, ProjectKeyColumn, CurrentversionColumn, IsArchivedColumn}
-		mutableColumns       = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, TitleColumn, TypeColumn, CategoryIDColumn, DescriptionColumn, DecorationColumn, ProjectKeyColumn, CurrentversionColumn, IsArchivedColumn}
+		allColumns           = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, UserIDColumn, TitleColumn, TypeColumn, CategoryIDColumn, DescriptionColumn, DecorationColumn, ProjectKeyColumn, CurrentversionColumn, IsArchivedColumn}
+		mutableColumns       = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, UserIDColumn, TitleColumn, TypeColumn, CategoryIDColumn, DescriptionColumn, DecorationColumn, ProjectKeyColumn, CurrentversionColumn, IsArchivedColumn}
 	)
 
 	return workflowsTable{
@@ -93,6 +95,7 @@ func newWorkflowsTableImpl(schemaName, tableName, alias string) workflowsTable {
 		CreatedAt:      CreatedAtColumn,
 		UpdatedAt:      UpdatedAtColumn,
 		DeletedAt:      DeletedAtColumn,
+		UserID:         UserIDColumn,
 		Title:          TitleColumn,
 		Type:           TypeColumn,
 		CategoryID:     CategoryIDColumn,
