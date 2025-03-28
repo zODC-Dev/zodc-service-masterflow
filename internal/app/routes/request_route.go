@@ -11,12 +11,36 @@ import (
 )
 
 func RequestRoute(group *echo.Group, db *sql.DB) {
-
 	requestRepo := repositories.NewRequestRepository()
+	workflowRepo := repositories.NewWorkflowRepository()
+	formRepo := repositories.NewFormRepository()
+	categoryRepo := repositories.NewCategoryRepository()
+	connectionRepo := repositories.NewConnectionRepository()
+	nodeRepo := repositories.NewNodeRepository()
+	nodeService := services.NewNodeService(services.NodeService{
+		DB: db,
+	})
 
 	userApi := externals.NewUserAPI()
 
-	requestService := services.NewRequestService(db, requestRepo, userApi)
+	workflowService := services.NewWorkflowService(services.WorkflowService{
+		DB:             db,
+		WorkflowRepo:   workflowRepo,
+		FormRepo:       formRepo,
+		CategoryRepo:   categoryRepo,
+		UserAPI:        userApi,
+		RequestRepo:    requestRepo,
+		ConnectionRepo: connectionRepo,
+		NodeRepo:       nodeRepo,
+		NodeService:    nodeService,
+	})
+
+	requestService := services.NewRequestService(services.RequestService{
+		DB:              db,
+		RequestRepo:     requestRepo,
+		UserAPI:         userApi,
+		WorkflowService: workflowService,
+	})
 
 	requestController := controllers.NewRequestController(requestService)
 
@@ -24,6 +48,8 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 	{
 		requestRoute.GET("", requestController.FindAllRequest)
 		requestRoute.GET("/overview", requestController.GetRequestOverview)
+		requestRoute.GET("/detail/:id", requestController.GetRequestDetail)
+		requestRoute.GET("/tasks/:id", requestController.GetRequestTasks)
 	}
 
 }

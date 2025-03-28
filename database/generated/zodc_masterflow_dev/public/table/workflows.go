@@ -28,7 +28,7 @@ type workflowsTable struct {
 	Description    postgres.ColumnString
 	Decoration     postgres.ColumnString
 	ProjectKey     postgres.ColumnString
-	Currentversion postgres.ColumnInteger
+	CurrentVersion postgres.ColumnInteger
 	IsArchived     postgres.ColumnBool
 
 	AllColumns     postgres.ColumnList
@@ -81,10 +81,10 @@ func newWorkflowsTableImpl(schemaName, tableName, alias string) workflowsTable {
 		DescriptionColumn    = postgres.StringColumn("description")
 		DecorationColumn     = postgres.StringColumn("decoration")
 		ProjectKeyColumn     = postgres.StringColumn("project_key")
-		CurrentversionColumn = postgres.IntegerColumn("currentversion")
+		CurrentVersionColumn = postgres.IntegerColumn("current_version")
 		IsArchivedColumn     = postgres.BoolColumn("is_archived")
-		allColumns           = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, UserIDColumn, TitleColumn, TypeColumn, CategoryIDColumn, DescriptionColumn, DecorationColumn, ProjectKeyColumn, CurrentversionColumn, IsArchivedColumn}
-		mutableColumns       = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, UserIDColumn, TitleColumn, TypeColumn, CategoryIDColumn, DescriptionColumn, DecorationColumn, ProjectKeyColumn, CurrentversionColumn, IsArchivedColumn}
+		allColumns           = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, UserIDColumn, TitleColumn, TypeColumn, CategoryIDColumn, DescriptionColumn, DecorationColumn, ProjectKeyColumn, CurrentVersionColumn, IsArchivedColumn}
+		mutableColumns       = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, UserIDColumn, TitleColumn, TypeColumn, CategoryIDColumn, DescriptionColumn, DecorationColumn, ProjectKeyColumn, CurrentVersionColumn, IsArchivedColumn}
 	)
 
 	return workflowsTable{
@@ -102,7 +102,7 @@ func newWorkflowsTableImpl(schemaName, tableName, alias string) workflowsTable {
 		Description:    DescriptionColumn,
 		Decoration:     DecorationColumn,
 		ProjectKey:     ProjectKeyColumn,
-		Currentversion: CurrentversionColumn,
+		CurrentVersion: CurrentVersionColumn,
 		IsArchived:     IsArchivedColumn,
 
 		AllColumns:     allColumns,

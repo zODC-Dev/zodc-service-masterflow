@@ -8,6 +8,7 @@ import (
 	"github.com/go-jet/jet/v2/postgres"
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/table"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
 )
 
 type NodeRepository struct{}
@@ -23,7 +24,7 @@ func (r *NodeRepository) UpdateNode(ctx context.Context, tx *sql.Tx, node model.
 
 	columns := Nodes.AllColumns.Except(Nodes.ID, Nodes.CreatedAt, Nodes.DeletedAt)
 
-	statement := Nodes.UPDATE(columns).MODEL(node).WHERE(Nodes.ID.EQ(postgres.String(node.ID)))
+	statement := Nodes.UPDATE(columns).MODEL(node).WHERE(Nodes.ID.EQ(postgres.String(node.ID))).RETURNING(Nodes.ID)
 
 	err := statement.QueryContext(ctx, tx, &node)
 
@@ -59,6 +60,48 @@ func (r *NodeRepository) FindAllNodeByRequestId(ctx context.Context, db *sql.DB,
 	err := statement.QueryContext(ctx, db, &results)
 
 	return results, err
+}
+
+func (r *NodeRepository) FindAllNodeByRequestIdWithPagination(ctx context.Context, db *sql.DB, requestId int32, requestTaskQueryParam queryparams.RequestTaskQueryParam, userId *int32) ([]model.Nodes, error) {
+	Nodes := table.Nodes
+	Requests := table.Requests
+
+	statement := postgres.SELECT(
+		Nodes.AllColumns,
+		Requests.AllColumns,
+	).FROM(
+		Nodes,
+	).WHERE(
+		Nodes.RequestID.EQ(postgres.Int32(requestId)),
+	).LIMIT(int64(requestTaskQueryParam.PageSize)).OFFSET(int64(requestTaskQueryParam.Page * requestTaskQueryParam.PageSize))
+
+	if userId != nil {
+		statement = statement.WHERE(
+			Nodes.AssigneeID.EQ(postgres.Int32(*userId)),
+		)
+	}
+
+	results := []model.Nodes{}
+
+	err := statement.QueryContext(ctx, db, &results)
+
+	return results, err
+}
+
+func (r *NodeRepository) CountAllNodeByRequestId(ctx context.Context, db *sql.DB, requestId int32) (int64, error) {
+	Nodes := table.Nodes
+
+	statement := postgres.SELECT(
+		postgres.COUNT(Nodes.ID),
+	).FROM(
+		Nodes,
+	).WHERE(
+		Nodes.RequestID.EQ(postgres.Int32(requestId)),
+	)
+
+	var total int64
+	err := statement.QueryContext(ctx, db, &total)
+	return total, err
 }
 
 func (r *NodeRepository) CreateNodes(ctx context.Context, tx *sql.Tx, nodes []model.Nodes) error {

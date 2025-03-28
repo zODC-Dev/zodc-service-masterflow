@@ -1,16 +1,14 @@
 package responses
 
 type Response struct {
-	Error    interface{} `json:"error"`
-	Message  string      `json:"message"`
-	Data     interface{} `json:"data"`
-	Metadata interface{} `json:"metadata"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
 }
 
 type Paginate[T any] struct {
-	Items      T
-	Total      int
-	Page       int
-	PageSize   int
-	TotalPages int
+	Items      T   `json:"items"`
+	Total      int `json:"total"`
+	Page       int `json:"page"`
+	PageSize   int `json:"pageSize"`
+	TotalPages int `json:"totalPages"`
 }

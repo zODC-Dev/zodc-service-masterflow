@@ -16,13 +16,13 @@ type Workflows struct {
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 	DeletedAt      *time.Time
-	UserID         *int32
+	UserID         int32
 	Title          string
 	Type           string
 	CategoryID     int32
 	Description    string
 	Decoration     string
 	ProjectKey     *string
-	Currentversion int32
+	CurrentVersion int32
 	IsArchived     bool
 }

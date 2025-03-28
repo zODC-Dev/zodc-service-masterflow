@@ -20,6 +20,8 @@ type Nodes struct {
 	Y                float64
 	Width            float64
 	Height           float64
+	Key              int32
+	JiraKey          *string
 	Title            *string
 	AssigneeID       *int32
 	EndType          *string

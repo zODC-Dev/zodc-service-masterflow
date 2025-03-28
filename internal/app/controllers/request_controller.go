@@ -1,11 +1,13 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/responses"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/middlewares"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/services"
 )
@@ -55,7 +57,10 @@ func (c *RequestController) FindAllRequest(e echo.Context) error {
 		return e.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 	}
 
-	return e.JSON(http.StatusOK, requests)
+	return e.JSON(http.StatusOK, responses.Response{
+		Message: "Success",
+		Data:    requests,
+	})
 }
 
 func (c *RequestController) GetRequestOverview(e echo.Context) error {
@@ -69,4 +74,66 @@ func (c *RequestController) GetRequestOverview(e echo.Context) error {
 	}
 
 	return e.JSON(http.StatusOK, requestOverviewResponse)
+}
+
+func (c *RequestController) GetRequestDetail(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	userId, _ := middlewares.GetUserID(e)
+
+	requestId := e.Param("id")
+	requestIdInt, err := strconv.Atoi(requestId)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, fmt.Sprintf("Invalid request ID: %s", requestId))
+	}
+
+	requestDetailResponse, err := c.requestService.GetRequestDetailHandler(ctx, userId, int32(requestIdInt))
+	if err != nil {
+		return e.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, requestDetailResponse)
+
+}
+
+func (c *RequestController) GetRequestTasks(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	// userId, _ := middlewares.GetUserID(e)
+
+	requestId := e.Param("id")
+	requestIdInt, err := strconv.Atoi(requestId)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, fmt.Sprintf("Invalid request ID: %s", requestId))
+
+	}
+
+	page := 1
+	if pageStr := e.QueryParam("page"); pageStr != "" {
+		if parsedPage, err := strconv.Atoi(pageStr); err == nil && parsedPage > 0 {
+			page = parsedPage
+		}
+	}
+
+	pageSize := 10
+	if pageSizeStr := e.QueryParam("pageSize"); pageSizeStr != "" {
+		if parsedPageSize, err := strconv.Atoi(pageSizeStr); err == nil && parsedPageSize > 0 {
+			pageSize = parsedPageSize
+		}
+	}
+
+	requestTaskQueryParam := queryparams.RequestTaskQueryParam{
+		Page:     page,
+		PageSize: pageSize,
+	}
+
+	requestTasksResponse, err := c.requestService.GetRequestTasksHandler(ctx, int32(requestIdInt), requestTaskQueryParam)
+	if err != nil {
+		return e.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, responses.Response{
+		Message: "Success",
+		Data:    requestTasksResponse,
+	})
 }

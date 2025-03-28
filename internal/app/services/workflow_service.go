@@ -29,16 +29,25 @@ type WorkflowService struct {
 }
 
 func NewWorkflowService(cfg WorkflowService) *WorkflowService {
-	workflowService := &WorkflowService{}
-	utils.Mapper(cfg, workflowService)
-	return workflowService
+	workflowService := WorkflowService{
+		DB:             cfg.DB,
+		WorkflowRepo:   cfg.WorkflowRepo,
+		FormRepo:       cfg.FormRepo,
+		CategoryRepo:   cfg.CategoryRepo,
+		UserAPI:        cfg.UserAPI,
+		RequestRepo:    cfg.RequestRepo,
+		ConnectionRepo: cfg.ConnectionRepo,
+		NodeRepo:       cfg.NodeRepo,
+		NodeService:    cfg.NodeService,
+	}
+	return &workflowService
 }
 
 func (s *WorkflowService) CreateWorkFlow(ctx context.Context, tx *sql.Tx, workflowData interface{}, projectKey *string, userId int32) (model.Workflows, error) {
 	workflow := model.Workflows{
-		Currentversion: 1,
+		CurrentVersion: 1,
 		IsArchived:     false,
-		UserID:         &userId,
+		UserID:         userId,
 	}
 	if err := utils.Mapper(workflowData, &workflow); err != nil {
 		return workflow, fmt.Errorf("mapping workflow failed: %w", err)
@@ -49,9 +58,9 @@ func (s *WorkflowService) CreateWorkFlow(ctx context.Context, tx *sql.Tx, workfl
 	return s.WorkflowRepo.CreateWorkflow(ctx, tx, workflow)
 }
 
-func (s *WorkflowService) CreateWorkFlowVersion(ctx context.Context, tx *sql.Tx, workflowId int32, hasSubWorkflow bool) (model.WorkflowVersions, error) {
+func (s *WorkflowService) CreateWorkFlowVersion(ctx context.Context, tx *sql.Tx, workflowId int32, hasSubWorkflow bool, version int32) (model.WorkflowVersions, error) {
 	workFlowVersion := model.WorkflowVersions{
-		Version:        1,
+		Version:        version,
 		WorkflowID:     workflowId,
 		HasSubWorkflow: hasSubWorkflow,
 	}
@@ -106,7 +115,7 @@ func (s *WorkflowService) RunWorkflowIfItStoryOrSubWorkflow(ctx context.Context,
 }
 
 func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId int32) error {
-	request, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, requestId)
+	request, err := s.RequestRepo.FindOneRequestByRequestIdTx(ctx, tx, requestId)
 	if err != nil {
 		return fmt.Errorf("request not found")
 	}
@@ -116,10 +125,10 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 
 	requestModel := model.Requests{}
 	if err := utils.Mapper(request, &requestModel); err != nil {
-		return err
+		return fmt.Errorf("map request fail: %w", err)
 	}
 	if err := s.RequestRepo.UpdateRequest(ctx, tx, requestModel); err != nil {
-		return err
+		return fmt.Errorf("update request fail: %w", err)
 	}
 
 	// Store Next Node For Update status to processing
@@ -134,7 +143,7 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 					// Update connection
 					request.Connections[j].IsCompleted = true
 					if err := s.ConnectionRepo.UpdateConnection(ctx, tx, request.Connections[j]); err != nil {
-						return err
+						return fmt.Errorf("update connection fail: %w", err)
 					}
 
 					nextNodeIds[request.Connections[j].ToNodeID] = true
@@ -146,14 +155,9 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 	for i := range request.Nodes {
 		if nextNodeIds[request.Nodes[i].ID] {
 			if err := s.NodeService.UpdateNodeStatusToInProcessing(ctx, tx, request.Nodes[i]); err != nil {
-				return err
+				return fmt.Errorf("update node status to in processing fail: %w", err)
 			}
 		}
-	}
-
-	//Commit
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit fail: %w", err)
 	}
 
 	return nil
@@ -179,7 +183,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			return fmt.Errorf("create Story Workflow Fail: %w", err)
 		}
 
-		storyWorkflowVersion, err := s.CreateWorkFlowVersion(ctx, tx, storyWorkflow.ID, false)
+		storyWorkflowVersion, err := s.CreateWorkFlowVersion(ctx, tx, storyWorkflow.ID, false, 1)
 		if err != nil {
 			return fmt.Errorf("create Story Workflow Version Fail: %w", err)
 		}
@@ -227,6 +231,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 		i := 0
 		for _, storyNodeReq := range req.Nodes {
+
 			if storyNodeReq.ParentId != storyReq.Node.Id {
 				req.Nodes[i] = storyNodeReq
 				i++
@@ -244,17 +249,24 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 				Type: storyNodeReq.Type,
 
-				ParentID: &storyNodeReq.ParentId,
-
-				AssigneeID: &storyNodeReq.Data.Assignee.Id,
-
-				// Data
-				Title:   &storyNodeReq.Data.Title,
-				EndType: &storyNodeReq.Data.EndType,
+				// ParentID: &storyNodeReq.ParentId,
 
 				Status: string(constants.NodeStatusTodo),
 
 				EstimatePoint: storyNodeReq.EstimatePoint,
+			}
+
+			if storyNodeReq.ParentId != "" {
+				storyNode.ParentID = &storyNodeReq.ParentId
+			}
+			if storyNodeReq.Data.Assignee.Id != 0 {
+				storyNode.AssigneeID = &storyNodeReq.Data.Assignee.Id
+			}
+			if storyNodeReq.Data.Title != "" {
+				storyNode.Title = &storyNodeReq.Data.Title
+			}
+			if storyNodeReq.Data.EndType != "" {
+				storyNode.EndType = &storyNodeReq.Data.EndType
 			}
 
 			// Form Type System Tag Story // Create Form Data
@@ -454,7 +466,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 func (s *WorkflowService) CreateWorkflowHandler(ctx context.Context, req *requests.CreateWorkflow, userId int32) error {
 	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
-		return err
+		return fmt.Errorf("create workflow handler fail: %w", err)
 	}
 	defer tx.Rollback()
 
@@ -474,13 +486,14 @@ func (s *WorkflowService) CreateWorkflowHandler(ctx context.Context, req *reques
 	}
 
 	// Create Workflow Version
-	workflowVersion, err := s.CreateWorkFlowVersion(ctx, tx, workflow.ID, hasSubWorkflow)
+	workflowVersion, err := s.CreateWorkFlowVersion(ctx, tx, workflow.ID, hasSubWorkflow, 1)
 	if err != nil {
 		return fmt.Errorf("create Main Workflow Version Fail: %w", err)
 	}
 
 	// Create Request
 	requestModel := model.Requests{
+		Title:             req.Title,
 		WorkflowVersionID: workflowVersion.ID,
 		IsTemplate:        true,
 		Status:            string(constants.RequestStatusTodo),
@@ -535,7 +548,7 @@ func (s *WorkflowService) FindAllWorkflowHandler(ctx context.Context, workflowTe
 		workflowResponse := responses.WorkflowResponse{
 			IsArchived: workflow.IsArchived,
 			RequestId:  workflow.Request.ID,
-			Version:    workflow.Currentversion,
+			Version:    workflow.CurrentVersion,
 		}
 		if err := utils.Mapper(workflow, &workflowResponse); err != nil {
 			return workflowResponses, err
@@ -588,8 +601,14 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 			continue
 		}
 
+		storyRequest, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, *node.SubRequestID)
+		if err != nil {
+			return workflowResponse, fmt.Errorf("find story request fail: %w", err)
+		}
+
 		// Map Response
 		nodeResponse, err := s.MapToWorkflowNodeResponse(node)
+		nodeResponse.ParentId = nil
 		if err != nil {
 			return workflowResponse, fmt.Errorf("map workflow node response fail: %w", err)
 		}
@@ -601,6 +620,7 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 			Decoration:  request.Workflow.Decoration,
 			Description: request.Workflow.Description,
 			Title:       request.Workflow.Title,
+			CategoryKey: storyRequest.Category.Key,
 		}
 
 		storiesResponse = append(storiesResponse, story)
@@ -612,6 +632,7 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 	for _, node := range request.Nodes {
 
 		nodeResponse, err := s.MapToWorkflowNodeResponse(node)
+		nodeResponse.ParentId = nil
 		if err != nil {
 			return workflowResponse, fmt.Errorf("map workflow node response fail: %w", err)
 		}
@@ -675,26 +696,34 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 	return workflowResponse, nil
 }
 
-func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests.StartWorkflow, userId int32) error {
-	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
+func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests.StartWorkflow, userId int32) (int32, error) {
+	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{
+		Isolation: sql.LevelReadCommitted,
+	})
 	if err != nil {
-		return err
+		return 0, fmt.Errorf("start workflow handler fail: %w", err)
 	}
 	defer tx.Rollback()
 
-	//User Id
-
 	request, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, req.RequestID)
 	if err != nil {
-		return err
+		return 0, fmt.Errorf("find request fail: %w", err)
 	}
 
 	workflowVersionId := request.Version.ID
+
 	// If Request Is Template
 	if req.IsTemplate {
-		workflowVersion, err := s.CreateWorkFlowVersion(ctx, tx, request.Workflow.ID, request.Version.HasSubWorkflow)
+		currentVersion := request.Workflow.CurrentVersion + 1
+		request.Workflow.CurrentVersion = currentVersion
+
+		if err := s.WorkflowRepo.UpdateWorkflow(ctx, tx, request.Workflow); err != nil {
+			return 0, fmt.Errorf("update workflow fail: %w", err)
+		}
+
+		workflowVersion, err := s.CreateWorkFlowVersion(ctx, tx, request.Workflow.ID, request.Version.HasSubWorkflow, currentVersion)
 		if err != nil {
-			return err
+			return 0, err
 		}
 
 		// Set workflowVersionId to new one
@@ -712,7 +741,7 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 
 		_, err = s.RequestRepo.CreateRequest(ctx, tx, requestTemplate)
 		if err != nil {
-			return err
+			return 0, err
 		}
 
 	}
@@ -724,64 +753,63 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 		Status:            string(constants.RequestStatusInProcessing),
 		UserID:            userId,
 		LastUpdateUserID:  userId,
+		SprintID:          req.SprintID,
 	}
 	newRequest, err := s.RequestRepo.CreateRequest(ctx, tx, requestModel)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	nodeConnectionStoryReq := requests.NodesConnectionsStories{}
-	if err := utils.Mapper(req.NodesConnectionsStories, &nodeConnectionStoryReq); err != nil {
-		return err
+	if err := utils.Mapper(req, &nodeConnectionStoryReq); err != nil {
+		return 0, err
 	}
-	if err := s.CreateNodesConnectionsStories(ctx, tx, &req.NodesConnectionsStories, newRequest.ID, request.Workflow.ProjectKey, userId); err != nil {
-		return err
+
+	if err := s.CreateNodesConnectionsStories(ctx, tx, &nodeConnectionStoryReq, newRequest.ID, request.Workflow.ProjectKey, userId); err != nil {
+		return 0, err
 	}
 
 	// Create Sub Workflow and Stories
 	for _, node := range req.Nodes {
-		if !(node.Type == string(constants.NodeTypeStory) || node.Type == string(constants.NodeTypeSubWorkflow) || node.Data.SubRequestID == nil) {
-			break
-		}
+		// Only create sub workflow or stories
+		if node.Type == string(constants.NodeTypeSubWorkflow) || node.Type == string(constants.NodeTypeStory) {
+			subRequest, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, *node.Data.SubRequestID)
+			if err != nil {
+				return 0, fmt.Errorf("find story request fail: %w", err)
+			}
 
-		request, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, *node.Data.SubRequestID)
-		if err != nil {
-			return err
-		}
+			// Copy request
+			requestModel := model.Requests{}
+			if err := utils.Mapper(subRequest, &requestModel); err != nil {
+				return 0, fmt.Errorf("map request fail: %w", err)
+			}
+			requestModel.SprintID = req.SprintID
+			requestModel.Status = string(constants.RequestStatusTodo)
+			copyRequest, err := s.RequestRepo.CreateRequest(ctx, tx, requestModel)
+			if err != nil {
+				return 0, fmt.Errorf("create copy request fail: %w", err)
+			}
 
-		// Copy request
-		requestModel := model.Requests{}
-		if err := utils.Mapper(request, &requestModel); err != nil {
-			return err
-		}
-		requestModel.SprintID = req.SprintID
-		requestModel.Status = string(constants.RequestStatusInProcessing)
-		copyRequest, err := s.RequestRepo.CreateRequest(ctx, tx, requestModel)
-		if err != nil {
-			return err
-		}
-
-		// Copy Request Nodes Connections Stories
-		nodeConnectionStoryReq := requests.NodesConnectionsStories{}
-		if err := utils.Mapper(request, &nodeConnectionStoryReq); err != nil {
-			return err
-		}
-		if err := s.CreateNodesConnectionsStories(ctx, tx, &req.NodesConnectionsStories, copyRequest.ID, request.Workflow.ProjectKey, userId); err != nil {
-			return err
+			// Copy Request Nodes Connections SubWorkflow
+			nodeConnectionStoryReq := requests.NodesConnectionsStories{}
+			if err := utils.Mapper(subRequest, &nodeConnectionStoryReq); err != nil {
+				return 0, fmt.Errorf("map node connection story request fail: %w", err)
+			}
+			if err := s.CreateNodesConnectionsStories(ctx, tx, &nodeConnectionStoryReq, copyRequest.ID, subRequest.Workflow.ProjectKey, userId); err != nil {
+				return 0, fmt.Errorf("create copy request nodes connections stories fail: %w", err)
+			}
 		}
 
 	}
 
-	//Logic Start Workflow
+	// Run Workflow
 	if err := s.RunWorkflow(ctx, tx, newRequest.ID); err != nil {
-		return err
+		return 0, fmt.Errorf("run workflow fail: %w", err)
 	}
 
-	//Commit
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit fail: %w", err)
+		return 0, fmt.Errorf("commit fail: %w", err)
 	}
 
-	return nil
-
+	return newRequest.ID, nil
 }

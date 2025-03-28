@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"strconv"
+	"time"
 
 	"github.com/go-jet/jet/v2/postgres"
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
@@ -62,11 +63,12 @@ func (r *WorkflowRepository) FindAllWorkflowTemplates(ctx context.Context, db *s
 			LEFT_JOIN(WorkflowVersions, WorkflowVersions.WorkflowID.EQ(Workflows.ID)).
 			LEFT_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)).
 			LEFT_JOIN(Requests, Requests.WorkflowVersionID.EQ(WorkflowVersions.ID)),
-	).WHERE(
-		WorkflowVersions.Version.EQ(Workflows.Currentversion),
 	)
 
 	conditions := []postgres.BoolExpression{}
+
+	conditions = append(conditions, Requests.IsTemplate.EQ(postgres.Bool(true)))
+	conditions = append(conditions, WorkflowVersions.Version.EQ(Workflows.CurrentVersion))
 
 	if workflowTemplateQueryParams.Search != "" {
 		conditions = append(conditions, postgres.LOWER(Workflows.Title).LIKE(postgres.LOWER(postgres.String("%"+workflowTemplateQueryParams.Search+"%"))))
@@ -126,4 +128,30 @@ func (r *WorkflowRepository) FindAllWorkflowTemplates(ctx context.Context, db *s
 	err := statement.QueryContext(ctx, db, &result)
 
 	return result, err
+}
+
+func (r *WorkflowRepository) FindOneWorkflowByWorkflowId(ctx context.Context, db *sql.DB, workflowId int32) (model.Workflows, error) {
+	Workflows := table.Workflows
+
+	statement := Workflows.SELECT(Workflows.AllColumns).WHERE(Workflows.ID.EQ(postgres.Int32(workflowId)))
+
+	workflow := model.Workflows{}
+
+	err := statement.QueryContext(ctx, db, &workflow)
+
+	return workflow, err
+}
+
+func (r *WorkflowRepository) UpdateWorkflow(ctx context.Context, tx *sql.Tx, workflow model.Workflows) error {
+	Workflows := table.Workflows
+
+	workflow.UpdatedAt = time.Now()
+
+	columns := Workflows.AllColumns.Except(Workflows.ID, Workflows.CreatedAt, Workflows.DeletedAt)
+
+	statement := Workflows.UPDATE(columns).MODEL(workflow).WHERE(Workflows.ID.EQ(postgres.Int32(workflow.ID)))
+
+	err := statement.QueryContext(ctx, tx, &workflow)
+
+	return err
 }

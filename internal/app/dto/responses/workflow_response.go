@@ -55,7 +55,7 @@ type StoryResponse struct {
 	Description string `json:"description"`
 	Title       string `json:"title"`
 	Type        string `json:"type"`
-	// CategoryId  int32 /* Tự xử lý */
+	CategoryKey string `json:"categoryKey"`
 
 	Node NodeResponse `json:"node"`
 }

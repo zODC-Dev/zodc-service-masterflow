@@ -5,7 +5,7 @@ CREATE TABLE workflows (
     updated_at TIMESTAMP DEFAULT now () NOT NULL,
     deleted_at TIMESTAMP,
 
-    user_id INT,
+    user_id INT NOT NULL,
 
     -- Info
     title TEXT NOT NULL,
@@ -16,7 +16,7 @@ CREATE TABLE workflows (
 
     project_key TEXT,
 
-    currentVersion INT NOT NULL,
+    current_version INT NOT NULL DEFAULT 1,
 
     is_archived BOOLEAN NOT NULL DEFAULT FALSE
 );
@@ -64,7 +64,7 @@ CREATE TABLE requests (
 
 
     -- Foreign Key
-    workflow_version_id INT NOT NULL REFERENCES workflows (id) ON DELETE CASCADE
+    workflow_version_id INT NOT NULL REFERENCES workflow_versions (id) ON DELETE CASCADE
 );
 
 CREATE TABLE nodes (
@@ -79,6 +79,9 @@ CREATE TABLE nodes (
     y NUMERIC NOT NULL,
     width NUMERIC NOT NULL,
     height NUMERIC NOT NULL,
+
+    key SERIAL NOT NULL,
+    jira_key TEXT,
 
     -- Info
     title TEXT,
@@ -108,8 +111,6 @@ CREATE TABLE nodes (
 
     -- Foreign Key
     request_id INT NOT NULL REFERENCES requests (id) ON DELETE CASCADE,
-
-    -- Form
     form_template_id INT REFERENCES form_templates (id) ON DELETE CASCADE,
     form_data_id INT REFERENCES form_data (id) ON DELETE CASCADE
 );
@@ -132,7 +133,22 @@ CREATE TABLE connections (
     request_id INT NOT NULL REFERENCES requests (id) ON DELETE CASCADE
 );
 
+ CREATE TABLE node_forms (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMP DEFAULT now () NOT NULL,
+    updated_at TIMESTAMP DEFAULT now () NOT NULL,
+    deleted_at TIMESTAMP,
+
+    permission TEXT NOT NULL,
+
+    node_id TEXT NOT NULL REFERENCES nodes (id) ON DELETE CASCADE,
+
+    form_data_id INT REFERENCES form_data (id) ON DELETE CASCADE
+);
+
 -- +goose Down
+DROP TABLE node_forms;
+
 DROP TABLE connections;
 
 DROP TABLE nodes;

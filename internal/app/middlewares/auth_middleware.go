@@ -33,6 +33,7 @@ func ExtractUserMiddleware() echo.MiddlewareFunc {
 
 func GetUserID(c echo.Context) (int32, error) {
 	userID, ok := c.Get("userID").(int32)
+
 	if !ok {
 		return 0, echo.NewHTTPError(http.StatusInternalServerError, "User ID not found in context")
 	}

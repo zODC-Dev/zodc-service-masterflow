@@ -3,7 +3,6 @@ package repositories
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"time"
 
 	"github.com/go-jet/jet/v2/postgres"
@@ -56,7 +55,7 @@ func (r *ConnectionRepository) UpdateConnection(ctx context.Context, tx *sql.Tx,
 
 	columns := Connections.AllColumns.Except(Connections.ID, Connections.CreatedAt, Connections.DeletedAt)
 
-	statment := Connections.UPDATE(columns).MODEL(connection)
+	statment := Connections.UPDATE(columns).MODEL(connection).WHERE(Connections.ID.EQ(postgres.String(connection.ID))).RETURNING(Connections.ID)
 
 	err := statment.QueryContext(ctx, tx, &connection)
 
@@ -86,13 +85,9 @@ func (r *ConnectionRepository) CreateConnections(ctx context.Context, tx *sql.Tx
 
 	columns := Connections.AllColumns.Except(Connections.CreatedAt, Connections.UpdatedAt, Connections.DeletedAt)
 
-	statement := Connections.INSERT(columns).MODELS(connections)
+	statement := Connections.INSERT(columns).MODELS(connections).RETURNING(Connections.ID)
 
 	err := statement.QueryContext(ctx, tx, &connections)
-
-	if err != nil {
-		fmt.Println(statement.DebugSql())
-	}
 
 	return err
 }

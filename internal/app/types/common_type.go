@@ -23,3 +23,8 @@ type Assignee struct {
 	AvatarUrl    string `json:"avatarUrl"`
 	IsSystemUser bool   `json:"isSystemUser"`
 }
+
+type Pagination struct {
+	Page     int `json:"page"`
+	PageSize int `json:"pageSize"`
+}
