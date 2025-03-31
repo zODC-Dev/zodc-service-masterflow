@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/constants"
@@ -121,7 +122,7 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 	}
 
 	// Update request status to in processing
-	request.Status = string(constants.RequestStatusInProcessing)
+	request.Status = string(constants.RequestStatusInProcess)
 
 	requestModel := model.Requests{}
 	if err := utils.Mapper(request, &requestModel); err != nil {
@@ -548,9 +549,9 @@ func (s *WorkflowService) FindAllWorkflowHandler(ctx context.Context, workflowTe
 
 		//Mapping workflow response
 		workflowResponse := responses.WorkflowResponse{
-			IsArchived: workflow.IsArchived,
-			RequestId:  workflow.Request.ID,
-			Version:    workflow.CurrentVersion,
+			IsArchived:     workflow.IsArchived,
+			RequestId:      workflow.Request.ID,
+			CurrentVersion: workflow.CurrentVersion,
 		}
 		if err := utils.Mapper(workflow, &workflowResponse); err != nil {
 			return workflowResponses, err
@@ -581,7 +582,7 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 	}
 	workflowResponse.Category = categoryResponse
 
-	workflowResponse.Version = request.Version.Version
+	workflowResponse.CurrentVersion = request.Version.Version
 	workflowResponse.IsArchived = request.Workflow.IsArchived
 
 	workflowResponse.RequestId = requestId
@@ -748,14 +749,17 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 
 	}
 
+	startedAt := time.Now()
+
 	requestModel := model.Requests{
 		Title:             req.Title,
 		IsTemplate:        false,
 		WorkflowVersionID: workflowVersionId,
-		Status:            string(constants.RequestStatusInProcessing),
+		Status:            string(constants.RequestStatusInProcess),
 		UserID:            userId,
 		LastUpdateUserID:  userId,
 		SprintID:          req.SprintID,
+		StartedAt:         &startedAt,
 	}
 	newRequest, err := s.RequestRepo.CreateRequest(ctx, tx, requestModel)
 	if err != nil {

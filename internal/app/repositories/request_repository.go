@@ -34,7 +34,7 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 		Requests.
 			LEFT_JOIN(Nodes, Requests.ID.EQ(Nodes.RequestID)).
 			LEFT_JOIN(WorkflowVerions, Requests.WorkflowVersionID.EQ(WorkflowVerions.ID)).
-			LEFT_JOIN(Workflows, Workflows.ID.EQ(WorkflowVerions.ID)),
+			LEFT_JOIN(Workflows, Workflows.ID.EQ(WorkflowVerions.WorkflowID)),
 	).WHERE(
 		Requests.UserID.EQ(postgres.Int32(userId)),
 	).LIMIT(int64(requestQueryParam.PageSize)).OFFSET(int64(requestQueryParam.Page))

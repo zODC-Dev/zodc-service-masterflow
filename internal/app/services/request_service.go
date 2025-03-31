@@ -145,7 +145,7 @@ func (s *RequestService) GetRequestOverviewHandler(ctx context.Context, userId i
 	}
 	requestOverviewResponse.MyRequests = int32(count)
 
-	count, err = s.RequestRepo.CountRequestByStatusAndUserId(ctx, s.DB, userId, constants.RequestStatusInProcessing)
+	count, err = s.RequestRepo.CountRequestByStatusAndUserId(ctx, s.DB, userId, constants.RequestStatusInProcess)
 	if err != nil {
 		return requestOverviewResponse, err
 	}
@@ -225,6 +225,12 @@ func (s *RequestService) GetRequestDetailHandler(ctx context.Context, userId int
 		return requestDetailResponse, err
 	}
 	requestDetailResponse.Workflow = workflowResponse
+
+	categoryResponse := responses.CategoryResponse{}
+	if err := utils.Mapper(request.Category, &categoryResponse); err != nil {
+		return requestDetailResponse, err
+	}
+	requestDetailResponse.Workflow.Category = categoryResponse
 
 	// Childen Request
 	childrenRequests, err := s.RequestRepo.FindAllChildrenRequestByRequestId(ctx, s.DB, requestId)

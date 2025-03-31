@@ -69,15 +69,15 @@ type WorkflowDetailResponse struct {
 }
 
 type WorkflowResponse struct {
-	Id          int32            `json:"id"`
-	Title       string           `json:"title"`
-	Type        string           `json:"type"`
-	Category    CategoryResponse `json:"category"`
-	Version     int32            `json:"version"`
-	Description string           `json:"description"`
-	Decoration  string           `json:"decoration"`
-	IsArchived  bool             `json:"isArchived"`
-	ProjectKey  string           `json:"projectKey"`
+	Id             int32            `json:"id"`
+	Title          string           `json:"title"`
+	Type           string           `json:"type"`
+	Category       CategoryResponse `json:"category"`
+	CurrentVersion int32            `json:"currentVersion"`
+	Description    string           `json:"description"`
+	Decoration     string           `json:"decoration"`
+	IsArchived     bool             `json:"isArchived"`
+	ProjectKey     string           `json:"projectKey"`
 
 	RequestId int32 `json:"requestId"`
 

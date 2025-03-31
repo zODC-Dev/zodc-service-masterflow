@@ -149,7 +149,7 @@ func (r *WorkflowRepository) UpdateWorkflow(ctx context.Context, tx *sql.Tx, wor
 
 	columns := Workflows.AllColumns.Except(Workflows.ID, Workflows.CreatedAt, Workflows.DeletedAt)
 
-	statement := Workflows.UPDATE(columns).MODEL(workflow).WHERE(Workflows.ID.EQ(postgres.Int32(workflow.ID)))
+	statement := Workflows.UPDATE(columns).MODEL(workflow).WHERE(Workflows.ID.EQ(postgres.Int32(workflow.ID))).RETURNING(Workflows.ID)
 
 	err := statement.QueryContext(ctx, tx, &workflow)
 
