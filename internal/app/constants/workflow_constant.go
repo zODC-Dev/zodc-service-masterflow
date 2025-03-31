@@ -3,8 +3,8 @@ package constants
 type WorkflowType string
 
 const (
-	WorkflowTypeGeneral WorkflowType = "GENERAL_WORKFLOW"
-	WorkflowTypeProject WorkflowType = "PROJECT_WORKFLOW"
+	WorkflowTypeGeneral WorkflowType = "GENERAL"
+	WorkflowTypeProject WorkflowType = "PROJECT"
 )
 
 type NodeType string

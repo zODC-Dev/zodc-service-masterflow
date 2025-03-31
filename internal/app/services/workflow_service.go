@@ -526,15 +526,17 @@ func (s *WorkflowService) FindAllWorkflowHandler(ctx context.Context, workflowTe
 
 	userIds := []int32{int32(userId)}
 
-	users, err := s.UserAPI.FindUsersByUserIds(userIds)
-	if err != nil {
-		return workflowResponses, err
-	}
-
-	// Get User Project
 	projects := []string{}
-	for _, projectRole := range users.Data[0].ProjectRoles {
-		projects = append(projects, projectRole.ProjectKey)
+	if workflowTemplateQueryParams.Type != string(constants.WorkflowTypeGeneral) {
+		users, err := s.UserAPI.FindUsersByUserIds(userIds)
+		if err != nil {
+			return workflowResponses, err
+		}
+
+		// Get User Project
+		for _, projectRole := range users.Data[0].ProjectRoles {
+			projects = append(projects, projectRole.ProjectKey)
+		}
 	}
 
 	workflows, err := s.WorkflowRepo.FindAllWorkflowTemplates(ctx, s.DB, workflowTemplateQueryParams, projects)
@@ -812,4 +814,31 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 	}
 
 	return newRequest.ID, nil
+}
+
+func (s *WorkflowService) ArchiveWorkflowHandler(ctx context.Context, workflowId int32) error {
+	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{
+		Isolation: sql.LevelReadCommitted,
+	})
+	if err != nil {
+		return fmt.Errorf("archive workflow handler fail: %w", err)
+	}
+	defer tx.Rollback()
+
+	workflow, err := s.WorkflowRepo.FindOneWorkflowByWorkflowId(ctx, s.DB, workflowId)
+	if err != nil {
+		return fmt.Errorf("find workflow fail: %w", err)
+	}
+
+	workflow.IsArchived = true
+
+	if err := s.WorkflowRepo.UpdateWorkflow(ctx, tx, workflow); err != nil {
+		return fmt.Errorf("update workflow fail: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit fail: %w", err)
+	}
+
+	return nil
 }

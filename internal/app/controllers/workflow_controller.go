@@ -106,3 +106,22 @@ func (c *WorkflowController) StartWorkflow(e echo.Context) error {
 		},
 	})
 }
+
+func (c *WorkflowController) ArchiveWorkflow(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	workflowId, err := strconv.Atoi(e.Param("id"))
+	if err != nil {
+		return e.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	err = c.workflowService.ArchiveWorkflowHandler(ctx, int32(workflowId))
+	if err != nil {
+		return e.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, map[string]string{
+		"message": "Workflow archived successfully",
+	})
+
+}

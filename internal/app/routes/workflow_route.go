@@ -53,6 +53,7 @@ func WorkflowRoute(group *echo.Group, db *sql.DB) {
 		workflowRoute.GET("/:id", workflowController.FindOneWorkflowDetail)
 
 		workflowRoute.POST("/start", workflowController.StartWorkflow)
+		workflowRoute.PUT("/:id/archive", workflowController.ArchiveWorkflow)
 
 	}
 }
