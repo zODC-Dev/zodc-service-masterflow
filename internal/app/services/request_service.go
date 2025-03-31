@@ -145,7 +145,7 @@ func (s *RequestService) GetRequestOverviewHandler(ctx context.Context, userId i
 	}
 	requestOverviewResponse.MyRequests = int32(count)
 
-	count, err = s.RequestRepo.CountRequestByStatusAndUserId(ctx, s.DB, userId, constants.RequestStatusInProcess)
+	count, err = s.RequestRepo.CountRequestByStatusAndUserId(ctx, s.DB, userId, constants.RequestStatusInProgress)
 	if err != nil {
 		return requestOverviewResponse, err
 	}
@@ -364,11 +364,11 @@ func (s *RequestService) GetRequestTasksHandler(ctx context.Context, requestId i
 		requestTaskResponse = append(requestTaskResponse, requestTask)
 	}
 
-	totalPages := (int(total) + requestTaskQueryParam.PageSize - 1) / requestTaskQueryParam.PageSize
+	totalPages := (int(total.Count) + requestTaskQueryParam.PageSize - 1) / requestTaskQueryParam.PageSize
 
 	paginatedResponse = responses.Paginate[[]responses.RequestTaskResponse]{
 		Items:      requestTaskResponse,
-		Total:      int(total),
+		Total:      int(total.Count),
 		Page:       requestTaskQueryParam.Page,
 		PageSize:   requestTaskQueryParam.PageSize,
 		TotalPages: totalPages,

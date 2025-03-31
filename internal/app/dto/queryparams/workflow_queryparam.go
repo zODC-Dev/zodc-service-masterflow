@@ -15,4 +15,5 @@ type RequestQueryParam struct {
 	PageSize   int
 	ProjectKey string
 	Status     string
+	SprintID   string
 }

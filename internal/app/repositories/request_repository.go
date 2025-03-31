@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"strconv"
 	"time"
 
 	"github.com/go-jet/jet/v2/postgres"
@@ -58,6 +59,14 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 		} else {
 			conditions = append(conditions, Requests.Status.EQ(postgres.String(requestQueryParam.Status)))
 		}
+	}
+
+	if requestQueryParam.SprintID != "" {
+		sprintIdInt, err := strconv.Atoi(requestQueryParam.SprintID)
+		if err != nil {
+			return results.Count{}, []results.Request{}, err
+		}
+		conditions = append(conditions, Requests.SprintID.EQ(postgres.Int64(int64(sprintIdInt))))
 	}
 
 	if len(conditions) > 0 {

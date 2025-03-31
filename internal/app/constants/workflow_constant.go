@@ -21,14 +21,14 @@ type NodeStatus string
 const (
 	NodeStatusCompleted  NodeStatus = "COMPLETED"
 	NodeStatusTodo       NodeStatus = "TO_DO"
-	NodeStatusInProccess NodeStatus = "IN_PROCESS"
+	NodeStatusInProgress NodeStatus = "IN_PROGRESS"
 	NodeStatusOverDue    NodeStatus = "OVER_DUE"
 )
 
 type RequestStatus string
 
 const (
-	RequestStatusCompleted RequestStatus = "COMPLETED"
-	RequestStatusTodo      RequestStatus = "TO_DO"
-	RequestStatusInProcess RequestStatus = "IN_PROCESS"
+	RequestStatusCompleted  RequestStatus = "COMPLETED"
+	RequestStatusTodo       RequestStatus = "TO_DO"
+	RequestStatusInProgress RequestStatus = "IN_PROGRESS"
 )

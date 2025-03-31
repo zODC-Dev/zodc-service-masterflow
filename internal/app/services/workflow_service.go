@@ -122,7 +122,7 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 	}
 
 	// Update request status to in processing
-	request.Status = string(constants.RequestStatusInProcess)
+	request.Status = string(constants.RequestStatusInProgress)
 
 	requestModel := model.Requests{}
 	if err := utils.Mapper(request, &requestModel); err != nil {
@@ -755,7 +755,7 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 		Title:             req.Title,
 		IsTemplate:        false,
 		WorkflowVersionID: workflowVersionId,
-		Status:            string(constants.RequestStatusInProcess),
+		Status:            string(constants.RequestStatusInProgress),
 		UserID:            userId,
 		LastUpdateUserID:  userId,
 		SprintID:          req.SprintID,

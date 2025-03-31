@@ -28,7 +28,7 @@ func NewNodeService(cfg NodeService) *NodeService {
 
 // Function
 func (s *NodeService) UpdateNodeStatusToInProcessing(ctx context.Context, tx *sql.Tx, node model.Nodes) error {
-	node.Status = string(constants.NodeStatusInProccess)
+	node.Status = string(constants.NodeStatusInProgress)
 
 	// Update Node
 	if err := s.NodeRepo.UpdateNode(ctx, tx, node); err != nil {
@@ -59,7 +59,7 @@ func (s *NodeService) StartNodeHandler(ctx context.Context, nodeId string) error
 	}
 
 	// Update Current Node Status To In Process
-	node.Status = string(constants.NodeStatusInProccess)
+	node.Status = string(constants.NodeStatusInProgress)
 
 	// Set actual start time
 	now := time.Now()

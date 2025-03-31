@@ -9,6 +9,7 @@ import (
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/table"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/results"
 )
 
 type NodeRepository struct{}
@@ -88,20 +89,21 @@ func (r *NodeRepository) FindAllNodeByRequestIdWithPagination(ctx context.Contex
 	return results, err
 }
 
-func (r *NodeRepository) CountAllNodeByRequestId(ctx context.Context, db *sql.DB, requestId int32) (int64, error) {
+func (r *NodeRepository) CountAllNodeByRequestId(ctx context.Context, db *sql.DB, requestId int32) (results.Count, error) {
 	Nodes := table.Nodes
 
 	statement := postgres.SELECT(
-		postgres.COUNT(Nodes.ID),
+		postgres.COUNT(Nodes.ID).AS("count"),
 	).FROM(
 		Nodes,
 	).WHERE(
 		Nodes.RequestID.EQ(postgres.Int32(requestId)),
 	)
 
-	var total int64
-	err := statement.QueryContext(ctx, db, &total)
-	return total, err
+	count := results.Count{}
+	err := statement.QueryContext(ctx, db, &count)
+
+	return count, err
 }
 
 func (r *NodeRepository) CreateNodes(ctx context.Context, tx *sql.Tx, nodes []model.Nodes) error {

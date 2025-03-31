@@ -27,6 +27,7 @@ func (c *RequestController) FindAllRequest(e echo.Context) error {
 	search := e.QueryParam("search")
 	projectKey := e.QueryParam("projectKey")
 	status := e.QueryParam("status")
+	sprintId := e.QueryParam("sprintId")
 
 	userId, _ := middlewares.GetUserID(e)
 
@@ -50,6 +51,7 @@ func (c *RequestController) FindAllRequest(e echo.Context) error {
 		PageSize:   pageSize,
 		ProjectKey: projectKey,
 		Status:     status,
+		SprintID:   sprintId,
 	}
 
 	requests, err := c.requestService.FindAllRequestHandler(ctx, requestQueryParams, userId)
