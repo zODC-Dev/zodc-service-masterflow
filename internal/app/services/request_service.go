@@ -105,7 +105,7 @@ func (s *RequestService) FindAllRequestHandler(ctx context.Context, requestQuery
 			}
 
 			currentTask := responses.CurrentTaskResponse{
-				Title:        *node.Title,
+				Title:        node.Title,
 				UpdatedAt:    node.UpdatedAt,
 				Participants: participants,
 			}
@@ -341,7 +341,7 @@ func (s *RequestService) GetRequestTasksHandler(ctx context.Context, requestId i
 	for _, node := range nodes {
 		requestTask := responses.RequestTaskResponse{
 			Id:               node.ID,
-			Title:            *node.Title,
+			Title:            node.Title,
 			Status:           node.Status,
 			PlannedStartTime: node.PlannedStartTime,
 			PlannedEndTime:   node.PlannedEndTime,

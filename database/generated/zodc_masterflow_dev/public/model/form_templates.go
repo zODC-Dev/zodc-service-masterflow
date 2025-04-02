@@ -12,16 +12,18 @@ import (
 )
 
 type FormTemplates struct {
-	ID          int32 `sql:"primary_key"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	DeletedAt   *time.Time
-	FileName    string
-	Title       string
-	CategoryID  *int32
-	DataSheet   *string
-	Description string
-	Decoration  string
-	Tag         string
-	Type        string
+	ID             int32 `sql:"primary_key"`
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	DeletedAt      *time.Time
+	FileName       string
+	Title          string
+	CategoryID     *int32
+	DataSheet      *string
+	Description    string
+	Decoration     string
+	TemplateID     *int32
+	CurrentVersion int32
+	Tag            string
+	Type           string
 }

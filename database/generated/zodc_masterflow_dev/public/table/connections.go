@@ -23,7 +23,7 @@ type connectionsTable struct {
 	DeletedAt   postgres.ColumnTimestamp
 	FromNodeID  postgres.ColumnString
 	ToNodeID    postgres.ColumnString
-	Type        postgres.ColumnString
+	Text        postgres.ColumnString
 	IsCompleted postgres.ColumnBool
 	RequestID   postgres.ColumnInteger
 
@@ -72,11 +72,11 @@ func newConnectionsTableImpl(schemaName, tableName, alias string) connectionsTab
 		DeletedAtColumn   = postgres.TimestampColumn("deleted_at")
 		FromNodeIDColumn  = postgres.StringColumn("from_node_id")
 		ToNodeIDColumn    = postgres.StringColumn("to_node_id")
-		TypeColumn        = postgres.StringColumn("type")
+		TextColumn        = postgres.StringColumn("text")
 		IsCompletedColumn = postgres.BoolColumn("is_completed")
 		RequestIDColumn   = postgres.IntegerColumn("request_id")
-		allColumns        = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, FromNodeIDColumn, ToNodeIDColumn, TypeColumn, IsCompletedColumn, RequestIDColumn}
-		mutableColumns    = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, FromNodeIDColumn, ToNodeIDColumn, TypeColumn, IsCompletedColumn, RequestIDColumn}
+		allColumns        = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, FromNodeIDColumn, ToNodeIDColumn, TextColumn, IsCompletedColumn, RequestIDColumn}
+		mutableColumns    = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, FromNodeIDColumn, ToNodeIDColumn, TextColumn, IsCompletedColumn, RequestIDColumn}
 	)
 
 	return connectionsTable{
@@ -89,7 +89,7 @@ func newConnectionsTableImpl(schemaName, tableName, alias string) connectionsTab
 		DeletedAt:   DeletedAtColumn,
 		FromNodeID:  FromNodeIDColumn,
 		ToNodeID:    ToNodeIDColumn,
-		Type:        TypeColumn,
+		Text:        TextColumn,
 		IsCompleted: IsCompletedColumn,
 		RequestID:   RequestIDColumn,
 

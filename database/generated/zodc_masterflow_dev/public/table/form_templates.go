@@ -17,18 +17,20 @@ type formTemplatesTable struct {
 	postgres.Table
 
 	// Columns
-	ID          postgres.ColumnInteger
-	CreatedAt   postgres.ColumnTimestamp
-	UpdatedAt   postgres.ColumnTimestamp
-	DeletedAt   postgres.ColumnTimestamp
-	FileName    postgres.ColumnString
-	Title       postgres.ColumnString
-	CategoryID  postgres.ColumnInteger
-	DataSheet   postgres.ColumnString
-	Description postgres.ColumnString
-	Decoration  postgres.ColumnString
-	Tag         postgres.ColumnString
-	Type        postgres.ColumnString
+	ID             postgres.ColumnInteger
+	CreatedAt      postgres.ColumnTimestamp
+	UpdatedAt      postgres.ColumnTimestamp
+	DeletedAt      postgres.ColumnTimestamp
+	FileName       postgres.ColumnString
+	Title          postgres.ColumnString
+	CategoryID     postgres.ColumnInteger
+	DataSheet      postgres.ColumnString
+	Description    postgres.ColumnString
+	Decoration     postgres.ColumnString
+	TemplateID     postgres.ColumnInteger
+	CurrentVersion postgres.ColumnInteger
+	Tag            postgres.ColumnString
+	Type           postgres.ColumnString
 
 	AllColumns     postgres.ColumnList
 	MutableColumns postgres.ColumnList
@@ -69,38 +71,42 @@ func newFormTemplatesTable(schemaName, tableName, alias string) *FormTemplatesTa
 
 func newFormTemplatesTableImpl(schemaName, tableName, alias string) formTemplatesTable {
 	var (
-		IDColumn          = postgres.IntegerColumn("id")
-		CreatedAtColumn   = postgres.TimestampColumn("created_at")
-		UpdatedAtColumn   = postgres.TimestampColumn("updated_at")
-		DeletedAtColumn   = postgres.TimestampColumn("deleted_at")
-		FileNameColumn    = postgres.StringColumn("file_name")
-		TitleColumn       = postgres.StringColumn("title")
-		CategoryIDColumn  = postgres.IntegerColumn("category_id")
-		DataSheetColumn   = postgres.StringColumn("data_sheet")
-		DescriptionColumn = postgres.StringColumn("description")
-		DecorationColumn  = postgres.StringColumn("decoration")
-		TagColumn         = postgres.StringColumn("tag")
-		TypeColumn        = postgres.StringColumn("type")
-		allColumns        = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, FileNameColumn, TitleColumn, CategoryIDColumn, DataSheetColumn, DescriptionColumn, DecorationColumn, TagColumn, TypeColumn}
-		mutableColumns    = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, FileNameColumn, TitleColumn, CategoryIDColumn, DataSheetColumn, DescriptionColumn, DecorationColumn, TagColumn, TypeColumn}
+		IDColumn             = postgres.IntegerColumn("id")
+		CreatedAtColumn      = postgres.TimestampColumn("created_at")
+		UpdatedAtColumn      = postgres.TimestampColumn("updated_at")
+		DeletedAtColumn      = postgres.TimestampColumn("deleted_at")
+		FileNameColumn       = postgres.StringColumn("file_name")
+		TitleColumn          = postgres.StringColumn("title")
+		CategoryIDColumn     = postgres.IntegerColumn("category_id")
+		DataSheetColumn      = postgres.StringColumn("data_sheet")
+		DescriptionColumn    = postgres.StringColumn("description")
+		DecorationColumn     = postgres.StringColumn("decoration")
+		TemplateIDColumn     = postgres.IntegerColumn("template_id")
+		CurrentVersionColumn = postgres.IntegerColumn("current_version")
+		TagColumn            = postgres.StringColumn("tag")
+		TypeColumn           = postgres.StringColumn("type")
+		allColumns           = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, FileNameColumn, TitleColumn, CategoryIDColumn, DataSheetColumn, DescriptionColumn, DecorationColumn, TemplateIDColumn, CurrentVersionColumn, TagColumn, TypeColumn}
+		mutableColumns       = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, FileNameColumn, TitleColumn, CategoryIDColumn, DataSheetColumn, DescriptionColumn, DecorationColumn, TemplateIDColumn, CurrentVersionColumn, TagColumn, TypeColumn}
 	)
 
 	return formTemplatesTable{
 		Table: postgres.NewTable(schemaName, tableName, alias, allColumns...),
 
 		//Columns
-		ID:          IDColumn,
-		CreatedAt:   CreatedAtColumn,
-		UpdatedAt:   UpdatedAtColumn,
-		DeletedAt:   DeletedAtColumn,
-		FileName:    FileNameColumn,
-		Title:       TitleColumn,
-		CategoryID:  CategoryIDColumn,
-		DataSheet:   DataSheetColumn,
-		Description: DescriptionColumn,
-		Decoration:  DecorationColumn,
-		Tag:         TagColumn,
-		Type:        TypeColumn,
+		ID:             IDColumn,
+		CreatedAt:      CreatedAtColumn,
+		UpdatedAt:      UpdatedAtColumn,
+		DeletedAt:      DeletedAtColumn,
+		FileName:       FileNameColumn,
+		Title:          TitleColumn,
+		CategoryID:     CategoryIDColumn,
+		DataSheet:      DataSheetColumn,
+		Description:    DescriptionColumn,
+		Decoration:     DecorationColumn,
+		TemplateID:     TemplateIDColumn,
+		CurrentVersion: CurrentVersionColumn,
+		Tag:            TagColumn,
+		Type:           TypeColumn,
 
 		AllColumns:     allColumns,
 		MutableColumns: mutableColumns,

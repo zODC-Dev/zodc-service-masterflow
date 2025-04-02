@@ -84,18 +84,14 @@ CREATE TABLE nodes (
     jira_key TEXT,
 
     -- Info
-    title TEXT,
+    title TEXT NOT NULL,
 
     assignee_id INT,
-
-    end_type TEXT,
 
     sub_request_id INT REFERENCES requests (id) ON DELETE CASCADE,    
     
     type TEXT NOT NULL, -- start, end, bug, task, approve, sub_workflow, story, input, noti, group, condition
     status TEXT NOT NULL, -- TO_DO, IN_PROCESSING, COMPLETED, OVERDUE
-
-    due_in int, -- Need remove when fix due_in in code
 
     is_current BOOLEAN NOT NULL DEFAULT false,
 
@@ -106,12 +102,47 @@ CREATE TABLE nodes (
     actual_start_time TIMESTAMP,
     actual_end_time TIMESTAMP,
 
+    -- notification node
+    body TEXT,
+    subject TEXT,
+
+    -- approve node
+    is_approved BOOLEAN NOT NULL DEFAULT false,
+
+    -- end node
+    end_type TEXT,
 
     parent_id TEXT REFERENCES nodes (id) ON DELETE CASCADE,
 
     -- Foreign Key
     request_id INT NOT NULL REFERENCES requests (id) ON DELETE CASCADE,
     form_template_id INT REFERENCES form_templates (id) ON DELETE CASCADE,
+    form_data_id INT REFERENCES form_data (id) ON DELETE CASCADE
+);
+
+CREATE TABLE node_condition_destinations (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMP DEFAULT now () NOT NULL,
+    updated_at TIMESTAMP DEFAULT now () NOT NULL,
+    deleted_at TIMESTAMP,
+
+    destination_node_id TEXT NOT NULL REFERENCES nodes (id) ON DELETE CASCADE,
+
+    is_true BOOLEAN NOT NULL,
+
+    node_id TEXT NOT NULL REFERENCES nodes (id) ON DELETE CASCADE
+);
+
+CREATE TABLE node_forms (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMP DEFAULT now () NOT NULL,
+    updated_at TIMESTAMP DEFAULT now () NOT NULL,
+    deleted_at TIMESTAMP,
+
+    permission TEXT NOT NULL,
+
+    node_id TEXT NOT NULL REFERENCES nodes (id) ON DELETE CASCADE,
+
     form_data_id INT REFERENCES form_data (id) ON DELETE CASCADE
 );
 
@@ -125,7 +156,7 @@ CREATE TABLE connections (
     from_node_id TEXT NOT NULL REFERENCES nodes (id),
     to_node_id TEXT NOT NULL REFERENCES nodes (id),
 
-    type TEXT NOT NULL,
+    text TEXT,
 
     is_completed BOOLEAN NOT NULL DEFAULT false, 
 
@@ -133,21 +164,10 @@ CREATE TABLE connections (
     request_id INT NOT NULL REFERENCES requests (id) ON DELETE CASCADE
 );
 
- CREATE TABLE node_forms (
-    id SERIAL PRIMARY KEY,
-    created_at TIMESTAMP DEFAULT now () NOT NULL,
-    updated_at TIMESTAMP DEFAULT now () NOT NULL,
-    deleted_at TIMESTAMP,
-
-    permission TEXT NOT NULL,
-
-    node_id TEXT NOT NULL REFERENCES nodes (id) ON DELETE CASCADE,
-
-    form_data_id INT REFERENCES form_data (id) ON DELETE CASCADE
-);
-
 -- +goose Down
 DROP TABLE node_forms;
+
+DROP TABLE node_condition_destinations;
 
 DROP TABLE connections;
 

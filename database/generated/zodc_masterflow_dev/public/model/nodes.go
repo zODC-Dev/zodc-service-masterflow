@@ -22,19 +22,21 @@ type Nodes struct {
 	Height           float64
 	Key              int32
 	JiraKey          *string
-	Title            *string
+	Title            string
 	AssigneeID       *int32
-	EndType          *string
 	SubRequestID     *int32
 	Type             string
 	Status           string
-	DueIn            *int32
 	IsCurrent        bool
 	EstimatePoint    *int32
 	PlannedStartTime *time.Time
 	PlannedEndTime   *time.Time
 	ActualStartTime  *time.Time
 	ActualEndTime    *time.Time
+	Body             *string
+	Subject          *string
+	IsApproved       bool
+	EndType          *string
 	ParentID         *string
 	RequestID        int32
 	FormTemplateID   *int32

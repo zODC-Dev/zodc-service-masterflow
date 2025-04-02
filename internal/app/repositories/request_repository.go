@@ -141,6 +141,8 @@ func (r *RequestRepository) FindOneRequestByRequestId(ctx context.Context, db *s
 			LEFT_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)),
 	).WHERE(
 		Requests.ID.EQ(postgres.Int32(requestId)),
+	).ORDER_BY(
+		Nodes.ActualStartTime.DESC(),
 	)
 
 	result := results.RequestDetail{}

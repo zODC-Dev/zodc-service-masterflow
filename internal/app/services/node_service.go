@@ -3,12 +3,16 @@ package services
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/constants"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
+	"github.com/zODC-Dev/zodc-service-masterflow/pkg/nats"
 	"github.com/zODC-Dev/zodc-service-masterflow/pkg/utils"
 )
 
@@ -18,12 +22,19 @@ type NodeService struct {
 	ConnectionRepo  *repositories.ConnectionRepository
 	RequestRepo     *repositories.RequestRepository
 	WorkflowService *WorkflowService
+	NatsClient      *nats.NATSClient
 }
 
 func NewNodeService(cfg NodeService) *NodeService {
-	nodeService := &NodeService{}
-	utils.Mapper(cfg, nodeService)
-	return nodeService
+	nodeService := NodeService{
+		DB:              cfg.DB,
+		NodeRepo:        cfg.NodeRepo,
+		ConnectionRepo:  cfg.ConnectionRepo,
+		RequestRepo:     cfg.RequestRepo,
+		WorkflowService: cfg.WorkflowService,
+		NatsClient:      cfg.NatsClient,
+	}
+	return &nodeService
 }
 
 // Function
@@ -77,7 +88,7 @@ func (s *NodeService) StartNodeHandler(ctx context.Context, nodeId string) error
 	return nil
 }
 
-func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string) error {
+func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, userId int32) error {
 	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
@@ -158,9 +169,22 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string) er
 				if err := s.UpdateNodeStatusToInProcessing(ctx, tx, connectionsToNode[i].Node); err != nil {
 					return err
 				}
+
 			}
 		}
 	}
+
+	// send notification
+	notification := types.Notification{
+		ToUserIds: []string{strconv.Itoa(int(userId))},
+		Subject:   "Task completed",
+		Body:      fmt.Sprintf("Task completed: %s – %s has marked this task as done.", node.Title, userId),
+	}
+	notificationBytes, err := json.Marshal(notification)
+	if err != nil {
+		return fmt.Errorf("marshal notification failed: %w", err)
+	}
+	s.NatsClient.Publish("notifications", notificationBytes)
 
 	// Calculate Request Process
 	request, _ := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, node.RequestID)
@@ -187,6 +211,38 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string) er
 	if err := s.RequestRepo.UpdateRequest(ctx, tx, requestModel); err != nil {
 		return err
 	}
+
+	// Commit
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit fail: %w", err)
+	}
+
+	return nil
+}
+
+func (s *NodeService) ApproveNodeHandler(ctx context.Context, nodeId string) error {
+	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	node, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
+	if err != nil {
+		return err
+	}
+
+	if node.Type != string(constants.NodeTypeCondition) {
+		return fmt.Errorf("node is not a condition node")
+	}
+
+	node.IsApproved = true
+
+	if err := s.NodeRepo.UpdateNode(ctx, tx, node); err != nil {
+		return err
+	}
+
+	//
 
 	// Commit
 	if err := tx.Commit(); err != nil {

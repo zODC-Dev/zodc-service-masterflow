@@ -3,7 +3,9 @@ package services
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
@@ -14,6 +16,7 @@ import (
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/externals"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
+	"github.com/zODC-Dev/zodc-service-masterflow/pkg/nats"
 	"github.com/zODC-Dev/zodc-service-masterflow/pkg/utils"
 )
 
@@ -27,6 +30,7 @@ type WorkflowService struct {
 	ConnectionRepo *repositories.ConnectionRepository
 	NodeRepo       *repositories.NodeRepository
 	NodeService    *NodeService
+	NatsClient     *nats.NATSClient
 }
 
 func NewWorkflowService(cfg WorkflowService) *WorkflowService {
@@ -40,6 +44,7 @@ func NewWorkflowService(cfg WorkflowService) *WorkflowService {
 		ConnectionRepo: cfg.ConnectionRepo,
 		NodeRepo:       cfg.NodeRepo,
 		NodeService:    cfg.NodeService,
+		NatsClient:     cfg.NatsClient,
 	}
 	return &workflowService
 }
@@ -155,11 +160,54 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 
 	for i := range request.Nodes {
 		if nextNodeIds[request.Nodes[i].ID] {
+
 			if err := s.NodeService.UpdateNodeStatusToInProcessing(ctx, tx, request.Nodes[i]); err != nil {
 				return fmt.Errorf("update node status to in processing fail: %w", err)
 			}
+
+			// Send notification
+			notification := types.Notification{
+				ToUserIds: []string{strconv.Itoa(int(*request.Nodes[i].AssigneeID))},
+				Subject:   "New task assigned",
+				Body:      fmt.Sprintf("New task assigned: %s – You have been assigned a new task by %s.", request.Nodes[i].Title, request.UserID),
+			}
+
+			notificationBytes, err := json.Marshal(notification)
+			if err != nil {
+				return fmt.Errorf("marshal notification failed: %w", err)
+			}
+
+			s.NatsClient.Publish("notifications", notificationBytes)
+
 		}
 	}
+
+	// Notification
+	uniqueUsers := make(map[int32]struct{})
+	for _, node := range request.Nodes {
+		if node.AssigneeID != nil {
+			uniqueUsers[*node.AssigneeID] = struct{}{}
+		}
+	}
+
+	userIdsStr := make([]string, 0, len(uniqueUsers))
+	for id := range uniqueUsers {
+		userIdsStr = append(userIdsStr, strconv.Itoa(int(id)))
+	}
+
+	// Send notification
+	notification := types.Notification{
+		ToUserIds: userIdsStr,
+		Subject:   "Workflow Started",
+		Body:      fmt.Sprintf("Workflow started with request ID: %d", requestId),
+	}
+
+	notificationBytes, err := json.Marshal(notification)
+	if err != nil {
+		return fmt.Errorf("marshal notification failed: %w", err)
+	}
+
+	s.NatsClient.Publish("notifications", notificationBytes)
 
 	return nil
 }
@@ -215,7 +263,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			Type: storyReq.Node.Type,
 
 			// Data
-			Title:      &storyReq.Node.Data.Title,
+			Title:      storyReq.Node.Data.Title,
 			AssigneeID: &storyReq.Node.Data.Assignee.Id,
 
 			SubRequestID: &storyRequest.ID,
@@ -252,6 +300,8 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 				// ParentID: &storyNodeReq.ParentId,
 
+				Title: storyNodeReq.Data.Title,
+
 				Status: string(constants.NodeStatusTodo),
 
 				EstimatePoint: storyNodeReq.EstimatePoint,
@@ -262,9 +312,6 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			}
 			if storyNodeReq.Data.Assignee.Id != 0 {
 				storyNode.AssigneeID = &storyNodeReq.Data.Assignee.Id
-			}
-			if storyNodeReq.Data.Title != "" {
-				storyNode.Title = &storyNodeReq.Data.Title
 			}
 			if storyNodeReq.Data.EndType != "" {
 				storyNode.EndType = &storyNodeReq.Data.EndType
@@ -338,7 +385,6 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 						ID:         connReq.Id,
 						FromNodeID: connReq.From,
 						ToNodeID:   connReq.To,
-						Type:       connReq.Type,
 						RequestID:  storyRequest.ID,
 					}
 
@@ -381,7 +427,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			SubRequestID: workflowNodeReq.Data.SubRequestID,
 
 			// Data
-			Title:   &workflowNodeReq.Data.Title,
+			Title:   workflowNodeReq.Data.Title,
 			EndType: &workflowNodeReq.Data.EndType,
 
 			Status: string(constants.NodeStatusTodo),
@@ -429,6 +475,31 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 		}
 
 		workflowNodes = append(workflowNodes, workflowNode)
+
+		// Condition Node
+		if workflowNodeReq.Type == string(constants.NodeTypeCondition) {
+			nodeConditionDestinations := []model.NodeConditionDestinations{}
+
+			for _, destination := range workflowNodeReq.Data.Condition.TrueDestinations {
+				nodeConditionDestinations = append(nodeConditionDestinations, model.NodeConditionDestinations{
+					IsTrue:            true,
+					DestinationNodeID: destination,
+					NodeID:            workflowNodeReq.Id,
+				})
+			}
+
+			for _, destination := range workflowNodeReq.Data.Condition.FalseDestinations {
+				nodeConditionDestinations = append(nodeConditionDestinations, model.NodeConditionDestinations{
+					IsTrue:            false,
+					DestinationNodeID: destination,
+					NodeID:            workflowNodeReq.Id,
+				})
+			}
+
+			if err := s.NodeRepo.CreateNodeConditionDestinations(ctx, tx, nodeConditionDestinations); err != nil {
+				return fmt.Errorf("create node condition destinations fail: %w", err)
+			}
+		}
 	}
 	if len(workflowNodes) > 0 {
 		err = s.NodeRepo.CreateNodes(ctx, tx, workflowNodes)
@@ -442,8 +513,6 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 	for _, workflowConnectionReq := range req.Connections {
 		workflowConnection := model.Connections{
 			ID: workflowConnectionReq.Id,
-
-			Type: workflowConnectionReq.Type,
 
 			FromNodeID: workflowConnectionReq.From,
 			ToNodeID:   workflowConnectionReq.To,
@@ -649,7 +718,6 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 			Id:   connection.ID,
 			To:   connection.ToNodeID,
 			From: connection.FromNodeID,
-			Type: connection.Type,
 		}
 
 		workflowResponse.Connections = append(workflowResponse.Connections, connectionResponse)

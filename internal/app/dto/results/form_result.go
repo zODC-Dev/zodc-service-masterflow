@@ -4,7 +4,8 @@ import "github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_mast
 
 type FormTemplateResult struct {
 	model.FormTemplates
-	Version model.FormTemplateVersions
+	Version  model.FormTemplateVersions
+	Category model.Categories
 }
 
 type FormSystemResult struct {

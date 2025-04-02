@@ -3,10 +3,12 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"strconv"
 
 	"github.com/go-jet/jet/v2/postgres"
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/table"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/results"
 )
 
@@ -16,18 +18,41 @@ func NewFormRepository() *FormRepository {
 	return &FormRepository{}
 }
 
-func (r *FormRepository) FindAllFormTemplate(ctx context.Context, db *sql.DB) ([]results.FormTemplateResult, error) {
+func (r *FormRepository) FindAllFormTemplate(ctx context.Context, db *sql.DB, queryParam queryparams.FormQueryParam) ([]results.FormTemplateResult, error) {
 	FormTemplates := table.FormTemplates
 	FormTemplateVersions := table.FormTemplateVersions
+	Categories := table.Categories
 
 	statement := postgres.SELECT(
 		FormTemplates.AllColumns,
 		FormTemplateVersions.AllColumns,
+		Categories.AllColumns,
 	).FROM(
 		FormTemplates.
-			LEFT_JOIN(FormTemplateVersions, FormTemplates.ID.EQ(FormTemplateVersions.FormTemplateID).
-				AND(FormTemplateVersions.IsArchived.EQ(postgres.Bool(false)))),
+			LEFT_JOIN(FormTemplateVersions, FormTemplates.ID.EQ(FormTemplateVersions.FormTemplateID)).
+			LEFT_JOIN(Categories, Categories.ID.EQ(FormTemplates.CategoryID)),
 	)
+
+	conditions := []postgres.BoolExpression{
+		FormTemplates.Type.EQ(postgres.String("USER")),
+	}
+
+	if queryParam.CategoryID != "" {
+		categoryIdInt, err := strconv.Atoi(queryParam.CategoryID)
+		if err != nil {
+			return []results.FormTemplateResult{}, err
+		}
+
+		conditions = append(conditions, Categories.ID.EQ(postgres.Int32(int32(categoryIdInt))))
+	}
+
+	if queryParam.Search != "" {
+		conditions = append(conditions, postgres.LOWER(FormTemplates.Title).LIKE(postgres.LOWER(postgres.String("%"+queryParam.Search+"%"))))
+	}
+
+	if len(conditions) > 0 {
+		statement = statement.WHERE(postgres.AND(conditions...))
+	}
 
 	results := []results.FormTemplateResult{}
 
@@ -36,15 +61,25 @@ func (r *FormRepository) FindAllFormTemplate(ctx context.Context, db *sql.DB) ([
 	return results, err
 }
 
-func (r *FormRepository) FindAllFormTemplateFieldsByFormTemplateVersionId(ctx context.Context, db *sql.DB, formTemplateVersionId int32) ([]model.FormTemplateFields, error) {
+func (r *FormRepository) FindAllFormTemplateFieldsByFormTemplateId(ctx context.Context, db *sql.DB, formTemplateId int32) ([]model.FormTemplateFields, error) {
 	FormTemplateFields := table.FormTemplateFields
+	FormTemplateVersions := table.FormTemplateVersions
+	FormTemplates := table.FormTemplates
 
 	statement := postgres.SELECT(
 		FormTemplateFields.AllColumns,
 	).FROM(
-		FormTemplateFields,
+		FormTemplateFields.LEFT_JOIN(
+			FormTemplateVersions,
+			FormTemplateVersions.FormTemplateID.EQ(FormTemplateFields.FormTemplateVersionID),
+		).LEFT_JOIN(
+			FormTemplates,
+			FormTemplates.ID.EQ(FormTemplateVersions.FormTemplateID),
+		),
 	).WHERE(
-		FormTemplateFields.FormTemplateVersionID.EQ(postgres.Int32(formTemplateVersionId)),
+		FormTemplates.ID.EQ(postgres.Int32(formTemplateId)).AND(
+			FormTemplateVersions.Version.EQ(FormTemplates.CurrentVersion),
+		),
 	)
 
 	results := []model.FormTemplateFields{}
@@ -57,7 +92,7 @@ func (r *FormRepository) FindAllFormTemplateFieldsByFormTemplateVersionId(ctx co
 func (r *FormRepository) CreateFormTemplate(ctx context.Context, tx *sql.Tx, formTemplate model.FormTemplates) (model.FormTemplates, error) {
 	FormTemplates := table.FormTemplates
 
-	columns := FormTemplates.AllColumns.Except(FormTemplates.ID, FormTemplates.CreatedAt, FormTemplates.UpdatedAt, FormTemplates.DeletedAt)
+	columns := FormTemplates.AllColumns.Except(FormTemplates.ID, FormTemplates.CreatedAt, FormTemplates.UpdatedAt, FormTemplates.DeletedAt, FormTemplates.CurrentVersion)
 
 	statement := FormTemplates.INSERT(columns).MODEL(formTemplate).RETURNING(FormTemplates.ID)
 

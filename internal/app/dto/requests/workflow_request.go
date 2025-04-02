@@ -15,6 +15,11 @@ type NodeDataAssignee struct {
 	Id int32
 }
 
+type NodeDataCondition struct {
+	TrueDestinations  []string
+	FalseDestinations []string
+}
+
 type NodeData struct {
 	Type         string
 	Title        string
@@ -22,6 +27,8 @@ type NodeData struct {
 	Assignee     NodeDataAssignee
 	EndType      string
 	SubRequestID *int32
+
+	Condition NodeDataCondition
 }
 
 type NodeForm struct {

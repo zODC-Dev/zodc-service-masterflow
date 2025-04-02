@@ -13,6 +13,10 @@ CREATE TABLE form_templates (
     description TEXT NOT NULL,
     decoration TEXT NOT NULL,
 
+    template_id INT,
+
+    current_version INT NOT NULL DEFAULT 1,
+
     tag TEXT NOT NULL DEFAULT 'FORM', -- FORM / TASK, BUG, STORY
     type TEXT NOT NULL DEFAULT 'USER' -- SYSTEM, USER
 );
@@ -24,8 +28,6 @@ CREATE TABLE form_template_versions (
     deleted_at TIMESTAMP,
 
     version INT NOT NULL,
-    is_archived BOOLEAN NOT NULL DEFAULT FALSE,
-    status TEXT,
 
     form_template_id INT NOT NULL REFERENCES form_templates (id) ON DELETE CASCADE
 );

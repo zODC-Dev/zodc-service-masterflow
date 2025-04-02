@@ -18,7 +18,7 @@ type Connections struct {
 	DeletedAt   *time.Time
 	FromNodeID  string
 	ToNodeID    string
-	Type        string
+	Text        *string
 	IsCompleted bool
 	RequestID   int32
 }

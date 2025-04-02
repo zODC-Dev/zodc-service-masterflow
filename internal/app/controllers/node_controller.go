@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/middlewares"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/services"
 )
 
@@ -20,12 +21,14 @@ func NewNodeController(nodeService *services.NodeService) *NodeController {
 func (c *NodeController) CompleteNode(e echo.Context) error {
 	ctx := e.Request().Context()
 
+	userId, _ := middlewares.GetUserID(e)
+
 	nodeId := e.Param("id")
 	if nodeId == "" {
 		return e.JSON(http.StatusBadRequest, map[string]string{"error": "nodeId is required"})
 	}
 
-	if err := c.nodeService.CompleteNodeHandler(ctx, nodeId); err != nil {
+	if err := c.nodeService.CompleteNodeHandler(ctx, nodeId, userId); err != nil {
 		return e.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 	}
 

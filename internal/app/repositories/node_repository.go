@@ -109,11 +109,23 @@ func (r *NodeRepository) CountAllNodeByRequestId(ctx context.Context, db *sql.DB
 func (r *NodeRepository) CreateNodes(ctx context.Context, tx *sql.Tx, nodes []model.Nodes) error {
 	Nodes := table.Nodes
 
-	columns := Nodes.AllColumns.Except(Nodes.CreatedAt, Nodes.UpdatedAt, Nodes.DeletedAt)
+	columns := Nodes.AllColumns.Except(Nodes.CreatedAt, Nodes.UpdatedAt, Nodes.DeletedAt, Nodes.Key)
 
 	statement := Nodes.INSERT(columns).MODELS(nodes)
 
 	err := statement.QueryContext(ctx, tx, &nodes)
+
+	return err
+}
+
+func (r *NodeRepository) CreateNodeConditionDestinations(ctx context.Context, tx *sql.Tx, nodeConditionDestinations []model.NodeConditionDestinations) error {
+	NodeConditionDestinations := table.NodeConditionDestinations
+
+	columns := NodeConditionDestinations.AllColumns.Except(NodeConditionDestinations.CreatedAt, NodeConditionDestinations.UpdatedAt, NodeConditionDestinations.DeletedAt)
+
+	statement := NodeConditionDestinations.INSERT(columns).MODELS(nodeConditionDestinations)
+
+	err := statement.QueryContext(ctx, tx, &nodeConditionDestinations)
 
 	return err
 }

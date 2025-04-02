@@ -5,9 +5,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/requests"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/responses"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
@@ -47,6 +47,12 @@ func (s *FormService) CreateFormTemplate(ctx context.Context, req *requests.Form
 		datasheet := string(*req.DataSheet)
 		formTemplate.DataSheet = &datasheet
 	}
+	if req.TemplateID != nil {
+		formTemplate.TemplateID = req.TemplateID
+	}
+
+	formTemplate.Type = "USER"
+	formTemplate.Tag = "FORM"
 
 	formTemplate, err = s.formRepo.CreateFormTemplate(ctx, tx, formTemplate)
 	if err != nil {
@@ -104,11 +110,10 @@ func (s *FormService) CreateFormTemplate(ctx context.Context, req *requests.Form
 	return nil
 }
 
-func (s *FormService) FindAllFormTemplate(ctx context.Context) ([]responses.FormTemplateFindAll, error) {
+func (s *FormService) FindAllFormTemplate(ctx context.Context, queryParam queryparams.FormQueryParam) ([]responses.FormTemplateFindAll, error) {
 	formTemplatesResponse := []responses.FormTemplateFindAll{}
-	slog.Info("Finding all form templates")
 
-	formTemplates, err := s.formRepo.FindAllFormTemplate(ctx, s.db)
+	formTemplates, err := s.formRepo.FindAllFormTemplate(ctx, s.db, queryParam)
 
 	if err != nil {
 		return formTemplatesResponse, err
@@ -119,6 +124,19 @@ func (s *FormService) FindAllFormTemplate(ctx context.Context) ([]responses.Form
 		formTemplateResponse := responses.FormTemplateFindAll{}
 		if err := utils.Mapper(formTemplate, &formTemplateResponse); err != nil {
 			return formTemplatesResponse, fmt.Errorf("map form template fail: %w", err)
+		}
+
+		if formTemplate.DataSheet != nil {
+			var dataSheet map[string]interface{}
+			if err := json.Unmarshal([]byte(*formTemplate.DataSheet), &dataSheet); err != nil {
+				return formTemplatesResponse, fmt.Errorf("unmarshal data sheet fail: %w", err)
+			}
+			formTemplateResponse.DataSheet = &dataSheet
+		}
+
+		formTemplateResponse.Category = responses.CategoryFindAll{}
+		if err := utils.Mapper(formTemplate.Category, &formTemplateResponse.Category); err != nil {
+			return formTemplatesResponse, fmt.Errorf("map category fail: %w", err)
 		}
 
 		formTemplateResponse.Version = formTemplate.Version.Version
@@ -161,10 +179,10 @@ func (s *FormService) FindAllFormTemplate(ctx context.Context) ([]responses.Form
 	return formTemplatesResponse, nil
 }
 
-func (s *FormService) FindAllFormTemplateFieldsByFormTemplateVersionId(ctx context.Context, formTemplateVersionId int32) ([][]responses.FormTemplateFieldsFindAll, error) {
+func (s *FormService) FindAllFormTemplateFieldsByFormTemplateId(ctx context.Context, formTemplateId int32) ([][]responses.FormTemplateFieldsFindAll, error) {
 	fieldsResponse := [][]responses.FormTemplateFieldsFindAll{}
 
-	formTemplateFields, err := s.formRepo.FindAllFormTemplateFieldsByFormTemplateVersionId(ctx, s.db, formTemplateVersionId)
+	formTemplateFields, err := s.formRepo.FindAllFormTemplateFieldsByFormTemplateId(ctx, s.db, formTemplateId)
 	if err != nil {
 		return fieldsResponse, err
 	}

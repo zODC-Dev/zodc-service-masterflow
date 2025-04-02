@@ -21,9 +21,8 @@ type formTemplateVersionsTable struct {
 	CreatedAt      postgres.ColumnTimestamp
 	UpdatedAt      postgres.ColumnTimestamp
 	DeletedAt      postgres.ColumnTimestamp
-	Version        postgres.ColumnInteger
 	IsArchived     postgres.ColumnBool
-	Status         postgres.ColumnString
+	Version        postgres.ColumnInteger
 	FormTemplateID postgres.ColumnInteger
 
 	AllColumns     postgres.ColumnList
@@ -69,12 +68,11 @@ func newFormTemplateVersionsTableImpl(schemaName, tableName, alias string) formT
 		CreatedAtColumn      = postgres.TimestampColumn("created_at")
 		UpdatedAtColumn      = postgres.TimestampColumn("updated_at")
 		DeletedAtColumn      = postgres.TimestampColumn("deleted_at")
-		VersionColumn        = postgres.IntegerColumn("version")
 		IsArchivedColumn     = postgres.BoolColumn("is_archived")
-		StatusColumn         = postgres.StringColumn("status")
+		VersionColumn        = postgres.IntegerColumn("version")
 		FormTemplateIDColumn = postgres.IntegerColumn("form_template_id")
-		allColumns           = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, VersionColumn, IsArchivedColumn, StatusColumn, FormTemplateIDColumn}
-		mutableColumns       = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, VersionColumn, IsArchivedColumn, StatusColumn, FormTemplateIDColumn}
+		allColumns           = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, IsArchivedColumn, VersionColumn, FormTemplateIDColumn}
+		mutableColumns       = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, IsArchivedColumn, VersionColumn, FormTemplateIDColumn}
 	)
 
 	return formTemplateVersionsTable{
@@ -85,9 +83,8 @@ func newFormTemplateVersionsTableImpl(schemaName, tableName, alias string) formT
 		CreatedAt:      CreatedAtColumn,
 		UpdatedAt:      UpdatedAtColumn,
 		DeletedAt:      DeletedAtColumn,
-		Version:        VersionColumn,
 		IsArchived:     IsArchivedColumn,
-		Status:         StatusColumn,
+		Version:        VersionColumn,
 		FormTemplateID: FormTemplateIDColumn,
 
 		AllColumns:     allColumns,

@@ -20,13 +20,13 @@ type FormTemplateFieldsFindAll struct {
 }
 
 type FormTemplateFindAll struct {
-	ID         int32      `json:"id"`
-	CreatedAt  time.Time  `json:"createdAt"`
-	UpdatedAt  time.Time  `json:"updatedAt"`
-	DeletedAt  *time.Time `json:"deletedAt"`
-	FileName   string     `json:"fileName"`
-	Title      string     `json:"title"`
-	CategoryID *int32     `json:"categoryId"`
+	ID        int32           `json:"id"`
+	CreatedAt time.Time       `json:"createdAt"`
+	UpdatedAt time.Time       `json:"updatedAt"`
+	DeletedAt *time.Time      `json:"deletedAt"`
+	FileName  string          `json:"fileName"`
+	Title     string          `json:"title"`
+	Category  CategoryFindAll `json:"category"`
 
 	Version int32 `json:"version"`
 

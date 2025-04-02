@@ -29,17 +29,19 @@ type nodesTable struct {
 	JiraKey          postgres.ColumnString
 	Title            postgres.ColumnString
 	AssigneeID       postgres.ColumnInteger
-	EndType          postgres.ColumnString
 	SubRequestID     postgres.ColumnInteger
 	Type             postgres.ColumnString
 	Status           postgres.ColumnString
-	DueIn            postgres.ColumnInteger
 	IsCurrent        postgres.ColumnBool
 	EstimatePoint    postgres.ColumnInteger
 	PlannedStartTime postgres.ColumnTimestamp
 	PlannedEndTime   postgres.ColumnTimestamp
 	ActualStartTime  postgres.ColumnTimestamp
 	ActualEndTime    postgres.ColumnTimestamp
+	Body             postgres.ColumnString
+	Subject          postgres.ColumnString
+	IsApproved       postgres.ColumnBool
+	EndType          postgres.ColumnString
 	ParentID         postgres.ColumnString
 	RequestID        postgres.ColumnInteger
 	FormTemplateID   postgres.ColumnInteger
@@ -96,23 +98,25 @@ func newNodesTableImpl(schemaName, tableName, alias string) nodesTable {
 		JiraKeyColumn          = postgres.StringColumn("jira_key")
 		TitleColumn            = postgres.StringColumn("title")
 		AssigneeIDColumn       = postgres.IntegerColumn("assignee_id")
-		EndTypeColumn          = postgres.StringColumn("end_type")
 		SubRequestIDColumn     = postgres.IntegerColumn("sub_request_id")
 		TypeColumn             = postgres.StringColumn("type")
 		StatusColumn           = postgres.StringColumn("status")
-		DueInColumn            = postgres.IntegerColumn("due_in")
 		IsCurrentColumn        = postgres.BoolColumn("is_current")
 		EstimatePointColumn    = postgres.IntegerColumn("estimate_point")
 		PlannedStartTimeColumn = postgres.TimestampColumn("planned_start_time")
 		PlannedEndTimeColumn   = postgres.TimestampColumn("planned_end_time")
 		ActualStartTimeColumn  = postgres.TimestampColumn("actual_start_time")
 		ActualEndTimeColumn    = postgres.TimestampColumn("actual_end_time")
+		BodyColumn             = postgres.StringColumn("body")
+		SubjectColumn          = postgres.StringColumn("subject")
+		IsApprovedColumn       = postgres.BoolColumn("is_approved")
+		EndTypeColumn          = postgres.StringColumn("end_type")
 		ParentIDColumn         = postgres.StringColumn("parent_id")
 		RequestIDColumn        = postgres.IntegerColumn("request_id")
 		FormTemplateIDColumn   = postgres.IntegerColumn("form_template_id")
 		FormDataIDColumn       = postgres.IntegerColumn("form_data_id")
-		allColumns             = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, KeyColumn, JiraKeyColumn, TitleColumn, AssigneeIDColumn, EndTypeColumn, SubRequestIDColumn, TypeColumn, StatusColumn, DueInColumn, IsCurrentColumn, EstimatePointColumn, PlannedStartTimeColumn, PlannedEndTimeColumn, ActualStartTimeColumn, ActualEndTimeColumn, ParentIDColumn, RequestIDColumn, FormTemplateIDColumn, FormDataIDColumn}
-		mutableColumns         = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, KeyColumn, JiraKeyColumn, TitleColumn, AssigneeIDColumn, EndTypeColumn, SubRequestIDColumn, TypeColumn, StatusColumn, DueInColumn, IsCurrentColumn, EstimatePointColumn, PlannedStartTimeColumn, PlannedEndTimeColumn, ActualStartTimeColumn, ActualEndTimeColumn, ParentIDColumn, RequestIDColumn, FormTemplateIDColumn, FormDataIDColumn}
+		allColumns             = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, KeyColumn, JiraKeyColumn, TitleColumn, AssigneeIDColumn, SubRequestIDColumn, TypeColumn, StatusColumn, IsCurrentColumn, EstimatePointColumn, PlannedStartTimeColumn, PlannedEndTimeColumn, ActualStartTimeColumn, ActualEndTimeColumn, BodyColumn, SubjectColumn, IsApprovedColumn, EndTypeColumn, ParentIDColumn, RequestIDColumn, FormTemplateIDColumn, FormDataIDColumn}
+		mutableColumns         = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, KeyColumn, JiraKeyColumn, TitleColumn, AssigneeIDColumn, SubRequestIDColumn, TypeColumn, StatusColumn, IsCurrentColumn, EstimatePointColumn, PlannedStartTimeColumn, PlannedEndTimeColumn, ActualStartTimeColumn, ActualEndTimeColumn, BodyColumn, SubjectColumn, IsApprovedColumn, EndTypeColumn, ParentIDColumn, RequestIDColumn, FormTemplateIDColumn, FormDataIDColumn}
 	)
 
 	return nodesTable{
@@ -131,17 +135,19 @@ func newNodesTableImpl(schemaName, tableName, alias string) nodesTable {
 		JiraKey:          JiraKeyColumn,
 		Title:            TitleColumn,
 		AssigneeID:       AssigneeIDColumn,
-		EndType:          EndTypeColumn,
 		SubRequestID:     SubRequestIDColumn,
 		Type:             TypeColumn,
 		Status:           StatusColumn,
-		DueIn:            DueInColumn,
 		IsCurrent:        IsCurrentColumn,
 		EstimatePoint:    EstimatePointColumn,
 		PlannedStartTime: PlannedStartTimeColumn,
 		PlannedEndTime:   PlannedEndTimeColumn,
 		ActualStartTime:  ActualStartTimeColumn,
 		ActualEndTime:    ActualEndTimeColumn,
+		Body:             BodyColumn,
+		Subject:          SubjectColumn,
+		IsApproved:       IsApprovedColumn,
+		EndType:          EndTypeColumn,
 		ParentID:         ParentIDColumn,
 		RequestID:        RequestIDColumn,
 		FormTemplateID:   FormTemplateIDColumn,
