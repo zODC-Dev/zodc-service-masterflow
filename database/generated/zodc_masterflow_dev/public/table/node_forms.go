@@ -17,13 +17,19 @@ type nodeFormsTable struct {
 	postgres.Table
 
 	// Columns
-	ID         postgres.ColumnInteger
-	CreatedAt  postgres.ColumnTimestamp
-	UpdatedAt  postgres.ColumnTimestamp
-	DeletedAt  postgres.ColumnTimestamp
-	Permission postgres.ColumnString
-	NodeID     postgres.ColumnString
-	FormDataID postgres.ColumnInteger
+	ID                       postgres.ColumnInteger
+	CreatedAt                postgres.ColumnTimestamp
+	UpdatedAt                postgres.ColumnTimestamp
+	DeletedAt                postgres.ColumnTimestamp
+	Permission               postgres.ColumnString
+	Key                      postgres.ColumnString
+	OptionKey                postgres.ColumnString
+	FromUserID               postgres.ColumnInteger
+	FromFormAttachedPosition postgres.ColumnInteger
+	IsOriginal               postgres.ColumnBool
+	DataID                   postgres.ColumnString
+	TemplateID               postgres.ColumnInteger
+	NodeID                   postgres.ColumnString
 
 	AllColumns     postgres.ColumnList
 	MutableColumns postgres.ColumnList
@@ -64,28 +70,40 @@ func newNodeFormsTable(schemaName, tableName, alias string) *NodeFormsTable {
 
 func newNodeFormsTableImpl(schemaName, tableName, alias string) nodeFormsTable {
 	var (
-		IDColumn         = postgres.IntegerColumn("id")
-		CreatedAtColumn  = postgres.TimestampColumn("created_at")
-		UpdatedAtColumn  = postgres.TimestampColumn("updated_at")
-		DeletedAtColumn  = postgres.TimestampColumn("deleted_at")
-		PermissionColumn = postgres.StringColumn("permission")
-		NodeIDColumn     = postgres.StringColumn("node_id")
-		FormDataIDColumn = postgres.IntegerColumn("form_data_id")
-		allColumns       = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, PermissionColumn, NodeIDColumn, FormDataIDColumn}
-		mutableColumns   = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, PermissionColumn, NodeIDColumn, FormDataIDColumn}
+		IDColumn                       = postgres.IntegerColumn("id")
+		CreatedAtColumn                = postgres.TimestampColumn("created_at")
+		UpdatedAtColumn                = postgres.TimestampColumn("updated_at")
+		DeletedAtColumn                = postgres.TimestampColumn("deleted_at")
+		PermissionColumn               = postgres.StringColumn("permission")
+		KeyColumn                      = postgres.StringColumn("key")
+		OptionKeyColumn                = postgres.StringColumn("option_key")
+		FromUserIDColumn               = postgres.IntegerColumn("from_user_id")
+		FromFormAttachedPositionColumn = postgres.IntegerColumn("from_form_attached_position")
+		IsOriginalColumn               = postgres.BoolColumn("is_original")
+		DataIDColumn                   = postgres.StringColumn("data_id")
+		TemplateIDColumn               = postgres.IntegerColumn("template_id")
+		NodeIDColumn                   = postgres.StringColumn("node_id")
+		allColumns                     = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, PermissionColumn, KeyColumn, OptionKeyColumn, FromUserIDColumn, FromFormAttachedPositionColumn, IsOriginalColumn, DataIDColumn, TemplateIDColumn, NodeIDColumn}
+		mutableColumns                 = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, PermissionColumn, KeyColumn, OptionKeyColumn, FromUserIDColumn, FromFormAttachedPositionColumn, IsOriginalColumn, DataIDColumn, TemplateIDColumn, NodeIDColumn}
 	)
 
 	return nodeFormsTable{
 		Table: postgres.NewTable(schemaName, tableName, alias, allColumns...),
 
 		//Columns
-		ID:         IDColumn,
-		CreatedAt:  CreatedAtColumn,
-		UpdatedAt:  UpdatedAtColumn,
-		DeletedAt:  DeletedAtColumn,
-		Permission: PermissionColumn,
-		NodeID:     NodeIDColumn,
-		FormDataID: FormDataIDColumn,
+		ID:                       IDColumn,
+		CreatedAt:                CreatedAtColumn,
+		UpdatedAt:                UpdatedAtColumn,
+		DeletedAt:                DeletedAtColumn,
+		Permission:               PermissionColumn,
+		Key:                      KeyColumn,
+		OptionKey:                OptionKeyColumn,
+		FromUserID:               FromUserIDColumn,
+		FromFormAttachedPosition: FromFormAttachedPositionColumn,
+		IsOriginal:               IsOriginalColumn,
+		DataID:                   DataIDColumn,
+		TemplateID:               TemplateIDColumn,
+		NodeID:                   NodeIDColumn,
 
 		AllColumns:     allColumns,
 		MutableColumns: mutableColumns,

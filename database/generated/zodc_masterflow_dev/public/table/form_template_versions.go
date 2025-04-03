@@ -21,7 +21,6 @@ type formTemplateVersionsTable struct {
 	CreatedAt      postgres.ColumnTimestamp
 	UpdatedAt      postgres.ColumnTimestamp
 	DeletedAt      postgres.ColumnTimestamp
-	IsArchived     postgres.ColumnBool
 	Version        postgres.ColumnInteger
 	FormTemplateID postgres.ColumnInteger
 
@@ -68,11 +67,10 @@ func newFormTemplateVersionsTableImpl(schemaName, tableName, alias string) formT
 		CreatedAtColumn      = postgres.TimestampColumn("created_at")
 		UpdatedAtColumn      = postgres.TimestampColumn("updated_at")
 		DeletedAtColumn      = postgres.TimestampColumn("deleted_at")
-		IsArchivedColumn     = postgres.BoolColumn("is_archived")
 		VersionColumn        = postgres.IntegerColumn("version")
 		FormTemplateIDColumn = postgres.IntegerColumn("form_template_id")
-		allColumns           = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, IsArchivedColumn, VersionColumn, FormTemplateIDColumn}
-		mutableColumns       = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, IsArchivedColumn, VersionColumn, FormTemplateIDColumn}
+		allColumns           = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, VersionColumn, FormTemplateIDColumn}
+		mutableColumns       = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, VersionColumn, FormTemplateIDColumn}
 	)
 
 	return formTemplateVersionsTable{
@@ -83,7 +81,6 @@ func newFormTemplateVersionsTableImpl(schemaName, tableName, alias string) formT
 		CreatedAt:      CreatedAtColumn,
 		UpdatedAt:      UpdatedAtColumn,
 		DeletedAt:      DeletedAtColumn,
-		IsArchived:     IsArchivedColumn,
 		Version:        VersionColumn,
 		FormTemplateID: FormTemplateIDColumn,
 

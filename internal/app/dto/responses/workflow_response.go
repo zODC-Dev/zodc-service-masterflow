@@ -47,7 +47,7 @@ type ConnectionResponse struct {
 	Id   string `json:"id"`
 	From string `json:"from"`
 	To   string `json:"to"`
-	Type string `json:"type"`
+	Text string `json:"text"`
 }
 
 type StoryResponse struct {

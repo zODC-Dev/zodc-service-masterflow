@@ -16,7 +16,6 @@ type FormTemplateVersions struct {
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 	DeletedAt      *time.Time
-	IsArchived     bool
 	Version        int32
 	FormTemplateID int32
 }

@@ -12,33 +12,42 @@ import (
 )
 
 type Nodes struct {
-	ID               string `sql:"primary_key"`
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	DeletedAt        *time.Time
-	X                float64
-	Y                float64
-	Width            float64
-	Height           float64
-	Key              int32
-	JiraKey          *string
-	Title            string
-	AssigneeID       *int32
-	SubRequestID     *int32
-	Type             string
-	Status           string
-	IsCurrent        bool
-	EstimatePoint    *int32
-	PlannedStartTime *time.Time
-	PlannedEndTime   *time.Time
-	ActualStartTime  *time.Time
-	ActualEndTime    *time.Time
-	Body             *string
-	Subject          *string
-	IsApproved       bool
-	EndType          *string
-	ParentID         *string
-	RequestID        int32
-	FormTemplateID   *int32
-	FormDataID       *int32
+	ID                        string `sql:"primary_key"`
+	CreatedAt                 time.Time
+	UpdatedAt                 time.Time
+	DeletedAt                 *time.Time
+	X                         float64
+	Y                         float64
+	Width                     float64
+	Height                    float64
+	Key                       int32
+	JiraKey                   *string
+	Title                     string
+	AssigneeID                *int32
+	SubRequestID              *int32
+	Type                      string
+	Status                    string
+	IsCurrent                 bool
+	EstimatePoint             *int32
+	PlannedStartTime          *time.Time
+	PlannedEndTime            *time.Time
+	ActualStartTime           *time.Time
+	ActualEndTime             *time.Time
+	Body                      *string
+	Subject                   *string
+	IsApproved                bool
+	EndType                   *string
+	TaskAssignedRequester     bool
+	TaskAssignedAssignee      bool
+	TaskAssignedParticipants  bool
+	TaskStartedRequester      bool
+	TaskStartedAssignee       bool
+	TaskStartedParticipants   bool
+	TaskCompletedRequester    bool
+	TaskCompletedAssignee     bool
+	TaskCompletedParticipants bool
+	ParentID                  *string
+	RequestID                 int32
+	FormTemplateID            *int32
+	FormDataID                *int32
 }

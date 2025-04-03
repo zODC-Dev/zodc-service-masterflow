@@ -112,6 +112,19 @@ CREATE TABLE nodes (
     -- end node
     end_type TEXT,
 
+    -- task node
+    task_assigned_requester BOOLEAN NOT NULL DEFAULT false,
+    task_assigned_assignee BOOLEAN NOT NULL DEFAULT false,
+    task_assigned_participants BOOLEAN NOT NULL DEFAULT false,
+
+    task_started_requester BOOLEAN NOT NULL DEFAULT false,  
+    task_started_assignee BOOLEAN NOT NULL DEFAULT false,
+    task_started_participants BOOLEAN NOT NULL DEFAULT false,
+
+    task_completed_requester BOOLEAN NOT NULL DEFAULT false,
+    task_completed_assignee BOOLEAN NOT NULL DEFAULT false,
+    task_completed_participants BOOLEAN NOT NULL DEFAULT false,
+
     parent_id TEXT REFERENCES nodes (id) ON DELETE CASCADE,
 
     -- Foreign Key
@@ -140,10 +153,30 @@ CREATE TABLE node_forms (
     deleted_at TIMESTAMP,
 
     permission TEXT NOT NULL,
+    key TEXT NOT NULL, -- FE GENERATE UUID
 
-    node_id TEXT NOT NULL REFERENCES nodes (id) ON DELETE CASCADE,
+    -- For FE
+    option_key TEXT,
+    from_user_id INT,
+    from_form_attached_position INT,
+    is_original BOOLEAN NOT NULL DEFAULT false,
 
-    form_data_id INT REFERENCES form_data (id) ON DELETE CASCADE
+    -- Form
+    data_id TEXT,
+    template_id INT REFERENCES form_templates (id) ON DELETE CASCADE,
+
+    node_id TEXT NOT NULL REFERENCES nodes (id) ON DELETE CASCADE
+);
+
+CREATE TABLE node_form_approve_users (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMP DEFAULT now () NOT NULL,
+    updated_at TIMESTAMP DEFAULT now () NOT NULL,
+    deleted_at TIMESTAMP,
+
+    user_id INT NOT NULL,
+
+    node_form_id INT NOT NULL REFERENCES node_forms (id) ON DELETE CASCADE
 );
 
 CREATE TABLE connections (
@@ -165,6 +198,8 @@ CREATE TABLE connections (
 );
 
 -- +goose Down
+DROP TABLE node_form_approve_users;
+
 DROP TABLE node_forms;
 
 DROP TABLE node_condition_destinations;

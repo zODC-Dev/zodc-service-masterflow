@@ -388,6 +388,10 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 						RequestID:  storyRequest.ID,
 					}
 
+					if connReq.Text != "" {
+						storyConnection.Text = &connReq.Text
+					}
+
 					storyConnections = append(storyConnections, storyConnection)
 				}
 			}
@@ -500,6 +504,20 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 				return fmt.Errorf("create node condition destinations fail: %w", err)
 			}
 		}
+
+		// Form Attached
+		// for _, formAttached := range workflowNodeReq.Data.FormAttached {
+		// 	formAttachedModel := model.NodeForms{
+		// 		Key:                      formAttached.Key,
+		// 		FormTemplateId:           formAttached.FormTemplateId,
+		// 		DataId:                   formAttached.DataId,
+		// 		OptionId:                 formAttached.OptionId,
+		// 		FromUserId:               formAttached.FromUserId,
+		// 		FromFormAttachedPosition: formAttached.FromFormAttachedPosition,
+		// 		Permission:               formAttached.Permission,
+		// 		IsOriginal:               formAttached.IsOriginal,
+		// 	}
+		// }
 	}
 	if len(workflowNodes) > 0 {
 		err = s.NodeRepo.CreateNodes(ctx, tx, workflowNodes)

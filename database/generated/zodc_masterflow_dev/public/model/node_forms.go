@@ -12,11 +12,17 @@ import (
 )
 
 type NodeForms struct {
-	ID         int32 `sql:"primary_key"`
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	DeletedAt  *time.Time
-	Permission string
-	NodeID     string
-	FormDataID *int32
+	ID                       int32 `sql:"primary_key"`
+	CreatedAt                time.Time
+	UpdatedAt                time.Time
+	DeletedAt                *time.Time
+	Permission               string
+	Key                      string
+	OptionKey                *string
+	FromUserID               *int32
+	FromFormAttachedPosition *int32
+	IsOriginal               bool
+	DataID                   *string
+	TemplateID               *int32
+	NodeID                   string
 }

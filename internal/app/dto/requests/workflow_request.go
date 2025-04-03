@@ -8,7 +8,19 @@ type Connection struct {
 	Id   string
 	From string
 	To   string
-	Type string
+	Text string
+}
+
+type NodeDataFormAttached struct {
+	Key                      string
+	FormTemplateId           int32
+	DataId                   *string
+	OptionId                 *string
+	FromUserId               *int32
+	FromFormAttachedPosition *int32
+	Permission               string
+	IsOriginal               bool
+	ApproveUserIds           []int32
 }
 
 type NodeDataAssignee struct {
@@ -29,6 +41,8 @@ type NodeData struct {
 	SubRequestID *int32
 
 	Condition NodeDataCondition
+
+	FormAttached []NodeDataFormAttached
 }
 
 type NodeForm struct {

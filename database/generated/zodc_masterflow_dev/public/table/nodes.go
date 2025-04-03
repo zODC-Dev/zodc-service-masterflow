@@ -17,35 +17,44 @@ type nodesTable struct {
 	postgres.Table
 
 	// Columns
-	ID               postgres.ColumnString
-	CreatedAt        postgres.ColumnTimestamp
-	UpdatedAt        postgres.ColumnTimestamp
-	DeletedAt        postgres.ColumnTimestamp
-	X                postgres.ColumnFloat
-	Y                postgres.ColumnFloat
-	Width            postgres.ColumnFloat
-	Height           postgres.ColumnFloat
-	Key              postgres.ColumnInteger
-	JiraKey          postgres.ColumnString
-	Title            postgres.ColumnString
-	AssigneeID       postgres.ColumnInteger
-	SubRequestID     postgres.ColumnInteger
-	Type             postgres.ColumnString
-	Status           postgres.ColumnString
-	IsCurrent        postgres.ColumnBool
-	EstimatePoint    postgres.ColumnInteger
-	PlannedStartTime postgres.ColumnTimestamp
-	PlannedEndTime   postgres.ColumnTimestamp
-	ActualStartTime  postgres.ColumnTimestamp
-	ActualEndTime    postgres.ColumnTimestamp
-	Body             postgres.ColumnString
-	Subject          postgres.ColumnString
-	IsApproved       postgres.ColumnBool
-	EndType          postgres.ColumnString
-	ParentID         postgres.ColumnString
-	RequestID        postgres.ColumnInteger
-	FormTemplateID   postgres.ColumnInteger
-	FormDataID       postgres.ColumnInteger
+	ID                        postgres.ColumnString
+	CreatedAt                 postgres.ColumnTimestamp
+	UpdatedAt                 postgres.ColumnTimestamp
+	DeletedAt                 postgres.ColumnTimestamp
+	X                         postgres.ColumnFloat
+	Y                         postgres.ColumnFloat
+	Width                     postgres.ColumnFloat
+	Height                    postgres.ColumnFloat
+	Key                       postgres.ColumnInteger
+	JiraKey                   postgres.ColumnString
+	Title                     postgres.ColumnString
+	AssigneeID                postgres.ColumnInteger
+	SubRequestID              postgres.ColumnInteger
+	Type                      postgres.ColumnString
+	Status                    postgres.ColumnString
+	IsCurrent                 postgres.ColumnBool
+	EstimatePoint             postgres.ColumnInteger
+	PlannedStartTime          postgres.ColumnTimestamp
+	PlannedEndTime            postgres.ColumnTimestamp
+	ActualStartTime           postgres.ColumnTimestamp
+	ActualEndTime             postgres.ColumnTimestamp
+	Body                      postgres.ColumnString
+	Subject                   postgres.ColumnString
+	IsApproved                postgres.ColumnBool
+	EndType                   postgres.ColumnString
+	TaskAssignedRequester     postgres.ColumnBool
+	TaskAssignedAssignee      postgres.ColumnBool
+	TaskAssignedParticipants  postgres.ColumnBool
+	TaskStartedRequester      postgres.ColumnBool
+	TaskStartedAssignee       postgres.ColumnBool
+	TaskStartedParticipants   postgres.ColumnBool
+	TaskCompletedRequester    postgres.ColumnBool
+	TaskCompletedAssignee     postgres.ColumnBool
+	TaskCompletedParticipants postgres.ColumnBool
+	ParentID                  postgres.ColumnString
+	RequestID                 postgres.ColumnInteger
+	FormTemplateID            postgres.ColumnInteger
+	FormDataID                postgres.ColumnInteger
 
 	AllColumns     postgres.ColumnList
 	MutableColumns postgres.ColumnList
@@ -86,72 +95,90 @@ func newNodesTable(schemaName, tableName, alias string) *NodesTable {
 
 func newNodesTableImpl(schemaName, tableName, alias string) nodesTable {
 	var (
-		IDColumn               = postgres.StringColumn("id")
-		CreatedAtColumn        = postgres.TimestampColumn("created_at")
-		UpdatedAtColumn        = postgres.TimestampColumn("updated_at")
-		DeletedAtColumn        = postgres.TimestampColumn("deleted_at")
-		XColumn                = postgres.FloatColumn("x")
-		YColumn                = postgres.FloatColumn("y")
-		WidthColumn            = postgres.FloatColumn("width")
-		HeightColumn           = postgres.FloatColumn("height")
-		KeyColumn              = postgres.IntegerColumn("key")
-		JiraKeyColumn          = postgres.StringColumn("jira_key")
-		TitleColumn            = postgres.StringColumn("title")
-		AssigneeIDColumn       = postgres.IntegerColumn("assignee_id")
-		SubRequestIDColumn     = postgres.IntegerColumn("sub_request_id")
-		TypeColumn             = postgres.StringColumn("type")
-		StatusColumn           = postgres.StringColumn("status")
-		IsCurrentColumn        = postgres.BoolColumn("is_current")
-		EstimatePointColumn    = postgres.IntegerColumn("estimate_point")
-		PlannedStartTimeColumn = postgres.TimestampColumn("planned_start_time")
-		PlannedEndTimeColumn   = postgres.TimestampColumn("planned_end_time")
-		ActualStartTimeColumn  = postgres.TimestampColumn("actual_start_time")
-		ActualEndTimeColumn    = postgres.TimestampColumn("actual_end_time")
-		BodyColumn             = postgres.StringColumn("body")
-		SubjectColumn          = postgres.StringColumn("subject")
-		IsApprovedColumn       = postgres.BoolColumn("is_approved")
-		EndTypeColumn          = postgres.StringColumn("end_type")
-		ParentIDColumn         = postgres.StringColumn("parent_id")
-		RequestIDColumn        = postgres.IntegerColumn("request_id")
-		FormTemplateIDColumn   = postgres.IntegerColumn("form_template_id")
-		FormDataIDColumn       = postgres.IntegerColumn("form_data_id")
-		allColumns             = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, KeyColumn, JiraKeyColumn, TitleColumn, AssigneeIDColumn, SubRequestIDColumn, TypeColumn, StatusColumn, IsCurrentColumn, EstimatePointColumn, PlannedStartTimeColumn, PlannedEndTimeColumn, ActualStartTimeColumn, ActualEndTimeColumn, BodyColumn, SubjectColumn, IsApprovedColumn, EndTypeColumn, ParentIDColumn, RequestIDColumn, FormTemplateIDColumn, FormDataIDColumn}
-		mutableColumns         = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, KeyColumn, JiraKeyColumn, TitleColumn, AssigneeIDColumn, SubRequestIDColumn, TypeColumn, StatusColumn, IsCurrentColumn, EstimatePointColumn, PlannedStartTimeColumn, PlannedEndTimeColumn, ActualStartTimeColumn, ActualEndTimeColumn, BodyColumn, SubjectColumn, IsApprovedColumn, EndTypeColumn, ParentIDColumn, RequestIDColumn, FormTemplateIDColumn, FormDataIDColumn}
+		IDColumn                        = postgres.StringColumn("id")
+		CreatedAtColumn                 = postgres.TimestampColumn("created_at")
+		UpdatedAtColumn                 = postgres.TimestampColumn("updated_at")
+		DeletedAtColumn                 = postgres.TimestampColumn("deleted_at")
+		XColumn                         = postgres.FloatColumn("x")
+		YColumn                         = postgres.FloatColumn("y")
+		WidthColumn                     = postgres.FloatColumn("width")
+		HeightColumn                    = postgres.FloatColumn("height")
+		KeyColumn                       = postgres.IntegerColumn("key")
+		JiraKeyColumn                   = postgres.StringColumn("jira_key")
+		TitleColumn                     = postgres.StringColumn("title")
+		AssigneeIDColumn                = postgres.IntegerColumn("assignee_id")
+		SubRequestIDColumn              = postgres.IntegerColumn("sub_request_id")
+		TypeColumn                      = postgres.StringColumn("type")
+		StatusColumn                    = postgres.StringColumn("status")
+		IsCurrentColumn                 = postgres.BoolColumn("is_current")
+		EstimatePointColumn             = postgres.IntegerColumn("estimate_point")
+		PlannedStartTimeColumn          = postgres.TimestampColumn("planned_start_time")
+		PlannedEndTimeColumn            = postgres.TimestampColumn("planned_end_time")
+		ActualStartTimeColumn           = postgres.TimestampColumn("actual_start_time")
+		ActualEndTimeColumn             = postgres.TimestampColumn("actual_end_time")
+		BodyColumn                      = postgres.StringColumn("body")
+		SubjectColumn                   = postgres.StringColumn("subject")
+		IsApprovedColumn                = postgres.BoolColumn("is_approved")
+		EndTypeColumn                   = postgres.StringColumn("end_type")
+		TaskAssignedRequesterColumn     = postgres.BoolColumn("task_assigned_requester")
+		TaskAssignedAssigneeColumn      = postgres.BoolColumn("task_assigned_assignee")
+		TaskAssignedParticipantsColumn  = postgres.BoolColumn("task_assigned_participants")
+		TaskStartedRequesterColumn      = postgres.BoolColumn("task_started_requester")
+		TaskStartedAssigneeColumn       = postgres.BoolColumn("task_started_assignee")
+		TaskStartedParticipantsColumn   = postgres.BoolColumn("task_started_participants")
+		TaskCompletedRequesterColumn    = postgres.BoolColumn("task_completed_requester")
+		TaskCompletedAssigneeColumn     = postgres.BoolColumn("task_completed_assignee")
+		TaskCompletedParticipantsColumn = postgres.BoolColumn("task_completed_participants")
+		ParentIDColumn                  = postgres.StringColumn("parent_id")
+		RequestIDColumn                 = postgres.IntegerColumn("request_id")
+		FormTemplateIDColumn            = postgres.IntegerColumn("form_template_id")
+		FormDataIDColumn                = postgres.IntegerColumn("form_data_id")
+		allColumns                      = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, KeyColumn, JiraKeyColumn, TitleColumn, AssigneeIDColumn, SubRequestIDColumn, TypeColumn, StatusColumn, IsCurrentColumn, EstimatePointColumn, PlannedStartTimeColumn, PlannedEndTimeColumn, ActualStartTimeColumn, ActualEndTimeColumn, BodyColumn, SubjectColumn, IsApprovedColumn, EndTypeColumn, TaskAssignedRequesterColumn, TaskAssignedAssigneeColumn, TaskAssignedParticipantsColumn, TaskStartedRequesterColumn, TaskStartedAssigneeColumn, TaskStartedParticipantsColumn, TaskCompletedRequesterColumn, TaskCompletedAssigneeColumn, TaskCompletedParticipantsColumn, ParentIDColumn, RequestIDColumn, FormTemplateIDColumn, FormDataIDColumn}
+		mutableColumns                  = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, KeyColumn, JiraKeyColumn, TitleColumn, AssigneeIDColumn, SubRequestIDColumn, TypeColumn, StatusColumn, IsCurrentColumn, EstimatePointColumn, PlannedStartTimeColumn, PlannedEndTimeColumn, ActualStartTimeColumn, ActualEndTimeColumn, BodyColumn, SubjectColumn, IsApprovedColumn, EndTypeColumn, TaskAssignedRequesterColumn, TaskAssignedAssigneeColumn, TaskAssignedParticipantsColumn, TaskStartedRequesterColumn, TaskStartedAssigneeColumn, TaskStartedParticipantsColumn, TaskCompletedRequesterColumn, TaskCompletedAssigneeColumn, TaskCompletedParticipantsColumn, ParentIDColumn, RequestIDColumn, FormTemplateIDColumn, FormDataIDColumn}
 	)
 
 	return nodesTable{
 		Table: postgres.NewTable(schemaName, tableName, alias, allColumns...),
 
 		//Columns
-		ID:               IDColumn,
-		CreatedAt:        CreatedAtColumn,
-		UpdatedAt:        UpdatedAtColumn,
-		DeletedAt:        DeletedAtColumn,
-		X:                XColumn,
-		Y:                YColumn,
-		Width:            WidthColumn,
-		Height:           HeightColumn,
-		Key:              KeyColumn,
-		JiraKey:          JiraKeyColumn,
-		Title:            TitleColumn,
-		AssigneeID:       AssigneeIDColumn,
-		SubRequestID:     SubRequestIDColumn,
-		Type:             TypeColumn,
-		Status:           StatusColumn,
-		IsCurrent:        IsCurrentColumn,
-		EstimatePoint:    EstimatePointColumn,
-		PlannedStartTime: PlannedStartTimeColumn,
-		PlannedEndTime:   PlannedEndTimeColumn,
-		ActualStartTime:  ActualStartTimeColumn,
-		ActualEndTime:    ActualEndTimeColumn,
-		Body:             BodyColumn,
-		Subject:          SubjectColumn,
-		IsApproved:       IsApprovedColumn,
-		EndType:          EndTypeColumn,
-		ParentID:         ParentIDColumn,
-		RequestID:        RequestIDColumn,
-		FormTemplateID:   FormTemplateIDColumn,
-		FormDataID:       FormDataIDColumn,
+		ID:                        IDColumn,
+		CreatedAt:                 CreatedAtColumn,
+		UpdatedAt:                 UpdatedAtColumn,
+		DeletedAt:                 DeletedAtColumn,
+		X:                         XColumn,
+		Y:                         YColumn,
+		Width:                     WidthColumn,
+		Height:                    HeightColumn,
+		Key:                       KeyColumn,
+		JiraKey:                   JiraKeyColumn,
+		Title:                     TitleColumn,
+		AssigneeID:                AssigneeIDColumn,
+		SubRequestID:              SubRequestIDColumn,
+		Type:                      TypeColumn,
+		Status:                    StatusColumn,
+		IsCurrent:                 IsCurrentColumn,
+		EstimatePoint:             EstimatePointColumn,
+		PlannedStartTime:          PlannedStartTimeColumn,
+		PlannedEndTime:            PlannedEndTimeColumn,
+		ActualStartTime:           ActualStartTimeColumn,
+		ActualEndTime:             ActualEndTimeColumn,
+		Body:                      BodyColumn,
+		Subject:                   SubjectColumn,
+		IsApproved:                IsApprovedColumn,
+		EndType:                   EndTypeColumn,
+		TaskAssignedRequester:     TaskAssignedRequesterColumn,
+		TaskAssignedAssignee:      TaskAssignedAssigneeColumn,
+		TaskAssignedParticipants:  TaskAssignedParticipantsColumn,
+		TaskStartedRequester:      TaskStartedRequesterColumn,
+		TaskStartedAssignee:       TaskStartedAssigneeColumn,
+		TaskStartedParticipants:   TaskStartedParticipantsColumn,
+		TaskCompletedRequester:    TaskCompletedRequesterColumn,
+		TaskCompletedAssignee:     TaskCompletedAssigneeColumn,
+		TaskCompletedParticipants: TaskCompletedParticipantsColumn,
+		ParentID:                  ParentIDColumn,
+		RequestID:                 RequestIDColumn,
+		FormTemplateID:            FormTemplateIDColumn,
+		FormDataID:                FormDataIDColumn,
 
 		AllColumns:     allColumns,
 		MutableColumns: mutableColumns,

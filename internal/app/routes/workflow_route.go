@@ -2,15 +2,13 @@ package routes
 
 import (
 	"database/sql"
-	"log/slog"
-	"os"
 
 	"github.com/labstack/echo/v4"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/controllers"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/externals"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/nats"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/services"
-	"github.com/zODC-Dev/zodc-service-masterflow/pkg/nats"
 )
 
 func WorkflowRoute(group *echo.Group, db *sql.DB) {
@@ -21,11 +19,7 @@ func WorkflowRoute(group *echo.Group, db *sql.DB) {
 	requestRepo := repositories.NewRequestRepository()
 	connectionRepo := repositories.NewConnectionRepository()
 	nodeRepo := repositories.NewNodeRepository()
-	natsClient, err := nats.NewNATSClient(nats.DefaultConfig())
-	if err != nil {
-		slog.Error("Failed to create NATS client", "error", err)
-		os.Exit(1)
-	}
+	natsClient := nats.GetNATSClient()
 
 	// Apis
 	userApi := externals.NewUserAPI()
