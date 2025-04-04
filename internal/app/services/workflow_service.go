@@ -973,10 +973,7 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 
 			formFieldDatas := []model.FormFieldData{}
 			for _, form := range node.Form {
-				formTemplateField, err := s.FormRepo.FindOneFormTemplateFieldByFieldId(ctx, tx, form.FieldId, constants.FormTemplateIDJiraSystemForm)
-				if err != nil {
-					return 0, fmt.Errorf("find form template field fail: %w", err)
-				}
+				formTemplateField, _ := s.FormRepo.FindOneFormTemplateFieldByFieldId(ctx, tx, form.FieldId, constants.FormTemplateIDJiraSystemForm)
 
 				formFieldData := model.FormFieldData{
 					FormTemplateFieldID: formTemplateField.ID,
