@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -122,6 +123,7 @@ func (r *RequestRepository) FindOneRequestByRequestId(ctx context.Context, db *s
 	WorkflowVersions := table.WorkflowVersions
 	Requests := table.Requests
 	Nodes := table.Nodes
+	NodeForms := table.NodeForms
 	Connections := table.Connections
 	Categories := table.Categories
 
@@ -137,6 +139,7 @@ func (r *RequestRepository) FindOneRequestByRequestId(ctx context.Context, db *s
 			LEFT_JOIN(WorkflowVersions, WorkflowVersions.ID.EQ(Requests.WorkflowVersionID)).
 			LEFT_JOIN(Workflows, Workflows.ID.EQ(WorkflowVersions.WorkflowID)).
 			LEFT_JOIN(Nodes, Nodes.RequestID.EQ(Requests.ID)).
+			LEFT_JOIN(NodeForms, NodeForms.NodeID.EQ(Nodes.ID)).
 			LEFT_JOIN(Connections, Connections.RequestID.EQ(Requests.ID)).
 			LEFT_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)),
 	).WHERE(
@@ -307,6 +310,62 @@ func (r *RequestRepository) FindAllChildrenRequestByRequestId(ctx context.Contex
 
 	result := []model.Requests{}
 	err := statement.QueryContext(ctx, db, &result)
+
+	return result, err
+}
+
+func (r *RequestRepository) FindAllTasksByProject(ctx context.Context, db *sql.DB, userId int32, queryparams queryparams.RequestTaskProjectQueryParam) ([]results.NodeResult, error) {
+	Requests := table.Requests
+	Workflows := table.Workflows
+	WorkflowVersions := table.WorkflowVersions
+	Nodes := table.Nodes
+
+	statement := postgres.SELECT(
+		Nodes.AllColumns,
+		Requests.AllColumns,
+	).FROM(
+		Nodes.INNER_JOIN(
+			Requests, Nodes.RequestID.EQ(Requests.ID),
+		).INNER_JOIN(
+			WorkflowVersions, Requests.WorkflowVersionID.EQ(WorkflowVersions.ID),
+		).INNER_JOIN(
+			Workflows, Workflows.ID.EQ(WorkflowVersions.WorkflowID),
+		),
+	).LIMIT(int64(queryparams.PageSize)).OFFSET(int64(queryparams.Page))
+
+	conditions := []postgres.BoolExpression{
+		Nodes.AssigneeID.EQ(postgres.Int32(userId)),
+	}
+
+	if queryparams.ProjectKey != "" {
+		conditions = append(conditions, Workflows.ProjectKey.EQ(postgres.String(queryparams.ProjectKey)))
+	}
+
+	if queryparams.Status != "" {
+		if queryparams.Status == "TODAY" {
+			conditions = append(conditions, Nodes.IsCurrent.EQ(postgres.Bool(true)))
+			conditions = append(conditions, Nodes.Status.NOT_EQ(postgres.String(string(constants.NodeStatusCompleted))))
+		} else {
+			conditions = append(conditions, Requests.Status.EQ(postgres.String(queryparams.Status)))
+		}
+	}
+
+	if queryparams.Type != "" {
+		conditions = append(conditions, Nodes.Type.EQ(postgres.String(queryparams.Type)))
+	}
+
+	if queryparams.WorkflowType != "" {
+		conditions = append(conditions, Workflows.Type.EQ(postgres.String(queryparams.WorkflowType)))
+	}
+
+	if len(conditions) > 0 {
+		statement = statement.WHERE(postgres.AND(conditions...))
+	}
+
+	result := []results.NodeResult{}
+	err := statement.QueryContext(ctx, db, &result)
+
+	fmt.Println(statement.DebugSql())
 
 	return result, err
 }

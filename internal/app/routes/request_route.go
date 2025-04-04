@@ -50,6 +50,9 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 		requestRoute.GET("/overview", requestController.GetRequestOverview)
 		requestRoute.GET("/detail/:id", requestController.GetRequestDetail)
 		requestRoute.GET("/tasks/:id", requestController.GetRequestTasks)
+
+		requestRoute.GET("/tasks/projects", requestController.GetRequestTasksByProject)
+
 	}
 
 }

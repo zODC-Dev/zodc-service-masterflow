@@ -139,3 +139,47 @@ func (c *RequestController) GetRequestTasks(e echo.Context) error {
 		Data:    requestTasksResponse,
 	})
 }
+
+func (c *RequestController) GetRequestTasksByProject(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	userId, _ := middlewares.GetUserID(e)
+
+	page := 1
+	if pageStr := e.QueryParam("page"); pageStr != "" {
+		if parsedPage, err := strconv.Atoi(pageStr); err == nil && parsedPage > 0 {
+			page = parsedPage
+		}
+	}
+
+	pageSize := 10
+	if pageSizeStr := e.QueryParam("pageSize"); pageSizeStr != "" {
+		if parsedPageSize, err := strconv.Atoi(pageSizeStr); err == nil && parsedPageSize > 0 {
+			pageSize = parsedPageSize
+		}
+	}
+
+	workflowType := e.QueryParam("workflowType")
+	status := e.QueryParam("status")
+	typeQuery := e.QueryParam("type")
+	projectKey := e.QueryParam("projectKey")
+
+	requestTaskProjectQueryParam := queryparams.RequestTaskProjectQueryParam{
+		Page:         page,
+		PageSize:     pageSize,
+		WorkflowType: workflowType,
+		Status:       status,
+		Type:         typeQuery,
+		ProjectKey:   projectKey,
+	}
+
+	requestTasksResponse, err := c.requestService.GetRequestTasksByProjectHandler(ctx, requestTaskProjectQueryParam, userId)
+	if err != nil {
+		return e.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, responses.Response{
+		Message: "Success",
+		Data:    requestTasksResponse,
+	})
+}

@@ -166,6 +166,7 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 					return err
 				}
 			} else {
+				connectionsToNode[i].Node.IsCurrent = true
 				if err := s.UpdateNodeStatusToInProcessing(ctx, tx, connectionsToNode[i].Node); err != nil {
 					return err
 				}

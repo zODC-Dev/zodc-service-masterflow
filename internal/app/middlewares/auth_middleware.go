@@ -20,6 +20,12 @@ func ExtractUserMiddleware() echo.MiddlewareFunc {
 				tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 				tokenString = strings.Trim(tokenString, "\"")
 
+				if tokenString == "" {
+					return c.JSON(http.StatusUnauthorized, map[string]string{
+						"error": "Invalid token format",
+					})
+				}
+
 				token, _ := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 					return []byte(""), nil
 				})

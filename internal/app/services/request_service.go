@@ -9,6 +9,7 @@ import (
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/constants"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/responses"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/results"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/externals"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
@@ -306,7 +307,11 @@ func (s *RequestService) GetRequestTasksHandler(ctx context.Context, requestId i
 				}
 
 				// Append node
-				nodes = append(nodes, subNode)
+				subNodeModel := model.Nodes{}
+				if err := utils.Mapper(subNode, &subNodeModel); err != nil {
+					return paginatedResponse, err
+				}
+				nodes = append(nodes, subNodeModel)
 			}
 		} else {
 			// Only unique userIds
@@ -316,7 +321,11 @@ func (s *RequestService) GetRequestTasksHandler(ctx context.Context, requestId i
 			}
 
 			// Append node
-			nodes = append(nodes, node)
+			nodeModel := model.Nodes{}
+			if err := utils.Mapper(node, &nodeModel); err != nil {
+				return paginatedResponse, err
+			}
+			nodes = append(nodes, nodeModel)
 		}
 	}
 
@@ -373,5 +382,127 @@ func (s *RequestService) GetRequestTasksHandler(ctx context.Context, requestId i
 		PageSize:   requestTaskQueryParam.PageSize,
 		TotalPages: totalPages,
 	}
+	return paginatedResponse, nil
+}
+
+func (s *RequestService) GetRequestTasksByProjectHandler(ctx context.Context, requestTaskProjectQueryParam queryparams.RequestTaskProjectQueryParam, userId int32) (responses.Paginate[[]responses.RequestTaskResponse], error) {
+	paginatedResponse := responses.Paginate[[]responses.RequestTaskResponse]{}
+	requestTaskResponse := []responses.RequestTaskResponse{}
+
+	count, err := s.RequestRepo.CountRequestByStatusAndUserId(ctx, s.DB, userId, "")
+	if err != nil {
+		return paginatedResponse, err
+	}
+
+	total := count
+
+	tasks, err := s.RequestRepo.FindAllTasksByProject(ctx, s.DB, userId, requestTaskProjectQueryParam)
+	if err != nil {
+		return paginatedResponse, err
+	}
+
+	// Only unique existingUserIds
+	nodes := []results.NodeResult{}
+	existingUserIds := make(map[int32]bool)
+	userIds := []int32{}
+
+	// Get all nodes from request
+	for _, node := range tasks {
+
+		// Skip Start and End Node
+		if node.Type == string(constants.NodeTypeStart) || node.Type == string(constants.NodeTypeEnd) {
+			continue
+		}
+
+		// If Node is Story or SubWorkflow, get all nodes from subRequest
+		if node.Type == string(constants.NodeTypeStory) || node.Type == string(constants.NodeTypeSubWorkflow) {
+			subRequest, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, *node.SubRequestID)
+			if err != nil {
+				return paginatedResponse, err
+			}
+
+			for _, subNode := range subRequest.Nodes {
+				// Only unique userIds
+				if _, exists := existingUserIds[*subNode.AssigneeID]; !exists {
+					existingUserIds[*subNode.AssigneeID] = true
+					userIds = append(userIds, *subNode.AssigneeID)
+				}
+
+				// Append node
+				subNodeModel := results.NodeResult{}
+				if err := utils.Mapper(subNode, &subNodeModel); err != nil {
+					return paginatedResponse, err
+				}
+				nodes = append(nodes, subNodeModel)
+			}
+		} else {
+			// Only unique userIds
+			if _, exists := existingUserIds[*node.AssigneeID]; !exists {
+				existingUserIds[*node.AssigneeID] = true
+				userIds = append(userIds, *node.AssigneeID)
+			}
+
+			// Append node
+			nodeModel := results.NodeResult{}
+			if err := utils.Mapper(node, &nodeModel); err != nil {
+				return paginatedResponse, err
+			}
+			nodes = append(nodes, nodeModel)
+		}
+	}
+
+	// Get all users from userIds
+	users, err := s.UserAPI.FindUsersByUserIds(userIds)
+	if err != nil {
+		return paginatedResponse, err
+	}
+
+	// Create a map of assignees
+	assignees := make(map[int32]types.Assignee)
+	for _, user := range users.Data {
+		assignees[user.ID] = types.Assignee{
+			Id:           user.ID,
+			Name:         user.Name,
+			Email:        user.Email,
+			AvatarUrl:    user.AvatarUrl,
+			IsSystemUser: user.IsSystemUser,
+		}
+	}
+
+	for _, node := range nodes {
+
+		requestTask := responses.RequestTaskResponse{
+			Id:               node.ID,
+			Title:            node.Title,
+			Status:           node.Status,
+			PlannedStartTime: node.PlannedStartTime,
+			PlannedEndTime:   node.PlannedEndTime,
+			ActualStartTime:  node.ActualStartTime,
+			ActualEndTime:    node.ActualEndTime,
+			EstimatePoint:    node.EstimatePoint,
+			RequestProgress:  node.Request.Progress,
+			RequestTitle:     node.Request.Title,
+			Assignee:         assignees[*node.AssigneeID],
+		}
+
+		if node.JiraKey != nil {
+			requestTask.Key = *node.JiraKey
+		} else {
+			requestTask.Key = strconv.Itoa(int(node.Key))
+		}
+
+		requestTaskResponse = append(requestTaskResponse, requestTask)
+	}
+
+	totalPages := (int(total) + requestTaskProjectQueryParam.PageSize - 1) / requestTaskProjectQueryParam.PageSize
+
+	paginatedResponse = responses.Paginate[[]responses.RequestTaskResponse]{
+		Items:      requestTaskResponse,
+		Total:      int(total),
+		Page:       requestTaskProjectQueryParam.Page,
+		PageSize:   requestTaskProjectQueryParam.PageSize,
+		TotalPages: totalPages,
+	}
+
 	return paginatedResponse, nil
 }
