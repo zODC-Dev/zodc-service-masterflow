@@ -18,6 +18,7 @@ tasks:
   setup:
     cmds:
       - go mod download
+      - go install github.com/go-delve/delve/cmd/dlv@1.24.1  
       - go install github.com/go-jet/jet/v2/cmd/jet@v2.11.1
       - go install github.com/pressly/goose/v3/cmd/goose@v3.24.1
       - go install github.com/air-verse/air@v1.61.7
