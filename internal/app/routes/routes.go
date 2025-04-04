@@ -12,7 +12,7 @@ func RegisterRoutes(e *echo.Echo, db *sql.DB) {
 	RegisterSwaggerRoute(e)
 
 	// Api V1 Group
-	apiV1Group := e.Group("/services")
+	apiV1Group := e.Group("/api/v1")
 	{
 		FormRoute(apiV1Group, db)
 		WorkflowRoute(apiV1Group, db)
