@@ -23,6 +23,8 @@ type NodeDataResponse struct {
 	SubRequestID *int32 `json:"subRequestId"`
 
 	EstimatePoint int32 `json:"estimatePoint"`
+
+	FormAttached []NodeFormResponse `json:"formAttached"`
 }
 
 type NodeFormResponse struct {
@@ -60,8 +62,6 @@ type NodeResponse struct {
 	Data NodeDataResponse `json:"data"`
 
 	ParentId *string `json:"parentId"`
-
-	FormAttached []NodeFormResponse `json:"formAttached"`
 
 	Form []NodeFormDataResponse `json:"form"`
 }

@@ -800,7 +800,7 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 				ApproveUserIds:           approveUserIds,
 			}
 
-			nodeResponse.FormAttached = append(nodeResponse.FormAttached, formAttachedResponse)
+			nodeResponse.Data.FormAttached = append(nodeResponse.Data.FormAttached, formAttachedResponse)
 		}
 
 		// Form Data
