@@ -18,6 +18,7 @@ import (
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/externals"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
+	natsModel "github.com/zODC-Dev/zodc-service-masterflow/internal/app/types/nats"
 	"github.com/zODC-Dev/zodc-service-masterflow/pkg/nats"
 	"github.com/zODC-Dev/zodc-service-masterflow/pkg/utils"
 )
@@ -1035,16 +1036,16 @@ func (s *WorkflowService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx,
 	slog.Info("Processing connections", "connections", connections)
 
 	// First, ensure story assignees have feature_leader role
-	if err := s.assignFeatureLeaderRoles(ctx, stories, projectKey); err != nil {
+	if err := s.assignFeatureLeaderRoles(stories, projectKey); err != nil {
 		return fmt.Errorf("failed to assign feature leader roles: %w", err)
 	}
 
-	syncRequest := types.JiraSyncRequest{
+	syncRequest := natsModel.WorkflowSyncRequest{
 		TransactionId: uuid.New().String(),
 		ProjectKey:    projectKey,
 		SprintId:      sprintId,
-		Issues:        make([]types.JiraSyncIssue, 0),
-		Connections:   make([]types.JiraSyncConnection, 0),
+		Issues:        make([]natsModel.WorkflowSyncIssue, 0),
+		Connections:   make([]natsModel.WorkflowSyncConnection, 0),
 	}
 
 	// Process Stories
@@ -1054,7 +1055,7 @@ func (s *WorkflowService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx,
 			"title", story.Title,
 			"jiraKey", story.Node.JiraKey)
 
-		issue := types.JiraSyncIssue{
+		issue := natsModel.WorkflowSyncIssue{
 			NodeId:     story.Node.Id,
 			Type:       "Story",
 			Title:      story.Title,
@@ -1093,7 +1094,7 @@ func (s *WorkflowService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx,
 			"title", node.Data.Title,
 			"jiraKey", node.JiraKey)
 
-		issue := types.JiraSyncIssue{
+		issue := natsModel.WorkflowSyncIssue{
 			NodeId:     node.Id,
 			Type:       node.Type,
 			Title:      node.Data.Title,
@@ -1136,7 +1137,7 @@ func (s *WorkflowService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx,
 			continue
 		}
 
-		connection := types.JiraSyncConnection{
+		connection := natsModel.WorkflowSyncConnection{
 			FromIssueKey: fromNode.Id, // Luôn sử dụng node ID
 			ToIssueKey:   toNode.Id,   // Luôn sử dụng node ID
 			Type:         "relates to",
@@ -1176,7 +1177,7 @@ func (s *WorkflowService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx,
 			"parentType", parentNode.Type,
 			"childType", node.Type)
 
-		connection := types.JiraSyncConnection{
+		connection := natsModel.WorkflowSyncConnection{
 			FromIssueKey: parentNode.Id, // Luôn sử dụng node ID
 			ToIssueKey:   node.Id,       // Luôn sử dụng node ID
 			Type:         "contains",
@@ -1208,7 +1209,7 @@ func (s *WorkflowService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx,
 					"story", story.Title,
 					"node", node.Data.Title)
 
-				connection := types.JiraSyncConnection{
+				connection := natsModel.WorkflowSyncConnection{
 					FromIssueKey: story.Node.Id, // Luôn sử dụng node ID
 					ToIssueKey:   node.Id,       // Luôn sử dụng node ID
 					Type:         "contains",
@@ -1233,7 +1234,7 @@ func (s *WorkflowService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx,
 	}
 
 	// Process response
-	var syncResponse types.JiraSyncResponse
+	var syncResponse natsModel.WorkflowSyncResponse
 	if err := json.Unmarshal(response.Data, &syncResponse); err != nil {
 		return fmt.Errorf("failed to unmarshal Jira response: %w", err)
 	}
@@ -1254,7 +1255,7 @@ func (s *WorkflowService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx,
 }
 
 // New function to assign feature_leader roles to story assignees
-func (s *WorkflowService) assignFeatureLeaderRoles(ctx context.Context, stories []requests.Story, projectKey string) error {
+func (s *WorkflowService) assignFeatureLeaderRoles(stories []requests.Story, projectKey string) error {
 	// Keep track of users we've already assigned the role to avoid duplicate requests
 	assignedUsers := make(map[int32]bool)
 
@@ -1268,7 +1269,7 @@ func (s *WorkflowService) assignFeatureLeaderRoles(ctx context.Context, stories 
 		assignedUsers[story.Node.Data.Assignee.Id] = true
 
 		// Create role assignment request
-		roleRequest := types.RoleAssignmentRequest{
+		roleRequest := natsModel.RoleAssignmentRequest{
 			UserID:     story.Node.Data.Assignee.Id,
 			ProjectKey: projectKey,
 			RoleName:   constants.RoleFeatureLeader,
@@ -1292,7 +1293,7 @@ func (s *WorkflowService) assignFeatureLeaderRoles(ctx context.Context, stories 
 		}
 
 		// Process response
-		var roleResponse types.RoleAssignmentResponse
+		var roleResponse natsModel.RoleAssignmentResponse
 		if err := json.Unmarshal(response.Data, &roleResponse); err != nil {
 			return fmt.Errorf("failed to unmarshal role assignment response: %w", err)
 		}

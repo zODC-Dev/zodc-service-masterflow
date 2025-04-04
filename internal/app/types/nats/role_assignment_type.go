@@ -1,5 +1,5 @@
 // Define a new type for role assignment request
-package types
+package nats
 
 // RoleAssignmentRequest represents a request to assign a role to a user
 type RoleAssignmentRequest struct {
