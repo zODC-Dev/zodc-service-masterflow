@@ -178,7 +178,7 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 	notification := types.Notification{
 		ToUserIds: []string{strconv.Itoa(int(userId))},
 		Subject:   "Task completed",
-		Body:      fmt.Sprintf("Task completed: %s – %s has marked this task as done.", node.Title, userId),
+		Body:      fmt.Sprintf("Task completed: %s – %d has marked this task as done.", node.Title, userId),
 	}
 	notificationBytes, err := json.Marshal(notification)
 	if err != nil {

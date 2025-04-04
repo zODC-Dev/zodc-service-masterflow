@@ -129,3 +129,14 @@ func (r *NodeRepository) CreateNodeConditionDestinations(ctx context.Context, tx
 
 	return err
 }
+
+func (r *NodeRepository) UpdateJiraKey(ctx context.Context, tx *sql.Tx, nodeId string, jiraKey string) error {
+	Nodes := table.Nodes
+
+	statement := Nodes.UPDATE(Nodes.JiraKey).
+		SET(postgres.String(jiraKey)).
+		WHERE(Nodes.ID.EQ(postgres.String(nodeId)))
+
+	_, err := statement.ExecContext(ctx, tx)
+	return err
+}

@@ -2,7 +2,7 @@ root = "."
 tmp_dir = "tmp"
 
 [build]
-cmd = "go build -o ./tmp/main.exe ./cmd/main.go"
+cmd = "go build -o ./tmp/main ./cmd/main.go"
 bin = ""
 
 include_ext = ["go"]

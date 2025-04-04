@@ -39,6 +39,7 @@ type NodeData struct {
 	Assignee     NodeDataAssignee
 	EndType      string
 	SubRequestID *int32
+	JiraKey      string
 
 	Condition NodeDataCondition
 
@@ -61,6 +62,7 @@ type Node struct {
 	Data NodeData
 
 	EstimatePoint *int32
+	JiraKey       *string
 
 	Form []NodeForm
 }
