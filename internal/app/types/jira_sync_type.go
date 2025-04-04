@@ -21,6 +21,7 @@ type JiraSyncConnection struct {
 type JiraSyncRequest struct {
 	TransactionId string               `json:"transaction_id"`
 	ProjectKey    string               `json:"project_key"`
+	SprintId      int32                `json:"sprint_id"`
 	Issues        []JiraSyncIssue      `json:"issues"`
 	Connections   []JiraSyncConnection `json:"connections"`
 }

@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
 	"log/slog"
 	"strconv"
 	"time"
@@ -641,64 +640,7 @@ func (s *WorkflowService) CreateWorkflowHandler(ctx context.Context, req *reques
 
 	// Nếu có projectKey, thực hiện đồng bộ với Jira, using reqClone
 	if reqClone.ProjectKey != "" {
-
-		// Convert nodes
-		nodes := make([]model.Nodes, len(reqClone.Nodes))
-		for i, node := range reqClone.Nodes {
-
-			if err := utils.Mapper(node, &nodes[i]); err != nil {
-				return fmt.Errorf("failed to map node: %w", err)
-			}
-
-			nodes[i].Title = node.Data.Title
-
-			if node.Data.Assignee.Id != 0 {
-				nodes[i].AssigneeID = &node.Data.Assignee.Id
-			}
-
-			if node.ParentId != "" {
-				nodes[i].ParentID = &node.ParentId
-			}
-
-			// Extract JiraKey from form if exists
-			if node.JiraKey != nil {
-				nodes[i].JiraKey = node.JiraKey
-			}
-		}
-
-		// Convert stories
-		stories := make([]model.Nodes, len(reqClone.Stories))
-		for i, story := range reqClone.Stories {
-			stories[i] = model.Nodes{
-				ID:     story.Node.Id,
-				Type:   "Story",
-				Title:  story.Title,
-				X:      story.Node.Position.X,
-				Y:      story.Node.Position.Y,
-				Width:  story.Node.Size.Width,
-				Height: story.Node.Size.Height,
-			}
-
-			if story.Node.Data.Assignee.Id != 0 {
-				stories[i].AssigneeID = &story.Node.Data.Assignee.Id
-			}
-
-			if story.Node.JiraKey != nil {
-				stories[i].JiraKey = story.Node.JiraKey
-			}
-		}
-
-		// Convert connections
-		connections := make([]model.Connections, len(reqClone.Connections))
-		for i, conn := range reqClone.Connections {
-			connections[i] = model.Connections{
-				ID:         conn.Id,
-				FromNodeID: conn.From,
-				ToNodeID:   conn.To,
-			}
-		}
-
-		if err := s.publishWorkflowToJira(ctx, tx, nodes, stories, connections, reqClone.ProjectKey); err != nil {
+		if err := s.publishWorkflowToJira(ctx, tx, reqClone.Nodes, reqClone.Stories, reqClone.Connections, reqClone.ProjectKey, *reqClone.SprintId); err != nil {
 			return fmt.Errorf("failed to publish to Jira: %w", err)
 		}
 	}
@@ -1050,36 +992,6 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 		return 0, fmt.Errorf("run workflow fail: %w", err)
 	}
 
-	if request.Workflow.ProjectKey != nil {
-		log.Printf("Publishing workflow to Jira for project: %s", *request.Workflow.ProjectKey)
-
-		// Convert request types to model types
-		nodes := make([]model.Nodes, len(req.Nodes))
-		for i, node := range req.Nodes {
-			if err := utils.Mapper(node, &nodes[i]); err != nil {
-				return 0, fmt.Errorf("failed to map node: %w", err)
-			}
-		}
-
-		stories := make([]model.Nodes, len(req.Stories))
-		for i, story := range req.Stories {
-			if err := utils.Mapper(story.Node, &stories[i]); err != nil {
-				return 0, fmt.Errorf("failed to map story: %w", err)
-			}
-		}
-
-		connections := make([]model.Connections, len(req.Connections))
-		for i, conn := range req.Connections {
-			if err := utils.Mapper(conn, &connections[i]); err != nil {
-				return 0, fmt.Errorf("failed to map connection: %w", err)
-			}
-		}
-
-		if err := s.publishWorkflowToJira(ctx, tx, nodes, stories, connections, *request.Workflow.ProjectKey); err != nil {
-			return 0, fmt.Errorf("failed to publish to Jira: %w", err)
-		}
-	}
-
 	if err := tx.Commit(); err != nil {
 		return 0, fmt.Errorf("commit fail: %w", err)
 	}
@@ -1087,13 +999,14 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 	return newRequest.ID, nil
 }
 
-func (s *WorkflowService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx, nodes []model.Nodes, stories []model.Nodes, connections []model.Connections, projectKey string) error {
-	slog.Info("Starting Jira synchronization", "projectKey", projectKey)
+func (s *WorkflowService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx, nodes []requests.Node, stories []requests.Story, connections []requests.Connection, projectKey string, sprintId int32) error {
+	slog.Info("Starting Jira synchronization", "projectKey", projectKey, "sprintId", sprintId)
 	slog.Info("Processing stories", "len stories", len(stories), "len nodes", len(nodes), "len connections", len(connections))
 
 	syncRequest := types.JiraSyncRequest{
 		TransactionId: uuid.New().String(),
 		ProjectKey:    projectKey,
+		SprintId:      sprintId,
 		Issues:        make([]types.JiraSyncIssue, 0),
 		Connections:   make([]types.JiraSyncConnection, 0),
 	}
@@ -1101,21 +1014,21 @@ func (s *WorkflowService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx,
 	// Process Stories
 	for _, story := range stories {
 		slog.Info("Processing story",
-			"id", story.ID,
+			"id", story.Node.Id,
 			"title", story.Title,
-			"jiraKey", story.JiraKey)
+			"jiraKey", story.Node.JiraKey)
 
 		issue := types.JiraSyncIssue{
-			NodeId:     story.ID,
+			NodeId:     story.Node.Id,
 			Type:       "Story",
 			Title:      story.Title,
-			AssigneeId: story.AssigneeID,
+			AssigneeId: &story.Node.Data.Assignee.Id,
 			Action:     "create",
 		}
 
-		if story.JiraKey != nil {
+		if story.Node.JiraKey != "" {
 			issue.Action = "update"
-			issue.JiraKey = *story.JiraKey
+			issue.JiraKey = story.Node.JiraKey
 		}
 
 		syncRequest.Issues = append(syncRequest.Issues, issue)
@@ -1124,37 +1037,37 @@ func (s *WorkflowService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx,
 	// Process Tasks and Bugs
 	for _, node := range nodes {
 		slog.Info("Processing node details",
-			"id", node.ID,
+			"id", node.Id,
 			"type", node.Type,
-			"title", node.Title,
+			"title", node.Data.Title,
 			"jiraKey", node.JiraKey,
-			"assigneeId", node.AssigneeID,
-			"parentId", node.ParentID)
+			"assigneeId", node.Data.Assignee.Id,
+			"parentId", node.ParentId)
 
 		if node.Type != string(constants.NodeTypeTask) && node.Type != string(constants.NodeTypeBug) {
 			slog.Info("Skipping node - not a task or bug",
-				"id", node.ID,
+				"id", node.Id,
 				"type", node.Type)
 			continue
 		}
 
 		slog.Info("Processing node",
-			"id", node.ID,
+			"id", node.Id,
 			"type", node.Type,
-			"title", node.Title,
+			"title", node.Data.Title,
 			"jiraKey", node.JiraKey)
 
 		issue := types.JiraSyncIssue{
-			NodeId:     node.ID,
+			NodeId:     node.Id,
 			Type:       node.Type,
-			Title:      node.Title,
-			AssigneeId: node.AssigneeID,
+			Title:      node.Data.Title,
+			AssigneeId: &node.Data.Assignee.Id,
 			Action:     "create",
 		}
 
-		if node.JiraKey != nil {
+		if node.JiraKey != "" {
 			issue.Action = "update"
-			issue.JiraKey = *node.JiraKey
+			issue.JiraKey = node.JiraKey
 		}
 
 		syncRequest.Issues = append(syncRequest.Issues, issue)
@@ -1165,13 +1078,13 @@ func (s *WorkflowService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx,
 
 	// 1. Xử lý connections từ connections hiện có
 	for _, conn := range connections {
-		fromNode := findNodeById(nodes, stories, conn.FromNodeID)
-		toNode := findNodeById(nodes, stories, conn.ToNodeID)
+		fromNode := findNodeByIdFromRequest(nodes, stories, conn.From)
+		toNode := findNodeByIdFromRequest(nodes, stories, conn.To)
 
 		if fromNode == nil || toNode == nil {
 			slog.Info("Skipping connection - node not found",
-				"fromId", conn.FromNodeID,
-				"toId", conn.ToNodeID)
+				"fromId", conn.From,
+				"toId", conn.To)
 			continue
 		}
 
@@ -1181,30 +1094,16 @@ func (s *WorkflowService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx,
 			continue
 		}
 
-		// Create connection key based on node IDs if JiraKey is null
-		connectionKey := ""
-		if fromNode.JiraKey != nil && toNode.JiraKey != nil {
-			connectionKey = fmt.Sprintf("%s-%s", *fromNode.JiraKey, *toNode.JiraKey)
-		} else {
-			connectionKey = fmt.Sprintf("%s-%s", fromNode.ID, toNode.ID)
-		}
-
+		// Sử dụng node ID để tạo connectionKey
+		connectionKey := fmt.Sprintf("%s-%s", fromNode.Id, toNode.Id)
 		if processedConnections[connectionKey] {
 			continue
 		}
 
 		connection := types.JiraSyncConnection{
-			FromIssueKey: fromNode.ID, // Use node ID if JiraKey is null
-			ToIssueKey:   toNode.ID,
+			FromIssueKey: fromNode.Id, // Luôn sử dụng node ID
+			ToIssueKey:   toNode.Id,   // Luôn sử dụng node ID
 			Type:         "relates to",
-		}
-
-		// Override with JiraKey if available
-		if fromNode.JiraKey != nil {
-			connection.FromIssueKey = *fromNode.JiraKey
-		}
-		if toNode.JiraKey != nil {
-			connection.ToIssueKey = *toNode.JiraKey
 		}
 
 		syncRequest.Connections = append(syncRequest.Connections, connection)
@@ -1213,12 +1112,12 @@ func (s *WorkflowService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx,
 
 	// 2. Xử lý connections từ parent-child relationships
 	for _, node := range nodes {
-		if node.ParentID == nil {
+		if node.ParentId == "" {
 			continue
 		}
 
 		// Tìm parent node (có thể là story hoặc node khác)
-		parentNode := findNodeById(nodes, stories, *node.ParentID)
+		parentNode := findNodeByIdFromRequest(nodes, stories, node.ParentId)
 		if parentNode == nil {
 			continue
 		}
@@ -1229,36 +1128,22 @@ func (s *WorkflowService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx,
 			continue
 		}
 
-		// Create connection key based on node IDs if JiraKey is null
-		connectionKey := ""
-		if parentNode.JiraKey != nil && node.JiraKey != nil {
-			connectionKey = fmt.Sprintf("%s-%s", *parentNode.JiraKey, *node.JiraKey)
-		} else {
-			connectionKey = fmt.Sprintf("%s-%s", parentNode.ID, node.ID)
-		}
-
+		// Sử dụng node ID để tạo connectionKey
+		connectionKey := fmt.Sprintf("%s-%s", parentNode.Id, node.Id)
 		if processedConnections[connectionKey] {
 			continue
 		}
 
 		slog.Info("Creating parent-child connection",
-			"parent", parentNode.Title,
-			"child", node.Title,
+			"parent", parentNode.Data.Title,
+			"child", node.Data.Title,
 			"parentType", parentNode.Type,
 			"childType", node.Type)
 
 		connection := types.JiraSyncConnection{
-			FromIssueKey: parentNode.ID, // Use node ID if JiraKey is null
-			ToIssueKey:   node.ID,
+			FromIssueKey: parentNode.Id, // Luôn sử dụng node ID
+			ToIssueKey:   node.Id,       // Luôn sử dụng node ID
 			Type:         "contains",
-		}
-
-		// Override with JiraKey if available
-		if parentNode.JiraKey != nil {
-			connection.FromIssueKey = *parentNode.JiraKey
-		}
-		if node.JiraKey != nil {
-			connection.ToIssueKey = *node.JiraKey
 		}
 
 		syncRequest.Connections = append(syncRequest.Connections, connection)
@@ -1275,36 +1160,22 @@ func (s *WorkflowService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx,
 				continue
 			}
 
-			// Create connection key based on node IDs if JiraKey is null
-			connectionKey := ""
-			if story.JiraKey != nil && node.JiraKey != nil {
-				connectionKey = fmt.Sprintf("%s-%s", *story.JiraKey, *node.JiraKey)
-			} else {
-				connectionKey = fmt.Sprintf("%s-%s", story.ID, node.ID)
-			}
-
+			// Sử dụng node ID để tạo connectionKey
+			connectionKey := fmt.Sprintf("%s-%s", story.Node.Id, node.Id)
 			if processedConnections[connectionKey] {
 				continue
 			}
 
 			// Kiểm tra mối quan hệ giữa story và node
-			if node.ParentID != nil && *node.ParentID == story.ID {
+			if node.ParentId == story.Node.Id {
 				slog.Info("Creating story-node connection",
 					"story", story.Title,
-					"node", node.Title)
+					"node", node.Data.Title)
 
 				connection := types.JiraSyncConnection{
-					FromIssueKey: story.ID, // Use node ID if JiraKey is null
-					ToIssueKey:   node.ID,
+					FromIssueKey: story.Node.Id, // Luôn sử dụng node ID
+					ToIssueKey:   node.Id,       // Luôn sử dụng node ID
 					Type:         "contains",
-				}
-
-				// Override with JiraKey if available
-				if story.JiraKey != nil {
-					connection.FromIssueKey = *story.JiraKey
-				}
-				if node.JiraKey != nil {
-					connection.ToIssueKey = *node.JiraKey
 				}
 
 				syncRequest.Connections = append(syncRequest.Connections, connection)
@@ -1346,20 +1217,34 @@ func (s *WorkflowService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx,
 	return nil
 }
 
-// Helper function to find node by ID
-func findNodeById(nodes []model.Nodes, stories []model.Nodes, nodeId string) *model.Nodes {
+// Helper function to find node by ID from request structs
+func findNodeByIdFromRequest(nodes []requests.Node, stories []requests.Story, nodeId string) *requests.Node {
 	// Tìm trong nodes
 	for i := range nodes {
-		if nodes[i].ID == nodeId {
-			return &nodes[i]
+		if nodes[i].Id == nodeId {
+			return &requests.Node{
+				Id:       nodes[i].Id,
+				Type:     nodes[i].Type,
+				Data:     nodes[i].Data,
+				ParentId: nodes[i].ParentId,
+				JiraKey:  nodes[i].JiraKey,
+			}
 		}
 	}
+
 	// Tìm trong stories
 	for i := range stories {
-		if stories[i].ID == nodeId {
-			return &stories[i]
+		if stories[i].Node.Id == nodeId {
+			return &requests.Node{
+				Id:       stories[i].Node.Id,
+				Type:     stories[i].Node.Type,
+				Data:     stories[i].Node.Data,
+				ParentId: "",
+				JiraKey:  stories[i].Node.JiraKey,
+			}
 		}
 	}
+
 	return nil
 }
 

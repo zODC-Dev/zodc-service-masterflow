@@ -91,6 +91,7 @@ type CreateWorkflow struct {
 	Type        string
 	CategoryId  int32
 	ProjectKey  string
+	SprintId    *int32
 
 	NodesConnectionsStories
 }
