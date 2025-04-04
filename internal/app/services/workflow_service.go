@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -179,18 +178,24 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 			// }
 
 			// Send notification
-			notification := types.Notification{
-				ToUserIds: []string{strconv.Itoa(int(*request.Nodes[i].AssigneeID))},
-				Subject:   "New task assigned",
-				Body:      fmt.Sprintf("New task assigned: %s – You have been assigned a new task by %s.", request.Nodes[i].Title, request.UserID),
-			}
+			if request.Nodes[i].AssigneeID != nil {
+				// notification := types.Notification{
+				// 	ToUserIds: []string{strconv.Itoa(int(*request.Nodes[i].AssigneeID))},
+				// 	Subject:   "New task assigned",
+				// 	Body:      fmt.Sprintf("New task assigned: %s – You have been assigned a new task by %d.", request.Nodes[i].Title, request.UserID),
+				// }
 
-			notificationBytes, err := json.Marshal(notification)
-			if err != nil {
-				return fmt.Errorf("marshal notification failed: %w", err)
-			}
+				// notificationBytes, err := json.Marshal(notification)
+				// if err != nil {
+				// 	return fmt.Errorf("marshal notification failed: %w", err)
+				// }
 
-			s.NatsClient.Publish("notifications", notificationBytes)
+				// err = s.NatsClient.Publish("notifications", notificationBytes)
+				// if err != nil {
+				// 	return fmt.Errorf("publish notification failed: %w", err)
+				// }
+
+			}
 
 		}
 	}
@@ -209,18 +214,21 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 	}
 
 	// Send notification
-	notification := types.Notification{
-		ToUserIds: userIdsStr,
-		Subject:   "Workflow Started",
-		Body:      fmt.Sprintf("Workflow started with request ID: %d", requestId),
-	}
+	// notification := types.Notification{
+	// 	ToUserIds: userIdsStr,
+	// 	Subject:   "Workflow Started",
+	// 	Body:      fmt.Sprintf("Workflow started with request ID: %d", requestId),
+	// }
 
-	notificationBytes, err := json.Marshal(notification)
-	if err != nil {
-		return fmt.Errorf("marshal notification failed: %w", err)
-	}
+	// notificationBytes, err := json.Marshal(notification)
+	// if err != nil {
+	// 	return fmt.Errorf("marshal notification failed: %w", err)
+	// }
 
-	s.NatsClient.Publish("notifications", notificationBytes)
+	// err = s.NatsClient.Publish("notifications", notificationBytes)
+	// if err != nil {
+	// 	return fmt.Errorf("publish notification failed: %w", err)
+	// }
 
 	return nil
 }
