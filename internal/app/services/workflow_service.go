@@ -1002,6 +1002,14 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 func (s *WorkflowService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx, nodes []requests.Node, stories []requests.Story, connections []requests.Connection, projectKey string, sprintId int32) error {
 	slog.Info("Starting Jira synchronization", "projectKey", projectKey, "sprintId", sprintId)
 	slog.Info("Processing stories", "len stories", len(stories), "len nodes", len(nodes), "len connections", len(connections))
+	slog.Info("Processing stories", "stories", stories)
+	slog.Info("Processing nodes", "nodes", nodes)
+	slog.Info("Processing connections", "connections", connections)
+
+	// First, ensure story assignees have feature_leader role
+	if err := s.assignFeatureLeaderRoles(ctx, stories, projectKey); err != nil {
+		return fmt.Errorf("failed to assign feature leader roles: %w", err)
+	}
 
 	syncRequest := types.JiraSyncRequest{
 		TransactionId: uuid.New().String(),
@@ -1191,7 +1199,7 @@ func (s *WorkflowService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx,
 		return fmt.Errorf("failed to marshal sync request: %w", err)
 	}
 
-	response, err := s.NatsClient.Request("workflow.sync.request", requestBytes, 30*time.Second)
+	response, err := s.NatsClient.Request(constants.NatsTopicWorkflowSyncRequest, requestBytes, 30*time.Second)
 	if err != nil {
 		return fmt.Errorf("failed to sync with Jira: %w", err)
 	}
@@ -1214,6 +1222,64 @@ func (s *WorkflowService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx,
 	}
 
 	slog.Info("Completed Jira synchronization", "projectKey", projectKey)
+	return nil
+}
+
+// New function to assign feature_leader roles to story assignees
+func (s *WorkflowService) assignFeatureLeaderRoles(ctx context.Context, stories []requests.Story, projectKey string) error {
+	// Keep track of users we've already assigned the role to avoid duplicate requests
+	assignedUsers := make(map[int32]bool)
+
+	for _, story := range stories {
+		// Skip if no assignee or already processed
+		if story.Node.Data.Assignee.Id == 0 || assignedUsers[story.Node.Data.Assignee.Id] {
+			continue
+		}
+
+		// Mark this user as processed
+		assignedUsers[story.Node.Data.Assignee.Id] = true
+
+		// Create role assignment request
+		roleRequest := types.RoleAssignmentRequest{
+			UserID:     story.Node.Data.Assignee.Id,
+			ProjectKey: projectKey,
+			RoleName:   constants.RoleFeatureLeader,
+		}
+
+		slog.Info("Assigning feature_leader role",
+			"userId", roleRequest.UserID,
+			"projectKey", roleRequest.ProjectKey)
+
+		// Convert to JSON
+		requestBytes, err := json.Marshal(roleRequest)
+		if err != nil {
+			return fmt.Errorf("failed to marshal role assignment request: %w", err)
+		}
+
+		// Send request via NATS with a 10-second timeout
+		response, err := s.NatsClient.Request(constants.NatsTopicRoleAssignmentRequest, requestBytes, 10*time.Second)
+		if err != nil {
+			return fmt.Errorf("failed to assign feature_leader role to user %d: %w",
+				story.Node.Data.Assignee.Id, err)
+		}
+
+		// Process response
+		var roleResponse types.RoleAssignmentResponse
+		if err := json.Unmarshal(response.Data, &roleResponse); err != nil {
+			return fmt.Errorf("failed to unmarshal role assignment response: %w", err)
+		}
+
+		// Check if successful
+		if !roleResponse.Success {
+			return fmt.Errorf("role assignment failed for user %d: %s",
+				story.Node.Data.Assignee.Id, roleResponse.Message)
+		}
+
+		slog.Info("Successfully assigned feature_leader role",
+			"userId", roleRequest.UserID,
+			"projectKey", roleRequest.ProjectKey)
+	}
+
 	return nil
 }
 
