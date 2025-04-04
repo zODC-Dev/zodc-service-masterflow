@@ -946,6 +946,36 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 			}
 		}
 
+		if node.Type == string(constants.NodeTypeTask) {
+			formData := model.FormData{
+				FormTemplateVersionID: constants.FormTemplateIDJiraSystemForm,
+			}
+			formData, err := s.FormRepo.CreateFormData(ctx, tx, formData)
+			if err != nil {
+				return 0, fmt.Errorf("create form data fail: %w", err)
+			}
+
+			formFieldDatas := []model.FormFieldData{}
+			for _, form := range node.Form {
+				formTemplateField, err := s.FormRepo.FindOneFormTemplateFieldByFieldId(ctx, tx, form.FieldId, constants.FormTemplateIDJiraSystemForm)
+				if err != nil {
+					return 0, fmt.Errorf("find form template field fail: %w", err)
+				}
+
+				formFieldData := model.FormFieldData{
+					FormTemplateFieldID: formTemplateField.ID,
+					Value:               form.Value,
+					FormDataID:          formData.ID,
+				}
+
+				formFieldDatas = append(formFieldDatas, formFieldData)
+
+			}
+			if len(formFieldDatas) > 0 {
+				s.FormRepo.CreateFormFieldDatas(ctx, tx, formFieldDatas)
+			}
+		}
+
 	}
 
 	// Run Workflow

@@ -6,7 +6,7 @@ import (
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
 )
 
-type RequestOverviewResponse struct {
+type RequestCountResponse struct {
 	MyRequests  int32 `json:"myrequest"`
 	InProcess   int32 `json:"in_process"`
 	Completed   int32 `json:"completed"`
@@ -57,4 +57,16 @@ type RequestTaskResponse struct {
 	ActualStartTime  *time.Time     `json:"actualStartTime"`
 	ActualEndTime    *time.Time     `json:"actualEndTime"`
 	EstimatePoint    *int32         `json:"estimatePoint"`
+}
+
+type TaskCountResponse struct {
+	OverdueCount   int32 `json:"overdueCount"`
+	TotalCount     int32 `json:"totalCount"`
+	CompletedCount int32 `json:"completedCount"`
+	TodoCount      int32 `json:"todoCount"`
+}
+
+type RequestOverviewResponse struct {
+	WorkflowDetailResponse
+	Progress float32 `json:"progress"`
 }

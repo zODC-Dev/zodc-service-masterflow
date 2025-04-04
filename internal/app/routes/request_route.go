@@ -47,11 +47,13 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 	requestRoute := group.Group("/requests")
 	{
 		requestRoute.GET("", requestController.FindAllRequest)
-		requestRoute.GET("/overview", requestController.GetRequestOverview)
+		requestRoute.GET("/count", requestController.GetRequestCount)
 		requestRoute.GET("/detail/:id", requestController.GetRequestDetail)
 		requestRoute.GET("/tasks/:id", requestController.GetRequestTasks)
 
 		requestRoute.GET("/tasks/projects", requestController.GetRequestTasksByProject)
+
+		requestRoute.GET("/overview/:id", requestController.GetRequestOverview)
 
 	}
 

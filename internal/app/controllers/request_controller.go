@@ -65,12 +65,12 @@ func (c *RequestController) FindAllRequest(e echo.Context) error {
 	})
 }
 
-func (c *RequestController) GetRequestOverview(e echo.Context) error {
+func (c *RequestController) GetRequestCount(e echo.Context) error {
 	ctx := e.Request().Context()
 
 	userId, _ := middlewares.GetUserID(e)
 
-	requestOverviewResponse, err := c.requestService.GetRequestOverviewHandler(ctx, userId)
+	requestOverviewResponse, err := c.requestService.GetRequestCountHandler(ctx, userId)
 	if err != nil {
 		return e.JSON(http.StatusInternalServerError, err.Error())
 	}
@@ -182,4 +182,21 @@ func (c *RequestController) GetRequestTasksByProject(e echo.Context) error {
 		Message: "Success",
 		Data:    requestTasksResponse,
 	})
+}
+
+func (c *RequestController) GetRequestOverview(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	requestId := e.Param("id")
+	requestIdInt, err := strconv.Atoi(requestId)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, fmt.Sprintf("Invalid request ID: %s", requestId))
+	}
+
+	requestOverviewResponse, err := c.requestService.GetRequestOverviewHandler(ctx, int32(requestIdInt))
+	if err != nil {
+		return e.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, requestOverviewResponse)
 }

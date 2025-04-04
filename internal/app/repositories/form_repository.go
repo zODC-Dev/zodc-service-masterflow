@@ -173,3 +173,28 @@ func (r *FormRepository) CreateFormFieldDatas(ctx context.Context, tx *sql.Tx, f
 
 	return err
 }
+
+func (r *FormRepository) FindOneFormTemplateFieldByFieldId(ctx context.Context, tx *sql.Tx, fieldId string, formTemplateId int32) (model.FormTemplateFields, error) {
+	FormTemplateFields := table.FormTemplateFields
+	FormTemplateVersions := table.FormTemplateVersions
+
+	statement := FormTemplateFields.SELECT(
+		FormTemplateFields.AllColumns,
+	).FROM(
+		FormTemplateFields.
+			LEFT_JOIN(
+				FormTemplateVersions,
+				FormTemplateVersions.FormTemplateID.EQ(FormTemplateFields.FormTemplateVersionID),
+			),
+	).WHERE(
+		FormTemplateFields.FieldID.EQ(postgres.String(fieldId)).AND(
+			FormTemplateFields.FormTemplateVersionID.EQ(postgres.Int32(formTemplateId)),
+		),
+	)
+
+	formTemplateField := model.FormTemplateFields{}
+
+	err := statement.QueryContext(ctx, tx, &formTemplateField)
+
+	return formTemplateField, err
+}

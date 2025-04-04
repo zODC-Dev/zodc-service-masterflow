@@ -136,8 +136,8 @@ func (s *RequestService) FindAllRequestHandler(ctx context.Context, requestQuery
 	return paginatedResponse, nil
 }
 
-func (s *RequestService) GetRequestOverviewHandler(ctx context.Context, userId int32) (responses.RequestOverviewResponse, error) {
-	requestOverviewResponse := responses.RequestOverviewResponse{}
+func (s *RequestService) GetRequestCountHandler(ctx context.Context, userId int32) (responses.RequestCountResponse, error) {
+	requestOverviewResponse := responses.RequestCountResponse{}
 	var err error
 
 	count, err := s.RequestRepo.CountRequestByStatusAndUserId(ctx, s.DB, userId, "")
@@ -505,4 +505,43 @@ func (s *RequestService) GetRequestTasksByProjectHandler(ctx context.Context, re
 	}
 
 	return paginatedResponse, nil
+}
+
+func (s *RequestService) GetTaskCount(ctx context.Context, userId int32, queryParams queryparams.RequestTaskProjectQueryParam) (responses.TaskCountResponse, error) {
+	taskCountResponse := responses.TaskCountResponse{}
+
+	count, err := s.RequestRepo.CountRequestByStatusAndUserId(ctx, s.DB, userId, "")
+	if err != nil {
+		return taskCountResponse, err
+	}
+	taskCountResponse.TotalCount = int32(count)
+
+	count, err = s.RequestRepo.CountRequestByStatusAndUserId(ctx, s.DB, userId, constants.RequestStatusCompleted)
+	if err != nil {
+		return taskCountResponse, err
+	}
+	taskCountResponse.CompletedCount = int32(count)
+
+	return taskCountResponse, nil
+}
+
+func (s *RequestService) GetRequestOverviewHandler(ctx context.Context, requestId int32) (responses.RequestOverviewResponse, error) {
+	requestOverviewResponse := responses.RequestOverviewResponse{}
+	workflowRequest, err := s.WorkflowService.FindOneWorkflowDetailHandler(ctx, requestId)
+	if err != nil {
+		return requestOverviewResponse, err
+	}
+
+	if err := utils.Mapper(workflowRequest, &requestOverviewResponse); err != nil {
+		return requestOverviewResponse, err
+	}
+
+	request, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, requestId)
+	if err != nil {
+		return requestOverviewResponse, err
+	}
+
+	requestOverviewResponse.Progress = request.Progress
+
+	return requestOverviewResponse, nil
 }

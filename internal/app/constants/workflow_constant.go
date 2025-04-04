@@ -15,6 +15,7 @@ const (
 	NodeTypeSubWorkflow NodeType = "SUB_WORKFLOW"
 	NodeTypeStory       NodeType = "STORY"
 	NodeTypeCondition   NodeType = "CONDITION"
+	NodeTypeTask        NodeType = "TASK"
 )
 
 type NodeStatus string
