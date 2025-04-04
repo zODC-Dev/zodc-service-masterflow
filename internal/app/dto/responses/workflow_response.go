@@ -25,6 +25,18 @@ type NodeDataResponse struct {
 	EstimatePoint int32 `json:"estimatePoint"`
 }
 
+type NodeFormResponse struct {
+	Key                      string  `json:"id"`
+	FormTemplateId           int32   `json:"formTemplateId"`
+	DataId                   string  `json:"dataId"`
+	OptionId                 *string `json:"optionId"`
+	FromUserId               *int32  `json:"fromUserId"`
+	FromFormAttachedPosition *int32  `json:"fromFormAttachedPosition"`
+	Permission               string  `json:"permission"`
+	IsOriginal               bool    `json:"isOriginal"`
+	ApproveUserIds           []int32 `json:"approveUserIds"`
+}
+
 type NodeResponse struct {
 	Id   string `json:"id"`
 	Type string `json:"type"`
@@ -35,12 +47,16 @@ type NodeResponse struct {
 	StartedAt   *time.Time `json:"startedAt"`
 	CompletedAt *time.Time `json:"completedAt"`
 
+	JiraKey *string `json:"jiraKey"`
+
 	Position types.Position `json:"position"`
 	Size     types.Size     `json:"size"`
 
 	Data NodeDataResponse `json:"data"`
 
 	ParentId *string `json:"parentId"`
+
+	FormAttached *NodeFormResponse `json:"formAttached"`
 }
 
 type ConnectionResponse struct {

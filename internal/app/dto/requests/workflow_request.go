@@ -14,7 +14,7 @@ type Connection struct {
 type NodeDataFormAttached struct {
 	Key                      string
 	FormTemplateId           int32
-	DataId                   *string
+	DataId                   string
 	OptionId                 *string
 	FromUserId               *int32
 	FromFormAttachedPosition *int32
@@ -56,13 +56,13 @@ type Node struct {
 	Position types.Position
 	Size     types.Size
 	ParentId string
+	JiraKey  string
 
 	Type string
 
 	Data NodeData
 
 	EstimatePoint *int32
-	JiraKey       *string
 
 	Form []NodeForm
 }

@@ -65,12 +65,12 @@ func (c *RequestController) FindAllRequest(e echo.Context) error {
 	})
 }
 
-func (c *RequestController) GetRequestOverview(e echo.Context) error {
+func (c *RequestController) GetRequestCount(e echo.Context) error {
 	ctx := e.Request().Context()
 
 	userId, _ := middlewares.GetUserID(e)
 
-	requestOverviewResponse, err := c.requestService.GetRequestOverviewHandler(ctx, userId)
+	requestOverviewResponse, err := c.requestService.GetRequestCountHandler(ctx, userId)
 	if err != nil {
 		return e.JSON(http.StatusInternalServerError, err.Error())
 	}
@@ -138,4 +138,65 @@ func (c *RequestController) GetRequestTasks(e echo.Context) error {
 		Message: "Success",
 		Data:    requestTasksResponse,
 	})
+}
+
+func (c *RequestController) GetRequestTasksByProject(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	userId, _ := middlewares.GetUserID(e)
+
+	page := 1
+	if pageStr := e.QueryParam("page"); pageStr != "" {
+		if parsedPage, err := strconv.Atoi(pageStr); err == nil && parsedPage > 0 {
+			page = parsedPage
+		}
+	}
+
+	pageSize := 10
+	if pageSizeStr := e.QueryParam("pageSize"); pageSizeStr != "" {
+		if parsedPageSize, err := strconv.Atoi(pageSizeStr); err == nil && parsedPageSize > 0 {
+			pageSize = parsedPageSize
+		}
+	}
+
+	workflowType := e.QueryParam("workflowType")
+	status := e.QueryParam("status")
+	typeQuery := e.QueryParam("type")
+	projectKey := e.QueryParam("projectKey")
+
+	requestTaskProjectQueryParam := queryparams.RequestTaskProjectQueryParam{
+		Page:         page,
+		PageSize:     pageSize,
+		WorkflowType: workflowType,
+		Status:       status,
+		Type:         typeQuery,
+		ProjectKey:   projectKey,
+	}
+
+	requestTasksResponse, err := c.requestService.GetRequestTasksByProjectHandler(ctx, requestTaskProjectQueryParam, userId)
+	if err != nil {
+		return e.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, responses.Response{
+		Message: "Success",
+		Data:    requestTasksResponse,
+	})
+}
+
+func (c *RequestController) GetRequestOverview(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	requestId := e.Param("id")
+	requestIdInt, err := strconv.Atoi(requestId)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, fmt.Sprintf("Invalid request ID: %s", requestId))
+	}
+
+	requestOverviewResponse, err := c.requestService.GetRequestOverviewHandler(ctx, int32(requestIdInt))
+	if err != nil {
+		return e.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, requestOverviewResponse)
 }

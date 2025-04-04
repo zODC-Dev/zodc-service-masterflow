@@ -101,6 +101,8 @@ func (s *WorkflowService) MapToWorkflowNodeResponse(node model.Nodes) (responses
 		Data:     nodeDataResponse,
 		ParentId: node.ParentID,
 
+		JiraKey: node.JiraKey,
+
 		Status: node.Status,
 
 		StartedAt: node.ActualStartTime,
@@ -164,9 +166,20 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 	for i := range request.Nodes {
 		if nextNodeIds[request.Nodes[i].ID] {
 
-			if err := s.NodeService.UpdateNodeStatusToInProcessing(ctx, tx, request.Nodes[i]); err != nil {
+			nodeModel := model.Nodes{}
+			if err := utils.Mapper(request.Nodes[i], &nodeModel); err != nil {
+				return fmt.Errorf("map node fail: %w", err)
+			}
+
+			nodeModel.IsCurrent = true
+
+			if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
 				return fmt.Errorf("update node status to in processing fail: %w", err)
 			}
+
+			// if err := s.NodeService.UpdateNodeStatusToInProcessing(ctx, tx, nodeModel); err != nil {
+			// 	return fmt.Errorf("update node status to in processing fail: %w", err)
+			// }
 
 			// Send notification
 			notification := types.Notification{
@@ -417,6 +430,9 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 	// Create Workflow Nodes
 	workflowNodes := []model.Nodes{}
+	formAttachedModels := []model.NodeForms{}
+	nodeConditionDestinations := []model.NodeConditionDestinations{}
+
 	for _, workflowNodeReq := range req.Nodes {
 		workflowNode := model.Nodes{
 			ID:        workflowNodeReq.Id,
@@ -484,8 +500,8 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 		workflowNodes = append(workflowNodes, workflowNode)
 
 		// Condition Node
+
 		if workflowNodeReq.Type == string(constants.NodeTypeCondition) {
-			nodeConditionDestinations := []model.NodeConditionDestinations{}
 
 			for _, destination := range workflowNodeReq.Data.Condition.TrueDestinations {
 				nodeConditionDestinations = append(nodeConditionDestinations, model.NodeConditionDestinations{
@@ -503,29 +519,48 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 				})
 			}
 
-			if err := s.NodeRepo.CreateNodeConditionDestinations(ctx, tx, nodeConditionDestinations); err != nil {
-				return fmt.Errorf("create node condition destinations fail: %w", err)
-			}
 		}
 
 		// Form Attached
-		// for _, formAttached := range workflowNodeReq.Data.FormAttached {
-		// 	formAttachedModel := model.NodeForms{
-		// 		Key:                      formAttached.Key,
-		// 		FormTemplateId:           formAttached.FormTemplateId,
-		// 		DataId:                   formAttached.DataId,
-		// 		OptionId:                 formAttached.OptionId,
-		// 		FromUserId:               formAttached.FromUserId,
-		// 		FromFormAttachedPosition: formAttached.FromFormAttachedPosition,
-		// 		Permission:               formAttached.Permission,
-		// 		IsOriginal:               formAttached.IsOriginal,
-		// 	}
-		// }
+
+		for _, formAttached := range workflowNodeReq.Data.FormAttached {
+			formAttachedModel := model.NodeForms{
+				Key:                      formAttached.Key,
+				FromUserID:               formAttached.FromUserId,
+				DataID:                   formAttached.DataId,
+				OptionKey:                formAttached.OptionId,
+				FromFormAttachedPosition: formAttached.FromFormAttachedPosition,
+				Permission:               formAttached.Permission,
+				IsOriginal:               formAttached.IsOriginal,
+				TemplateID:               formAttached.FormTemplateId,
+				NodeID:                   workflowNodeReq.Id,
+			}
+
+			formAttachedModels = append(formAttachedModels, formAttachedModel)
+		}
+
 	}
+	// Create Workflow Nodes
 	if len(workflowNodes) > 0 {
 		err = s.NodeRepo.CreateNodes(ctx, tx, workflowNodes)
 		if err != nil {
 			return fmt.Errorf("create Workflow Nodes Fail: %w", err)
+		}
+	}
+
+	// Create Node Forms
+	if len(formAttachedModels) > 0 {
+		err = s.NodeRepo.CreateNodeForms(ctx, tx, formAttachedModels)
+		if err != nil {
+			return fmt.Errorf("create node forms fail: %w", err)
+		}
+	}
+
+	// Create Node Condition Destinations
+	if len(nodeConditionDestinations) > 0 {
+		err = s.NodeRepo.CreateNodeConditionDestinations(ctx, tx, nodeConditionDestinations)
+		if err != nil {
+			return fmt.Errorf("create node condition destinations fail: %w", err)
 		}
 	}
 
@@ -764,7 +799,12 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 		}
 
 		// Map Response
-		nodeResponse, err := s.MapToWorkflowNodeResponse(node)
+		nodeModel := model.Nodes{}
+		if err := utils.Mapper(node, &nodeModel); err != nil {
+			return workflowResponse, fmt.Errorf("map node fail: %w", err)
+		}
+
+		nodeResponse, err := s.MapToWorkflowNodeResponse(nodeModel)
 		nodeResponse.ParentId = nil
 		if err != nil {
 			return workflowResponse, fmt.Errorf("map workflow node response fail: %w", err)
@@ -786,12 +826,26 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 	workflowResponse.Stories = storiesResponse
 
 	// Nodes
-	for _, node := range request.Nodes {
 
-		nodeResponse, err := s.MapToWorkflowNodeResponse(node)
+	for _, node := range request.Nodes {
+		nodeModel := model.Nodes{}
+		if err := utils.Mapper(node, &nodeModel); err != nil {
+			return workflowResponse, fmt.Errorf("map node fail: %w", err)
+		}
+
+		nodeResponse, err := s.MapToWorkflowNodeResponse(nodeModel)
 		nodeResponse.ParentId = nil
 		if err != nil {
 			return workflowResponse, fmt.Errorf("map workflow node response fail: %w", err)
+		}
+
+		// Form Attached
+		if node.NodeForms != nil {
+			formAttachedResponse := responses.NodeFormResponse{}
+			if err := utils.Mapper(node.NodeForms, &formAttachedResponse); err != nil {
+				return workflowResponse, fmt.Errorf("map node form response fail: %w", err)
+			}
+			nodeResponse.FormAttached = &formAttachedResponse
 		}
 
 		workflowResponse.Nodes = append(workflowResponse.Nodes, nodeResponse)
@@ -956,6 +1010,36 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 			}
 			if err := s.CreateNodesConnectionsStories(ctx, tx, &nodeConnectionStoryReq, copyRequest.ID, subRequest.Workflow.ProjectKey, userId); err != nil {
 				return 0, fmt.Errorf("create copy request nodes connections stories fail: %w", err)
+			}
+		}
+
+		if node.Type == string(constants.NodeTypeTask) {
+			formData := model.FormData{
+				FormTemplateVersionID: constants.FormTemplateIDJiraSystemForm,
+			}
+			formData, err := s.FormRepo.CreateFormData(ctx, tx, formData)
+			if err != nil {
+				return 0, fmt.Errorf("create form data fail: %w", err)
+			}
+
+			formFieldDatas := []model.FormFieldData{}
+			for _, form := range node.Form {
+				formTemplateField, err := s.FormRepo.FindOneFormTemplateFieldByFieldId(ctx, tx, form.FieldId, constants.FormTemplateIDJiraSystemForm)
+				if err != nil {
+					return 0, fmt.Errorf("find form template field fail: %w", err)
+				}
+
+				formFieldData := model.FormFieldData{
+					FormTemplateFieldID: formTemplateField.ID,
+					Value:               form.Value,
+					FormDataID:          formData.ID,
+				}
+
+				formFieldDatas = append(formFieldDatas, formFieldData)
+
+			}
+			if len(formFieldDatas) > 0 {
+				s.FormRepo.CreateFormFieldDatas(ctx, tx, formFieldDatas)
 			}
 		}
 
