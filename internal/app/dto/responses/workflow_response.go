@@ -61,7 +61,7 @@ type NodeResponse struct {
 
 	ParentId *string `json:"parentId"`
 
-	FormAttached *NodeFormResponse `json:"formAttached"`
+	FormAttached []NodeFormResponse `json:"formAttached"`
 
 	Form []NodeFormDataResponse `json:"form"`
 }

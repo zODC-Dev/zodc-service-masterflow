@@ -781,12 +781,26 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 		}
 
 		// Form Attached
-		if node.NodeForms != nil {
-			formAttachedResponse := responses.NodeFormResponse{}
-			if err := utils.Mapper(node.NodeForms, &formAttachedResponse); err != nil {
-				return workflowResponse, fmt.Errorf("map node form response fail: %w", err)
+		for _, nodeForm := range node.NodeForms {
+
+			approveUserIds := []int32{}
+			for _, approveUser := range nodeForm.NodeFormApproveUsers {
+				approveUserIds = append(approveUserIds, approveUser.UserID)
 			}
-			nodeResponse.FormAttached = &formAttachedResponse
+
+			formAttachedResponse := responses.NodeFormResponse{
+				Key:                      nodeForm.Key,
+				FromUserId:               nodeForm.FromUserID,
+				DataId:                   nodeForm.DataID,
+				OptionId:                 nodeForm.OptionKey,
+				FromFormAttachedPosition: nodeForm.FromFormAttachedPosition,
+				Permission:               nodeForm.Permission,
+				IsOriginal:               nodeForm.IsOriginal,
+				FormTemplateId:           nodeForm.TemplateID,
+				ApproveUserIds:           approveUserIds,
+			}
+
+			nodeResponse.FormAttached = append(nodeResponse.FormAttached, formAttachedResponse)
 		}
 
 		// Form Data

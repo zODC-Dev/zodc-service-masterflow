@@ -12,9 +12,14 @@ type RequestDetailFormData struct {
 	FormFieldData []RequestDetailFormFieldData
 }
 
+type RequestDetailNodeForm struct {
+	model.NodeForms
+	NodeFormApproveUsers []model.NodeFormApproveUsers
+}
+
 type RequestDetailNode struct {
 	model.Nodes
-	NodeForms []model.NodeForms
+	NodeForms []RequestDetailNodeForm
 	FormData  RequestDetailFormData
 }
 
