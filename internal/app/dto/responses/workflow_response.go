@@ -37,6 +37,11 @@ type NodeFormResponse struct {
 	ApproveUserIds           []int32 `json:"approveUserIds"`
 }
 
+type NodeFormDataResponse struct {
+	FieldId string `json:"fieldId"`
+	Value   string `json:"value"`
+}
+
 type NodeResponse struct {
 	Id   string `json:"id"`
 	Type string `json:"type"`
@@ -57,6 +62,8 @@ type NodeResponse struct {
 	ParentId *string `json:"parentId"`
 
 	FormAttached *NodeFormResponse `json:"formAttached"`
+
+	Form []NodeFormDataResponse `json:"form"`
 }
 
 type ConnectionResponse struct {

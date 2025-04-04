@@ -781,6 +781,14 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 			nodeResponse.FormAttached = &formAttachedResponse
 		}
 
+		// Form Data
+		for _, formFieldData := range node.FormData.FormFieldData {
+			nodeResponse.Form = append(nodeResponse.Form, responses.NodeFormDataResponse{
+				FieldId: formFieldData.FormTemplateField.FieldID,
+				Value:   formFieldData.Value,
+			})
+		}
+
 		workflowResponse.Nodes = append(workflowResponse.Nodes, nodeResponse)
 	}
 

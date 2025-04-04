@@ -22,7 +22,7 @@ type NodeForms struct {
 	FromUserID               *int32
 	FromFormAttachedPosition *int32
 	IsOriginal               bool
-	DataID                   *string
-	TemplateID               *int32
+	DataID                   string
+	TemplateID               int32
 	NodeID                   string
 }

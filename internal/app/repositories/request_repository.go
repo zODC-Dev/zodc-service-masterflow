@@ -124,6 +124,9 @@ func (r *RequestRepository) FindOneRequestByRequestId(ctx context.Context, db *s
 	Requests := table.Requests
 	Nodes := table.Nodes
 	NodeForms := table.NodeForms
+	FormData := table.FormData
+	FormFieldData := table.FormFieldData
+	FormTemplateFields := table.FormTemplateFields
 	Connections := table.Connections
 	Categories := table.Categories
 
@@ -134,12 +137,18 @@ func (r *RequestRepository) FindOneRequestByRequestId(ctx context.Context, db *s
 		Nodes.AllColumns,
 		Connections.AllColumns,
 		Categories.AllColumns,
+		FormData.AllColumns,
+		FormFieldData.AllColumns,
+		FormTemplateFields.AllColumns,
 	).FROM(
 		Requests.
 			LEFT_JOIN(WorkflowVersions, WorkflowVersions.ID.EQ(Requests.WorkflowVersionID)).
 			LEFT_JOIN(Workflows, Workflows.ID.EQ(WorkflowVersions.WorkflowID)).
 			LEFT_JOIN(Nodes, Nodes.RequestID.EQ(Requests.ID)).
 			LEFT_JOIN(NodeForms, NodeForms.NodeID.EQ(Nodes.ID)).
+			LEFT_JOIN(FormData, FormData.ID.EQ(Nodes.FormDataID)).
+			LEFT_JOIN(FormFieldData, FormFieldData.FormDataID.EQ(FormData.ID)).
+			LEFT_JOIN(FormTemplateFields, FormTemplateFields.ID.EQ(FormFieldData.FormTemplateFieldID)).
 			LEFT_JOIN(Connections, Connections.RequestID.EQ(Requests.ID)).
 			LEFT_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)),
 	).WHERE(
