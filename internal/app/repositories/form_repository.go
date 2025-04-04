@@ -184,11 +184,11 @@ func (r *FormRepository) FindOneFormTemplateFieldByFieldId(ctx context.Context, 
 		FormTemplateFields.
 			LEFT_JOIN(
 				FormTemplateVersions,
-				FormTemplateVersions.FormTemplateID.EQ(FormTemplateFields.FormTemplateVersionID),
+				FormTemplateVersions.ID.EQ(FormTemplateFields.FormTemplateVersionID),
 			),
 	).WHERE(
 		FormTemplateFields.FieldID.EQ(postgres.String(fieldId)).AND(
-			FormTemplateFields.FormTemplateVersionID.EQ(postgres.Int32(formTemplateId)),
+			FormTemplateVersions.FormTemplateID.EQ(postgres.Int32(formTemplateId)),
 		),
 	)
 

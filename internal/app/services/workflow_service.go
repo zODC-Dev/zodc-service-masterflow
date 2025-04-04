@@ -181,18 +181,24 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 			// }
 
 			// Send notification
-			notification := types.Notification{
-				ToUserIds: []string{strconv.Itoa(int(*request.Nodes[i].AssigneeID))},
-				Subject:   "New task assigned",
-				Body:      fmt.Sprintf("New task assigned: %s – You have been assigned a new task by %d.", request.Nodes[i].Title, request.UserID),
-			}
+			if request.Nodes[i].AssigneeID != nil {
+				// notification := types.Notification{
+				// 	ToUserIds: []string{strconv.Itoa(int(*request.Nodes[i].AssigneeID))},
+				// 	Subject:   "New task assigned",
+				// 	Body:      fmt.Sprintf("New task assigned: %s – You have been assigned a new task by %d.", request.Nodes[i].Title, request.UserID),
+				// }
 
-			notificationBytes, err := json.Marshal(notification)
-			if err != nil {
-				return fmt.Errorf("marshal notification failed: %w", err)
-			}
+				// notificationBytes, err := json.Marshal(notification)
+				// if err != nil {
+				// 	return fmt.Errorf("marshal notification failed: %w", err)
+				// }
 
-			s.NatsClient.Publish("notifications", notificationBytes)
+				// err = s.NatsClient.Publish("notifications", notificationBytes)
+				// if err != nil {
+				// 	return fmt.Errorf("publish notification failed: %w", err)
+				// }
+
+			}
 
 		}
 	}
@@ -211,18 +217,21 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 	}
 
 	// Send notification
-	notification := types.Notification{
-		ToUserIds: userIdsStr,
-		Subject:   "Workflow Started",
-		Body:      fmt.Sprintf("Workflow started with request ID: %d", requestId),
-	}
+	// notification := types.Notification{
+	// 	ToUserIds: userIdsStr,
+	// 	Subject:   "Workflow Started",
+	// 	Body:      fmt.Sprintf("Workflow started with request ID: %d", requestId),
+	// }
 
-	notificationBytes, err := json.Marshal(notification)
-	if err != nil {
-		return fmt.Errorf("marshal notification failed: %w", err)
-	}
+	// notificationBytes, err := json.Marshal(notification)
+	// if err != nil {
+	// 	return fmt.Errorf("marshal notification failed: %w", err)
+	// }
 
-	s.NatsClient.Publish("notifications", notificationBytes)
+	// err = s.NatsClient.Publish("notifications", notificationBytes)
+	// if err != nil {
+	// 	return fmt.Errorf("publish notification failed: %w", err)
+	// }
 
 	return nil
 }
@@ -782,12 +791,34 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 		}
 
 		// Form Attached
-		if node.NodeForms != nil {
-			formAttachedResponse := responses.NodeFormResponse{}
-			if err := utils.Mapper(node.NodeForms, &formAttachedResponse); err != nil {
-				return workflowResponse, fmt.Errorf("map node form response fail: %w", err)
+		for _, nodeForm := range node.NodeForms {
+
+			approveUserIds := []int32{}
+			for _, approveUser := range nodeForm.NodeFormApproveUsers {
+				approveUserIds = append(approveUserIds, approveUser.UserID)
 			}
-			nodeResponse.FormAttached = &formAttachedResponse
+
+			formAttachedResponse := responses.NodeFormResponse{
+				Key:                      nodeForm.Key,
+				FromUserId:               nodeForm.FromUserID,
+				DataId:                   nodeForm.DataID,
+				OptionId:                 nodeForm.OptionKey,
+				FromFormAttachedPosition: nodeForm.FromFormAttachedPosition,
+				Permission:               nodeForm.Permission,
+				IsOriginal:               nodeForm.IsOriginal,
+				FormTemplateId:           nodeForm.TemplateID,
+				ApproveUserIds:           approveUserIds,
+			}
+
+			nodeResponse.Data.FormAttached = append(nodeResponse.Data.FormAttached, formAttachedResponse)
+		}
+
+		// Form Data
+		for _, formFieldData := range node.FormData.FormFieldData {
+			nodeResponse.Form = append(nodeResponse.Form, responses.NodeFormDataResponse{
+				FieldId: formFieldData.FormTemplateField.FieldID,
+				Value:   formFieldData.Value,
+			})
 		}
 
 		workflowResponse.Nodes = append(workflowResponse.Nodes, nodeResponse)
@@ -966,10 +997,7 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 
 			formFieldDatas := []model.FormFieldData{}
 			for _, form := range node.Form {
-				formTemplateField, err := s.FormRepo.FindOneFormTemplateFieldByFieldId(ctx, tx, form.FieldId, constants.FormTemplateIDJiraSystemForm)
-				if err != nil {
-					return 0, fmt.Errorf("find form template field fail: %w", err)
-				}
+				formTemplateField, _ := s.FormRepo.FindOneFormTemplateFieldByFieldId(ctx, tx, form.FieldId, constants.FormTemplateIDJiraSystemForm)
 
 				formFieldData := model.FormFieldData{
 					FormTemplateFieldID: formTemplateField.ID,

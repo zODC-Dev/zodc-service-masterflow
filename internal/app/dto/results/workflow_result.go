@@ -2,9 +2,25 @@ package results
 
 import "github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 
+type RequestDetailFormFieldData struct {
+	model.FormFieldData
+	FormTemplateField model.FormTemplateFields
+}
+
+type RequestDetailFormData struct {
+	model.FormData
+	FormFieldData []RequestDetailFormFieldData
+}
+
+type RequestDetailNodeForm struct {
+	model.NodeForms
+	NodeFormApproveUsers []model.NodeFormApproveUsers
+}
+
 type RequestDetailNode struct {
 	model.Nodes
-	NodeForms []model.NodeForms
+	NodeForms []RequestDetailNodeForm
+	FormData  RequestDetailFormData
 }
 
 type RequestDetail struct {

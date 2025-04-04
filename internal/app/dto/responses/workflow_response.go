@@ -23,6 +23,8 @@ type NodeDataResponse struct {
 	SubRequestID *int32 `json:"subRequestId"`
 
 	EstimatePoint int32 `json:"estimatePoint"`
+
+	FormAttached []NodeFormResponse `json:"formAttached"`
 }
 
 type NodeFormResponse struct {
@@ -35,6 +37,11 @@ type NodeFormResponse struct {
 	Permission               string  `json:"permission"`
 	IsOriginal               bool    `json:"isOriginal"`
 	ApproveUserIds           []int32 `json:"approveUserIds"`
+}
+
+type NodeFormDataResponse struct {
+	FieldId string `json:"fieldId"`
+	Value   string `json:"value"`
 }
 
 type NodeResponse struct {
@@ -56,7 +63,7 @@ type NodeResponse struct {
 
 	ParentId *string `json:"parentId"`
 
-	FormAttached *NodeFormResponse `json:"formAttached"`
+	Form []NodeFormDataResponse `json:"form"`
 }
 
 type ConnectionResponse struct {
