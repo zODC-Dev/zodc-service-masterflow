@@ -83,6 +83,10 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 		conditions = append(conditions, requestSprintId.EQ(postgres.Int64(int64(sprintIdInt))))
 	}
 
+	if requestQueryParam.WorkflowType != "" {
+		conditions = append(conditions, Workflows.Type.EQ(postgres.String(requestQueryParam.WorkflowType)))
+	}
+
 	if len(conditions) > 0 {
 		statement = statement.WHERE(postgres.AND(conditions...))
 	}
