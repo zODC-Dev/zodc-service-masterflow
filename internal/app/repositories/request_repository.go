@@ -371,6 +371,8 @@ func (r *RequestRepository) FindAllTasksByProject(ctx context.Context, db *sql.D
 		if queryparams.Status == "TODAY" {
 			conditions = append(conditions, Nodes.IsCurrent.EQ(postgres.Bool(true)))
 			conditions = append(conditions, Nodes.Status.NOT_EQ(postgres.String(string(constants.NodeStatusCompleted))))
+		} else if queryparams.Status == "INCOMING" {
+			conditions = append(conditions, Nodes.IsCurrent.EQ(postgres.Bool(false)))
 		} else {
 			conditions = append(conditions, Requests.Status.EQ(postgres.String(queryparams.Status)))
 		}
