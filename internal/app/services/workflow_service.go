@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
@@ -201,17 +200,17 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 	}
 
 	// Notification
-	uniqueUsers := make(map[int32]struct{})
-	for _, node := range request.Nodes {
-		if node.AssigneeID != nil {
-			uniqueUsers[*node.AssigneeID] = struct{}{}
-		}
-	}
+	// uniqueUsers := make(map[int32]struct{})
+	// for _, node := range request.Nodes {
+	// 	if node.AssigneeID != nil {
+	// 		uniqueUsers[*node.AssigneeID] = struct{}{}
+	// 	}
+	// }
 
-	userIdsStr := make([]string, 0, len(uniqueUsers))
-	for id := range uniqueUsers {
-		userIdsStr = append(userIdsStr, strconv.Itoa(int(id)))
-	}
+	// userIdsStr := make([]string, 0, len(uniqueUsers))
+	// for id := range uniqueUsers {
+	// 	userIdsStr = append(userIdsStr, strconv.Itoa(int(id)))
+	// }
 
 	// Send notification
 	// notification := types.Notification{
@@ -792,7 +791,7 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 				Key:                      nodeForm.Key,
 				FromUserId:               nodeForm.FromUserID,
 				DataId:                   nodeForm.DataID,
-				OptionId:                 nodeForm.OptionKey,
+				OptionKey:                nodeForm.OptionKey,
 				FromFormAttachedPosition: nodeForm.FromFormAttachedPosition,
 				Permission:               nodeForm.Permission,
 				IsOriginal:               nodeForm.IsOriginal,

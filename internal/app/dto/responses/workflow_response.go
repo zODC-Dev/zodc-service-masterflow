@@ -28,10 +28,10 @@ type NodeDataResponse struct {
 }
 
 type NodeFormResponse struct {
-	Key                      string  `json:"id"`
+	Key                      string  `json:"key"`
 	FormTemplateId           int32   `json:"formTemplateId"`
 	DataId                   string  `json:"dataId"`
-	OptionId                 *string `json:"optionId"`
+	OptionKey                *string `json:"optionKey"`
 	FromUserId               *int32  `json:"fromUserId"`
 	FromFormAttachedPosition *int32  `json:"fromFormAttachedPosition"`
 	Permission               string  `json:"permission"`
