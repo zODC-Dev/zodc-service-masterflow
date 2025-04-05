@@ -267,8 +267,8 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 		storyRequestModel := model.Requests{
 			WorkflowVersionID: storyWorkflowVersion.ID,
-			IsTemplate:        false,
-			Status:            "IN_ACTIVE",
+			IsTemplate:        true,
+			Status:            string(constants.RequestStatusTodo),
 			ParentID:          &requestId,
 			UserID:            userId,
 			LastUpdateUserID:  userId,
