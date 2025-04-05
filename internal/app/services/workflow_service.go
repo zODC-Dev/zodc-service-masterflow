@@ -142,6 +142,14 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 	for i := range request.Nodes {
 		if request.Nodes[i].Type == string(constants.NodeTypeStart) {
 			request.Nodes[i].Status = string(constants.NodeStatusCompleted)
+			nodeModel := model.Nodes{}
+			if err := utils.Mapper(request.Nodes[i], &nodeModel); err != nil {
+				return fmt.Errorf("map node fail: %w", err)
+			}
+			err = s.NodeRepo.UpdateNode(ctx, tx, nodeModel)
+			if err != nil {
+				return fmt.Errorf("update node status to completed fail: %w", err)
+			}
 
 			for j := range request.Connections {
 				if request.Connections[j].FromNodeID == request.Nodes[i].ID {
