@@ -39,6 +39,7 @@ type NodeData struct {
 	Assignee     NodeDataAssignee
 	EndType      string
 	SubRequestID *int32
+	JiraKey      string
 
 	Condition NodeDataCondition
 
@@ -90,6 +91,7 @@ type CreateWorkflow struct {
 	Type        string
 	CategoryId  int32
 	ProjectKey  string
+	SprintId    *int32
 
 	NodesConnectionsStories
 }
