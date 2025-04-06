@@ -28,8 +28,14 @@ type WorkflowSyncRequest struct {
 
 // WorkflowSyncResponse represents the response received from Jira via NATS
 type WorkflowSyncResponse struct {
-	Issues []struct {
-		NodeId  string `json:"node_id"`
-		JiraKey string `json:"jira_key"`
-	} `json:"issues"`
+	Success bool `json:"success"`
+	Data    struct {
+		Success bool `json:"success"`
+		Data    struct {
+			Issues []struct {
+				NodeId  string `json:"node_id"`
+				JiraKey string `json:"jira_key"`
+			} `json:"issues"`
+		} `json:"data"`
+	} `json:"data"`
 }

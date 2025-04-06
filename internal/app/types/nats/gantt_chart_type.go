@@ -27,7 +27,13 @@ type GanttChartConnection struct {
 
 // GanttChartCalculationResponse - Kết quả tính toán Gantt Chart
 type GanttChartCalculationResponse struct {
-	Issues []GanttChartJiraIssueResult `json:"issues"`
+	Success bool `json:"success"`
+	Data    struct {
+		Success bool `json:"success"`
+		Data    struct {
+			Issues []GanttChartJiraIssueResult `json:"issues"`
+		} `json:"data"`
+	} `json:"data"`
 }
 
 // GanttChartJiraIssueResult - Kết quả tính toán cho một issue

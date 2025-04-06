@@ -215,3 +215,34 @@ func (r *NodeRepository) UpdateNodePlannedTimes(ctx context.Context, tx *sql.Tx,
 	slog.Info("Completed updating planned times in database")
 	return nil
 }
+
+func (r *NodeRepository) FindAllNodeByRequestIdTx(ctx context.Context, tx *sql.Tx, requestId int32) ([]model.Nodes, error) {
+	WorkflowNodes := table.Nodes
+
+	statement := postgres.SELECT(
+		WorkflowNodes.AllColumns,
+	).FROM(
+		WorkflowNodes,
+	).WHERE(
+		WorkflowNodes.RequestID.EQ(postgres.Int32(requestId)),
+	)
+
+	results := []model.Nodes{}
+
+	err := statement.QueryContext(ctx, tx, &results)
+
+	return results, err
+}
+
+func (r *NodeRepository) FindOneNodeByNodeIdTx(ctx context.Context, tx *sql.Tx, nodeId string) (model.Nodes, error) {
+	Nodes := table.Nodes
+
+	statement := postgres.SELECT(Nodes.AllColumns).
+		FROM(Nodes).
+		WHERE(Nodes.ID.EQ(postgres.String(nodeId)))
+
+	result := model.Nodes{}
+	err := statement.QueryContext(ctx, tx, &result)
+
+	return result, err
+}
