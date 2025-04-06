@@ -1,5 +1,5 @@
 package constants
 
 const (
-	FormTemplateIDJiraSystemForm = 1
+	FormTemplateIDJiraSystemForm int32 = 1
 )

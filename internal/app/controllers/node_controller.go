@@ -43,5 +43,5 @@ func (c *NodeController) StartNode(e echo.Context) error {
 		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	return e.JSON(http.StatusOK, nil)
+	return e.JSON(http.StatusOK, map[string]string{"message": "Node started successfully"})
 }

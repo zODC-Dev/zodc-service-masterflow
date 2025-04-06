@@ -56,14 +56,14 @@ func (s *NodeService) UpdateNodeStatusToInProcessing(ctx context.Context, tx *sq
 func (s *NodeService) StartNodeHandler(ctx context.Context, nodeId string) error {
 	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
-		return err
+		return fmt.Errorf("start node handler fail: %w", err)
 	}
 	defer tx.Rollback()
 
 	//
 	node, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
 	if err != nil {
-		return err
+		return fmt.Errorf("find node by node id fail: %w", err)
 	}
 
 	// Update Current Node Status To In Process
@@ -74,7 +74,7 @@ func (s *NodeService) StartNodeHandler(ctx context.Context, nodeId string) error
 	node.ActualStartTime = &now
 
 	if err := s.NodeRepo.UpdateNode(ctx, tx, node); err != nil {
-		return err
+		return fmt.Errorf("update node fail: %w", err)
 	}
 
 	//Commit

@@ -47,6 +47,7 @@ type RequestTaskResponse struct {
 	Id               string         `json:"id"`
 	Key              string         `json:"key"`
 	Title            string         `json:"title"`
+	Type             string         `json:"type"`
 	RequestID        int32          `json:"requestId"`
 	RequestTitle     string         `json:"requestTitle"`
 	RequestProgress  float32        `json:"requestProgress"`
@@ -57,6 +58,7 @@ type RequestTaskResponse struct {
 	ActualStartTime  *time.Time     `json:"actualStartTime"`
 	ActualEndTime    *time.Time     `json:"actualEndTime"`
 	EstimatePoint    *int32         `json:"estimatePoint"`
+	IsCurrent        bool           `json:"isCurrent"`
 }
 
 type TaskCountResponse struct {

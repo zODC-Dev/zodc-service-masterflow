@@ -475,6 +475,7 @@ func (s *RequestService) GetRequestTasksByProjectHandler(ctx context.Context, re
 			Id:               node.ID,
 			Title:            node.Title,
 			Status:           node.Status,
+			Type:             node.Type,
 			PlannedStartTime: node.PlannedStartTime,
 			PlannedEndTime:   node.PlannedEndTime,
 			ActualStartTime:  node.ActualStartTime,
@@ -483,6 +484,7 @@ func (s *RequestService) GetRequestTasksByProjectHandler(ctx context.Context, re
 			RequestProgress:  node.Request.Progress,
 			RequestTitle:     node.Request.Title,
 			Assignee:         assignees[*node.AssigneeID],
+			IsCurrent:        node.IsCurrent,
 		}
 
 		if node.JiraKey != nil {

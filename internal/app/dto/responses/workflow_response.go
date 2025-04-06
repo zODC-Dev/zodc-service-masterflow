@@ -67,10 +67,11 @@ type NodeResponse struct {
 }
 
 type ConnectionResponse struct {
-	Id   string `json:"id"`
-	From string `json:"from"`
-	To   string `json:"to"`
-	Text string `json:"text"`
+	Id          string `json:"id"`
+	From        string `json:"from"`
+	To          string `json:"to"`
+	Text        string `json:"text"`
+	IsCompleted bool   `json:"isCompleted"`
 }
 
 type StoryResponse struct {

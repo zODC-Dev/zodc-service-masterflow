@@ -28,6 +28,7 @@ func NodeRoute(group *echo.Group, db *sql.DB) {
 		NodeRepo:       nodeRepo,
 		ConnectionRepo: connectionRepo,
 		RequestRepo:    requestRepo,
+		DB:             db,
 	})
 
 	workflowService := services.NewWorkflowService(services.WorkflowService{

@@ -174,27 +174,26 @@ func (r *FormRepository) CreateFormFieldDatas(ctx context.Context, tx *sql.Tx, f
 	return err
 }
 
-func (r *FormRepository) FindOneFormTemplateFieldByFieldId(ctx context.Context, tx *sql.Tx, fieldId string, formTemplateId int32) (model.FormTemplateFields, error) {
-	FormTemplateFields := table.FormTemplateFields
+func (r *FormRepository) FindOneFormTemplateByFormTemplateId(ctx context.Context, db *sql.DB, formTemplateId int32) (results.FormSystemResult, error) {
+	FormTemplates := table.FormTemplates
 	FormTemplateVersions := table.FormTemplateVersions
+	FormTemplateFields := table.FormTemplateFields
 
-	statement := FormTemplateFields.SELECT(
+	statement := FormTemplates.SELECT(
+		FormTemplates.AllColumns,
+		FormTemplateVersions.AllColumns,
 		FormTemplateFields.AllColumns,
 	).FROM(
-		FormTemplateFields.
-			LEFT_JOIN(
-				FormTemplateVersions,
-				FormTemplateVersions.ID.EQ(FormTemplateFields.FormTemplateVersionID),
-			),
+		FormTemplates.
+			LEFT_JOIN(FormTemplateVersions, FormTemplateVersions.FormTemplateID.EQ(FormTemplates.ID)).
+			LEFT_JOIN(FormTemplateFields, FormTemplateFields.FormTemplateVersionID.EQ(FormTemplateVersions.ID)),
 	).WHERE(
-		FormTemplateFields.FieldID.EQ(postgres.String(fieldId)).AND(
-			FormTemplateVersions.FormTemplateID.EQ(postgres.Int32(formTemplateId)),
-		),
+		FormTemplates.ID.EQ(postgres.Int32(formTemplateId)),
 	)
 
-	formTemplateField := model.FormTemplateFields{}
+	formTemplate := results.FormSystemResult{}
 
-	err := statement.QueryContext(ctx, tx, &formTemplateField)
+	err := statement.QueryContext(ctx, db, &formTemplate)
 
-	return formTemplateField, err
+	return formTemplate, err
 }

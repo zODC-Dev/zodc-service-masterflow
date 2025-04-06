@@ -32,12 +32,11 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 	).FROM(
 		Requests,
 	).WHERE(
-		Requests.UserID.EQ(postgres.Int32(userId)),
-	).LIMIT(int64(requestQueryParam.PageSize)).OFFSET(int64(requestQueryParam.Page)).AsTable("rRequests")
+		Requests.UserID.EQ(postgres.Int32(userId)).AND(Requests.IsTemplate.EQ(postgres.Bool(false))),
+	).LIMIT(int64(requestQueryParam.PageSize)).OFFSET(int64(requestQueryParam.Page - 1)).AsTable("rRequests")
 
 	requestId := Requests.ID.From(rRequests)
 	requestWorkflowVersionId := Requests.WorkflowVersionID.From(rRequests)
-	requestIsTemplate := Requests.IsTemplate.From(rRequests)
 	requestTitle := Requests.Title.From(rRequests)
 	requestStatus := Requests.Status.From(rRequests)
 	requestSprintId := Requests.SprintID.From(rRequests)
@@ -54,10 +53,9 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 			LEFT_JOIN(Workflows, Workflows.ID.EQ(WorkflowVerions.WorkflowID)),
 	)
 
-	conditions := []postgres.BoolExpression{}
-
-	// Filter out template requests
-	conditions = append(conditions, requestIsTemplate.EQ(postgres.Bool(false)))
+	conditions := []postgres.BoolExpression{
+		Nodes.IsCurrent.EQ(postgres.Bool(true)),
+	}
 
 	if requestQueryParam.Search != "" {
 		conditions = append(conditions, postgres.LOWER(requestTitle).LIKE(postgres.LOWER(postgres.String("%"+requestQueryParam.Search+"%"))))
@@ -93,6 +91,7 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 
 	result := []results.Request{}
 	err := statement.QueryContext(ctx, db, &result)
+	fmt.Println(statement.DebugSql())
 
 	if err != nil {
 		return results.Count{}, result, err
@@ -100,21 +99,38 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 
 	// Count
 	statementCount := postgres.SELECT(
-		postgres.COUNT(Requests.ID).AS("count"),
+		Requests.ID,
 	).FROM(
-		Requests,
-	).WHERE(
-		Requests.UserID.EQ(postgres.Int32(userId)),
+		Requests.
+			LEFT_JOIN(WorkflowVerions, WorkflowVerions.ID.EQ(Requests.WorkflowVersionID)).
+			LEFT_JOIN(Workflows, Workflows.ID.EQ(WorkflowVerions.WorkflowID)),
 	)
 
-	count := results.Count{}
+	conditionsCount := []postgres.BoolExpression{
+		Requests.UserID.EQ(postgres.Int32(userId)),
+		Requests.IsTemplate.EQ(postgres.Bool(false)),
+	}
 
-	err = statementCount.QueryContext(ctx, db, &count)
+	if requestQueryParam.WorkflowType != "" {
+		conditionsCount = append(conditionsCount, Workflows.Type.EQ(postgres.String(requestQueryParam.WorkflowType)))
+	}
+
+	if requestQueryParam.ProjectKey != "" {
+		conditionsCount = append(conditionsCount, Workflows.ProjectKey.EQ(postgres.String(requestQueryParam.ProjectKey)))
+	}
+
+	if len(conditionsCount) > 0 {
+		statementCount = statementCount.WHERE(postgres.AND(conditionsCount...))
+	}
+
+	resultCount := []model.Requests{}
+	err = statementCount.QueryContext(ctx, db, &resultCount)
+	fmt.Println(statementCount.DebugSql())
 	if err != nil {
 		return results.Count{}, result, err
 	}
 
-	return count, result, err
+	return results.Count{Count: int64(len(resultCount))}, result, err
 }
 
 func (r *RequestRepository) FindRequestByNodeId(ctx context.Context, db *sql.DB, nodeId string) (model.Requests, error) {
@@ -354,17 +370,21 @@ func (r *RequestRepository) FindAllTasksByProject(ctx context.Context, db *sql.D
 		Nodes.AllColumns,
 		Requests.AllColumns,
 	).FROM(
-		Nodes.INNER_JOIN(
-			Requests, Nodes.RequestID.EQ(Requests.ID),
-		).INNER_JOIN(
-			WorkflowVersions, Requests.WorkflowVersionID.EQ(WorkflowVersions.ID),
-		).INNER_JOIN(
-			Workflows, Workflows.ID.EQ(WorkflowVersions.WorkflowID),
-		),
-	).LIMIT(int64(queryparams.PageSize)).OFFSET(int64(queryparams.Page))
+		Nodes.
+			INNER_JOIN(
+				Requests, Nodes.RequestID.EQ(Requests.ID),
+			).
+			INNER_JOIN(
+				WorkflowVersions, Requests.WorkflowVersionID.EQ(WorkflowVersions.ID),
+			).
+			INNER_JOIN(
+				Workflows, Workflows.ID.EQ(WorkflowVersions.WorkflowID),
+			),
+	).LIMIT(int64(queryparams.PageSize)).OFFSET(int64(queryparams.Page - 1))
 
 	conditions := []postgres.BoolExpression{
 		Nodes.AssigneeID.EQ(postgres.Int32(userId)),
+		Requests.IsTemplate.EQ(postgres.Bool(false)),
 	}
 
 	if queryparams.ProjectKey != "" {
@@ -396,7 +416,6 @@ func (r *RequestRepository) FindAllTasksByProject(ctx context.Context, db *sql.D
 
 	result := []results.NodeResult{}
 	err := statement.QueryContext(ctx, db, &result)
-
 	fmt.Println(statement.DebugSql())
 
 	return result, err

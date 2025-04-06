@@ -42,7 +42,7 @@ func (r *NodeRepository) FindOneNodeByNodeId(ctx context.Context, db *sql.DB, no
 		WHERE(Nodes.ID.EQ(postgres.String(nodeId)))
 
 	result := model.Nodes{}
-	err := statement.QueryContext(ctx, db, result)
+	err := statement.QueryContext(ctx, db, &result)
 
 	return result, err
 }
