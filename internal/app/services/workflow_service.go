@@ -653,6 +653,12 @@ func (s *WorkflowService) CreateWorkflowHandler(ctx context.Context, req *reques
 		if err := s.publishWorkflowToJira(ctx, tx, reqClone.Nodes, reqClone.Stories, reqClone.Connections, reqClone.ProjectKey, *reqClone.SprintId); err != nil {
 			return fmt.Errorf("failed to publish to Jira: %w", err)
 		}
+
+		// Tính toán Gantt Chart sau khi đồng bộ với Jira
+		if err := s.publishWorkflowToGanttChart(ctx, tx, reqClone.Nodes, reqClone.Stories, reqClone.Connections, reqClone.ProjectKey, *reqClone.SprintId, workflow.ID); err != nil {
+			slog.Error("Failed to calculate Gantt Chart", "error", err)
+			// Không return error ở đây để không làm fail luồng chính nếu tính toán Gantt Chart lỗi
+		}
 	}
 
 	//Commit
@@ -1367,5 +1373,254 @@ func (s *WorkflowService) ArchiveWorkflowHandler(ctx context.Context, workflowId
 		return fmt.Errorf("commit fail: %w", err)
 	}
 
+	return nil
+}
+
+// publishWorkflowToGanttChart gửi dữ liệu workflow đến service tính toán Gantt Chart
+func (s *WorkflowService) publishWorkflowToGanttChart(ctx context.Context, tx *sql.Tx, nodes []requests.Node, stories []requests.Story, connections []requests.Connection, projectKey string, sprintId int32, workflowId int32) error {
+	slog.Info("Starting Gantt Chart calculation",
+		"projectKey", projectKey,
+		"sprintId", sprintId,
+		"workflowId", workflowId)
+
+	// Chuẩn bị request
+	ganttRequest := natsModel.GanttChartCalculationRequest{
+		WorkflowId:  workflowId,
+		SprintId:    sprintId,
+		ProjectKey:  projectKey,
+		Issues:      []natsModel.GanttChartJiraIssue{},
+		Connections: []natsModel.GanttChartConnection{},
+	}
+
+	// Processing Stories - Add to issues
+	for _, story := range stories {
+		slog.Info("Processing story for Gantt Chart",
+			"id", story.Node.Id,
+			"title", story.Title,
+			"type", "STORY")
+
+		issue := natsModel.GanttChartJiraIssue{
+			NodeId:  story.Node.Id,
+			Type:    "STORY",
+			JiraKey: story.Node.JiraKey,
+		}
+
+		ganttRequest.Issues = append(ganttRequest.Issues, issue)
+	}
+
+	// Processing Tasks and Bugs - Add to issues
+	for _, node := range nodes {
+		if node.Type != string(constants.NodeTypeTask) &&
+			node.Type != string(constants.NodeTypeBug) &&
+			node.Type != string(constants.NodeTypeStory) {
+			continue
+		}
+
+		slog.Info("Processing node for Gantt Chart",
+			"id", node.Id,
+			"title", node.Data.Title,
+			"type", node.Type)
+
+		issue := natsModel.GanttChartJiraIssue{
+			NodeId:  node.Id,
+			Type:    node.Type,
+			JiraKey: node.JiraKey,
+		}
+
+		ganttRequest.Issues = append(ganttRequest.Issues, issue)
+	}
+
+	// Processing Connections
+	processedConnections := make(map[string]bool)
+
+	// 1. Connections từ connections hiện có
+	for _, conn := range connections {
+		fromNode := findNodeByIdFromRequest(nodes, stories, conn.From)
+		toNode := findNodeByIdFromRequest(nodes, stories, conn.To)
+
+		if fromNode == nil || toNode == nil {
+			continue
+		}
+
+		// Skip START/END connections
+		if fromNode.Type == string(constants.NodeTypeStart) ||
+			toNode.Type == string(constants.NodeTypeEnd) {
+			continue
+		}
+
+		// Skip if not story/task/bug nodes
+		if (fromNode.Type != string(constants.NodeTypeStory) &&
+			fromNode.Type != string(constants.NodeTypeTask) &&
+			fromNode.Type != string(constants.NodeTypeBug)) ||
+			(toNode.Type != string(constants.NodeTypeStory) &&
+				toNode.Type != string(constants.NodeTypeTask) &&
+				toNode.Type != string(constants.NodeTypeBug)) {
+			continue
+		}
+
+		// Tạo connection key để tránh duplicate
+		connectionKey := fmt.Sprintf("%s-%s", fromNode.Id, toNode.Id)
+		if processedConnections[connectionKey] {
+			continue
+		}
+
+		connection := natsModel.GanttChartConnection{
+			FromNodeId: fromNode.Id,
+			ToNodeId:   toNode.Id,
+			Type:       "relates to",
+		}
+
+		ganttRequest.Connections = append(ganttRequest.Connections, connection)
+		processedConnections[connectionKey] = true
+	}
+
+	// 2. Mối quan hệ parent-child
+	for _, node := range nodes {
+		if node.ParentId == "" {
+			continue
+		}
+
+		// Skip if not task/bug
+		if node.Type != string(constants.NodeTypeTask) &&
+			node.Type != string(constants.NodeTypeBug) {
+			continue
+		}
+
+		// Tìm parent node
+		parentNode := findNodeByIdFromRequest(nodes, stories, node.ParentId)
+		if parentNode == nil {
+			continue
+		}
+
+		// Skip nếu parent không phải story/task/bug
+		if parentNode.Type != string(constants.NodeTypeStory) &&
+			parentNode.Type != string(constants.NodeTypeTask) &&
+			parentNode.Type != string(constants.NodeTypeBug) {
+			continue
+		}
+
+		// Tạo connection key để tránh duplicate
+		connectionKey := fmt.Sprintf("%s-%s", parentNode.Id, node.Id)
+		if processedConnections[connectionKey] {
+			continue
+		}
+
+		// Tạo connection type "contains" giữa parent và node
+		connection := natsModel.GanttChartConnection{
+			FromNodeId: parentNode.Id,
+			ToNodeId:   node.Id,
+			Type:       "contains",
+		}
+
+		ganttRequest.Connections = append(ganttRequest.Connections, connection)
+		processedConnections[connectionKey] = true
+	}
+
+	// 3. Mối quan hệ story-tasks
+	for _, story := range stories {
+		for _, node := range nodes {
+			// Skip if not task/bug
+			if node.Type != string(constants.NodeTypeTask) &&
+				node.Type != string(constants.NodeTypeBug) {
+				continue
+			}
+
+			// Tạo connection key để tránh duplicate
+			connectionKey := fmt.Sprintf("%s-%s", story.Node.Id, node.Id)
+			if processedConnections[connectionKey] {
+				continue
+			}
+
+			// Kiểm tra nếu node thuộc story
+			if node.ParentId == story.Node.Id {
+				// Tạo connection type "contains" giữa story và node
+				connection := natsModel.GanttChartConnection{
+					FromNodeId: story.Node.Id,
+					ToNodeId:   node.Id,
+					Type:       "contains",
+				}
+
+				ganttRequest.Connections = append(ganttRequest.Connections, connection)
+				processedConnections[connectionKey] = true
+			}
+		}
+	}
+
+	// Gửi request đến NATS
+	slog.Info("Sending Gantt Chart calculation request to NATS", "request", ganttRequest)
+	requestBytes, err := json.Marshal(ganttRequest)
+	if err != nil {
+		return fmt.Errorf("failed to marshal Gantt Chart request: %w", err)
+	}
+
+	response, err := s.NatsClient.Request(constants.NatsTopicGanttChartCalculationRequest, requestBytes, 30*time.Second)
+	if err != nil {
+		return fmt.Errorf("failed to calculate Gantt Chart: %w", err)
+	}
+
+	// Log raw response để debug
+	slog.Info("Received raw response from Gantt Chart service", "response", string(response.Data))
+
+	// Xử lý response có cấu trúc lồng ghép
+	var wrappedResponse struct {
+		Success bool `json:"success"`
+		Data    struct {
+			Success bool `json:"success"`
+			Data    struct {
+				Issues []natsModel.GanttChartJiraIssueResult `json:"issues"`
+			} `json:"data"`
+		} `json:"data"`
+	}
+
+	if err := json.Unmarshal(response.Data, &wrappedResponse); err != nil {
+		slog.Error("Failed to unmarshal Gantt Chart response", "error", err)
+		return fmt.Errorf("failed to unmarshal Gantt Chart response: %w", err)
+	}
+
+	// Kiểm tra response success
+	if !wrappedResponse.Success || !wrappedResponse.Data.Success {
+		slog.Error("Gantt Chart calculation failed",
+			"outerSuccess", wrappedResponse.Success,
+			"innerSuccess", wrappedResponse.Data.Success)
+		return fmt.Errorf("Gantt Chart calculation failed")
+	}
+
+	// Cập nhật PlannedStartTime và PlannedEndTime vào database
+	nodeUpdates := make([]struct {
+		NodeId           string
+		PlannedStartTime time.Time
+		PlannedEndTime   time.Time
+	}, len(wrappedResponse.Data.Data.Issues))
+
+	for i, issue := range wrappedResponse.Data.Data.Issues {
+		slog.Info("Updating Planned Times",
+			"nodeId", issue.NodeId,
+			"plannedStart", issue.PlannedStartTime,
+			"plannedEnd", issue.PlannedEndTime)
+
+		nodeUpdates[i] = struct {
+			NodeId           string
+			PlannedStartTime time.Time
+			PlannedEndTime   time.Time
+		}{
+			NodeId:           issue.NodeId,
+			PlannedStartTime: issue.PlannedStartTime,
+			PlannedEndTime:   issue.PlannedEndTime,
+		}
+	}
+
+	if len(nodeUpdates) > 0 {
+		if err := s.NodeRepo.UpdateNodePlannedTimes(ctx, tx, nodeUpdates); err != nil {
+			slog.Error("Failed to update node planned times", "error", err)
+			return fmt.Errorf("failed to update node planned times: %w", err)
+		}
+
+		// Log thành công sau khi đã lưu
+		slog.Info("Successfully updated planned times for nodes", "count", len(nodeUpdates))
+	} else {
+		slog.Warn("No planned times received from Gantt Chart service")
+	}
+
+	slog.Info("Completed Gantt Chart calculation", "projectKey", projectKey)
 	return nil
 }

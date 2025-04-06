@@ -3,6 +3,8 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/go-jet/jet/v2/postgres"
@@ -152,4 +154,64 @@ func (r *NodeRepository) CreateNodeForms(ctx context.Context, tx *sql.Tx, nodeFo
 	err := statement.QueryContext(ctx, tx, &nodeForms)
 
 	return err
+}
+
+func (r *NodeRepository) UpdateNodePlannedTimes(ctx context.Context, tx *sql.Tx, nodeTimesUpdates []struct {
+	NodeId           string
+	PlannedStartTime time.Time
+	PlannedEndTime   time.Time
+}) error {
+	if len(nodeTimesUpdates) == 0 {
+		return nil
+	}
+
+	slog.Info("Starting to update planned times in database", "count", len(nodeTimesUpdates))
+
+	// Thực hiện các updates riêng lẻ trong cùng một transaction
+	for i, update := range nodeTimesUpdates {
+		Nodes := table.Nodes
+
+		// Log thông tin chi tiết của mỗi node đang được cập nhật
+		slog.Info("Updating node planned times",
+			"index", i,
+			"nodeId", update.NodeId,
+			"startTime", update.PlannedStartTime.Format(time.RFC3339),
+			"endTime", update.PlannedEndTime.Format(time.RFC3339))
+
+		// Tạo model để cập nhật
+		nodeModel := model.Nodes{
+			ID:               update.NodeId,
+			PlannedStartTime: &update.PlannedStartTime,
+			PlannedEndTime:   &update.PlannedEndTime,
+			UpdatedAt:        time.Now(),
+		}
+
+		// Cập nhật theo cách sử dụng MODEL
+		statement := Nodes.UPDATE(
+			Nodes.PlannedStartTime,
+			Nodes.PlannedEndTime,
+			Nodes.UpdatedAt,
+		).MODEL(nodeModel).WHERE(Nodes.ID.EQ(postgres.String(update.NodeId)))
+
+		// Hiển thị SQL statement để debug
+		sql, args := statement.Sql()
+		slog.Info("SQL statement", "sql", sql, "args", args)
+
+		result, err := statement.ExecContext(ctx, tx)
+		if err != nil {
+			slog.Error("Failed to update node", "nodeId", update.NodeId, "error", err)
+			return fmt.Errorf("failed to update planned times for node %s: %w", update.NodeId, err)
+		}
+
+		// Kiểm tra số lượng row bị ảnh hưởng
+		rowsAffected, _ := result.RowsAffected()
+		slog.Info("Update result", "nodeId", update.NodeId, "rowsAffected", rowsAffected)
+
+		if rowsAffected == 0 {
+			slog.Warn("No rows affected when updating node", "nodeId", update.NodeId)
+		}
+	}
+
+	slog.Info("Completed updating planned times in database")
+	return nil
 }
