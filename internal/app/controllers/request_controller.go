@@ -28,6 +28,7 @@ func (c *RequestController) FindAllRequest(e echo.Context) error {
 	projectKey := e.QueryParam("projectKey")
 	status := e.QueryParam("status")
 	sprintId := e.QueryParam("sprintId")
+	workflowType := e.QueryParam("workflowType")
 
 	userId, _ := middlewares.GetUserID(e)
 
@@ -46,12 +47,13 @@ func (c *RequestController) FindAllRequest(e echo.Context) error {
 	}
 
 	requestQueryParams := queryparams.RequestQueryParam{
-		Search:     search,
-		Page:       page,
-		PageSize:   pageSize,
-		ProjectKey: projectKey,
-		Status:     status,
-		SprintID:   sprintId,
+		Search:       search,
+		Page:         page,
+		PageSize:     pageSize,
+		ProjectKey:   projectKey,
+		Status:       status,
+		SprintID:     sprintId,
+		WorkflowType: workflowType,
 	}
 
 	requests, err := c.requestService.FindAllRequestHandler(ctx, requestQueryParams, userId)

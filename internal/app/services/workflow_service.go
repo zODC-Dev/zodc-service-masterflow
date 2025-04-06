@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -147,6 +146,14 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 	for i := range request.Nodes {
 		if request.Nodes[i].Type == string(constants.NodeTypeStart) {
 			request.Nodes[i].Status = string(constants.NodeStatusCompleted)
+			nodeModel := model.Nodes{}
+			if err := utils.Mapper(request.Nodes[i], &nodeModel); err != nil {
+				return fmt.Errorf("map node fail: %w", err)
+			}
+			err = s.NodeRepo.UpdateNode(ctx, tx, nodeModel)
+			if err != nil {
+				return fmt.Errorf("update node status to completed fail: %w", err)
+			}
 
 			for j := range request.Connections {
 				if request.Connections[j].FromNodeID == request.Nodes[i].ID {
@@ -205,17 +212,17 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 	}
 
 	// Notification
-	uniqueUsers := make(map[int32]struct{})
-	for _, node := range request.Nodes {
-		if node.AssigneeID != nil {
-			uniqueUsers[*node.AssigneeID] = struct{}{}
-		}
-	}
+	// uniqueUsers := make(map[int32]struct{})
+	// for _, node := range request.Nodes {
+	// 	if node.AssigneeID != nil {
+	// 		uniqueUsers[*node.AssigneeID] = struct{}{}
+	// 	}
+	// }
 
-	userIdsStr := make([]string, 0, len(uniqueUsers))
-	for id := range uniqueUsers {
-		userIdsStr = append(userIdsStr, strconv.Itoa(int(id)))
-	}
+	// userIdsStr := make([]string, 0, len(uniqueUsers))
+	// for id := range uniqueUsers {
+	// 	userIdsStr = append(userIdsStr, strconv.Itoa(int(id)))
+	// }
 
 	// Send notification
 	// notification := types.Notification{
@@ -263,9 +270,10 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 		}
 
 		storyRequestModel := model.Requests{
+			Title:             storyReq.Title,
 			WorkflowVersionID: storyWorkflowVersion.ID,
-			IsTemplate:        false,
-			Status:            "IN_ACTIVE",
+			IsTemplate:        true,
+			Status:            string(constants.RequestStatusTodo),
 			ParentID:          &requestId,
 			UserID:            userId,
 			LastUpdateUserID:  userId,
@@ -860,7 +868,7 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 				Key:                      nodeForm.Key,
 				FromUserId:               nodeForm.FromUserID,
 				DataId:                   nodeForm.DataID,
-				OptionId:                 nodeForm.OptionKey,
+				OptionKey:                nodeForm.OptionKey,
 				FromFormAttachedPosition: nodeForm.FromFormAttachedPosition,
 				Permission:               nodeForm.Permission,
 				IsOriginal:               nodeForm.IsOriginal,
