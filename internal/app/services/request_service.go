@@ -183,14 +183,21 @@ func (s *RequestService) GetRequestDetailHandler(ctx context.Context, userId int
 
 	// Parent Request
 	if request.ParentID != nil {
+		parentRequest, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, *request.ParentID)
+		if err != nil {
+			return requestDetailResponse, err
+		}
+
 		requestDetailResponse.ParentRequest = &responses.RequestResponse{}
-		if err := utils.Mapper(request, &requestDetailResponse.ParentRequest); err != nil {
+		if err := utils.Mapper(parentRequest, &requestDetailResponse.ParentRequest); err != nil {
 			return requestDetailResponse, err
 		}
 
 		if request.SprintID != nil {
 			requestDetailResponse.ParentRequest.SprintId = *request.SprintID
 		}
+
+		requestDetailResponse.ParentKey = parentRequest.Key
 	}
 
 	// Participants

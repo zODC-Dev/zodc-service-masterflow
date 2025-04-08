@@ -79,3 +79,19 @@ func (c *NodeController) GetNodeJiraForm(e echo.Context) error {
 
 	return e.JSON(http.StatusOK, jiraForm)
 }
+
+func (c *NodeController) GetNodeTaskDetail(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	nodeId := e.Param("id")
+	if nodeId == "" {
+		return e.JSON(http.StatusBadRequest, map[string]string{"error": "nodeId is required"})
+	}
+
+	tasks, err := c.nodeService.GetNodeTaskDetail(ctx, nodeId)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, tasks)
+}
