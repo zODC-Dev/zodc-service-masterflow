@@ -472,18 +472,21 @@ func (r *RequestRepository) RemoveNodesConnectionsStoriesByRequestId(ctx context
 
 	statementConnections := Connections.DELETE().WHERE(
 		Connections.RequestID.EQ(postgres.Int32(requestId)),
-	)
+	).RETURNING(Connections.ID)
 
 	var err error
 
-	err = statementNodes.QueryContext(ctx, tx, nil)
+	connectionModel := model.Connections{}
+	err = statementConnections.QueryContext(ctx, tx, &connectionModel)
 	if err != nil {
 		return err
 	}
 
-	err = statementConnections.QueryContext(ctx, tx, nil)
+	nodeModel := model.Nodes{}
+	err = statementNodes.QueryContext(ctx, tx, &nodeModel)
 	if err != nil {
 		return err
+
 	}
 
 	return nil

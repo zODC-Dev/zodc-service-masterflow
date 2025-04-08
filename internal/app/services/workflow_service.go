@@ -528,8 +528,10 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 		for _, formSystem := range formSystems {
 			if formSystem.Tag == workflowNodeReq.Type {
 				// Create Form Data
+				uuid := uuid.New()
 				formData := model.FormData{
 					FormTemplateVersionID: formSystem.Version.ID,
+					ID:                    uuid.String(),
 				}
 
 				formData, err = s.FormRepo.CreateFormData(ctx, tx, formData)
@@ -1121,8 +1123,11 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 		}
 
 		if node.Type == string(constants.NodeTypeTask) {
+			uuid := uuid.New()
+
 			formData := model.FormData{
 				FormTemplateVersionID: int32(constants.FormTemplateIDJiraSystemForm),
+				ID:                    uuid.String(),
 			}
 			formData, err := s.FormRepo.CreateFormData(ctx, tx, formData)
 			if err != nil {
