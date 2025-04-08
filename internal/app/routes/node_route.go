@@ -52,6 +52,12 @@ func NodeRoute(group *echo.Group, db *sql.DB) {
 		nodeRoute.POST("/:id/complete", nodeController.CompleteNode)
 		nodeRoute.POST("/:id/start", nodeController.StartNode)
 
+		nodeRoute.POST("/:id/reassign", nodeController.ReassignNode)
+
+		// nodeRoute.POST("/:id/forms/:formId/submit", nodeController.SubmitNodeForm)
+		// nodeRoute.POST("/:id/forms/:formId/approve", nodeController.ApproveNodeForm)
+		// nodeRoute.POST("/:id/forms/:formId/reject", nodeController.RejectNodeForm)
+
 		nodeRoute.GET("/:id/forms/:permission", nodeController.GetNodeFormWithPermission)
 		nodeRoute.GET("/:id/jira-form", nodeController.GetNodeJiraForm)
 	}

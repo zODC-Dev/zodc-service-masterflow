@@ -326,3 +326,103 @@ func (s *NodeService) GetNodeJiraForm(ctx context.Context, nodeId string) (respo
 
 	return response, nil
 }
+
+func (s *NodeService) ReassignNode(ctx context.Context, nodeId string, userId int32) error {
+	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	node, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
+	if err != nil {
+		return err
+	}
+
+	node.AssigneeID = &userId
+
+	if err := s.NodeRepo.UpdateNode(ctx, tx, node); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// func (s *NodeService) SubmitNodeForm(ctx context.Context, nodeId string, formId string, req requests.SubmitNodeFormRequest) error {
+// 	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer tx.Rollback()
+
+// 	nodeForm, err := s.NodeRepo.FindOneNodeFormByNodeIdAndFormId(ctx, s.DB, nodeId, formId)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	nodeForm.IsSubmitted = true
+
+// 	if err := s.NodeRepo.UpdateNodeForm(ctx, tx, nodeForm); err != nil {
+// 		return err
+// 	}
+
+// 	if err := tx.Commit(); err != nil {
+// 		return err
+// 	}
+
+// 	return nil
+// }
+
+// func (s *NodeService) ApproveNodeForm(ctx context.Context, nodeId string, formId string) error {
+// 	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer tx.Rollback()
+
+// 	nodeForm, err := s.NodeRepo.FindOneNodeFormByNodeIdAndFormId(ctx, s.DB, nodeId, formId)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	nodeForm.IsApproved = true
+
+// 	if err := s.NodeRepo.UpdateNodeForm(ctx, tx, nodeForm); err != nil {
+// 		return err
+// 	}
+
+// 	if err := tx.Commit(); err != nil {
+// 		return err
+// 	}
+
+// 	return nil
+// }
+
+// func (s *NodeService) RejectNodeForm(ctx context.Context, nodeId string, formId string) error {
+// 	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer tx.Rollback()
+
+// 	nodeForm, err := s.NodeRepo.FindOneNodeFormByNodeIdAndFormId(ctx, s.DB, nodeId, formId)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	nodeForm.IsApproved = false
+
+// 	if err := s.NodeRepo.UpdateNodeForm(ctx, tx, nodeForm); err != nil {
+// 		return err
+// 	}
+
+// 	if err := tx.Commit(); err != nil {
+// 		return err
+// 	}
+
+// 	return nil
+// }
