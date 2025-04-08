@@ -878,6 +878,19 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 		nodeResponse, err := s.MapToWorkflowNodeResponse(nodeModel)
 		nodeResponse.ParentId = nil
 
+		if node.AssigneeID != nil {
+			user, err := s.UserAPI.FindUsersByUserIds([]int32{*node.AssigneeID})
+			if err != nil {
+				return workflowResponse, fmt.Errorf("find user fail: %w", err)
+			}
+
+			nodeResponse.Data.Assignee.Id = user.Data[0].ID
+			nodeResponse.Data.Assignee.Name = user.Data[0].Name
+			nodeResponse.Data.Assignee.Email = user.Data[0].Email
+			nodeResponse.Data.Assignee.AvatarUrl = user.Data[0].AvatarUrl
+			nodeResponse.Data.Assignee.IsSystemUser = user.Data[0].IsSystemUser
+		}
+
 		for _, formFieldData := range node.FormData.FormFieldData {
 			nodeResponse.Form = append(nodeResponse.Form, responses.NodeFormDataResponse{
 				FieldId: formFieldData.FormTemplateField.FieldID,
