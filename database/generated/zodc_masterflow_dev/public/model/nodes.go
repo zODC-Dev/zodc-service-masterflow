@@ -49,5 +49,5 @@ type Nodes struct {
 	ParentID                  *string
 	RequestID                 int32
 	FormTemplateID            *int32
-	FormDataID                *int32
+	FormDataID                *string
 }

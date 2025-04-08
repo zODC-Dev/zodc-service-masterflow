@@ -8,6 +8,7 @@ import (
 
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/constants"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/responses"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
 	"github.com/zODC-Dev/zodc-service-masterflow/pkg/nats"
 	"github.com/zODC-Dev/zodc-service-masterflow/pkg/utils"
@@ -248,4 +249,80 @@ func (s *NodeService) ApproveNodeHandler(ctx context.Context, nodeId string) err
 	}
 
 	return nil
+}
+
+func (s *NodeService) GetNodeFormWithPermission(ctx context.Context, nodeId string, permission string) ([]responses.NodeFormDetailResponse, error) {
+
+	nodeForm, err := s.NodeRepo.FindAllNodeFormByNodeIdAndPermission(ctx, s.DB, nodeId, permission)
+	if err != nil {
+		return nil, err
+	}
+
+	response := []responses.NodeFormDetailResponse{}
+
+	for _, nodeForm := range nodeForm {
+		fieldMap := map[int32]string{}
+		for _, formTemplateField := range nodeForm.FormTemplateFields {
+			fieldMap[formTemplateField.ID] = formTemplateField.FieldID
+		}
+
+		formTemplate := responses.FormTemplateFindAll{}
+		utils.Mapper(nodeForm.FormTemplates, &formTemplate)
+
+		formTemplateFields := []responses.FormTemplateFieldsFindAll{}
+		utils.Mapper(nodeForm.FormTemplateFields, &formTemplateFields)
+
+		formDatas := []responses.NodeFormDataResponse{}
+		for _, formData := range nodeForm.FormFieldData {
+			formDatas = append(formDatas, responses.NodeFormDataResponse{
+				FieldId: fieldMap[formData.FormTemplateFieldID],
+				Value:   formData.Value,
+			})
+		}
+
+		response = append(response, responses.NodeFormDetailResponse{
+			Template:    formTemplate,
+			Fields:      formTemplateFields,
+			Data:        formDatas,
+			DataId:      nodeForm.NodeForms.DataID,
+			IsSubmitted: nodeForm.NodeForms.IsSubmitted,
+			IsApproved:  nodeForm.NodeForms.IsApproved,
+		})
+	}
+
+	return response, nil
+}
+
+func (s *NodeService) GetNodeJiraForm(ctx context.Context, nodeId string) (responses.JiraFormDetailResponse, error) {
+	nodeJiraForm, err := s.NodeRepo.FindJiraFormByNodeId(ctx, s.DB, nodeId)
+	if err != nil {
+		return responses.JiraFormDetailResponse{}, err
+	}
+
+	formTemplate := responses.FormTemplateFindAll{}
+	utils.Mapper(nodeJiraForm.FormTemplates, &formTemplate)
+
+	formTemplateFields := []responses.FormTemplateFieldsFindAll{}
+	utils.Mapper(nodeJiraForm.FormTemplateFields, &formTemplateFields)
+
+	fieldMap := map[int32]string{}
+	for _, formTemplateField := range formTemplateFields {
+		fieldMap[formTemplateField.ID] = formTemplateField.FieldID
+	}
+
+	formDatas := []responses.NodeFormDataResponse{}
+	for _, formData := range nodeJiraForm.FormFieldData {
+		formDatas = append(formDatas, responses.NodeFormDataResponse{
+			FieldId: fieldMap[formData.FormTemplateFieldID],
+			Value:   formData.Value,
+		})
+	}
+
+	response := responses.JiraFormDetailResponse{
+		Template: formTemplate,
+		Fields:   formTemplateFields,
+		Data:     formDatas,
+	}
+
+	return response, nil
 }

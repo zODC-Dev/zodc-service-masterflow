@@ -246,3 +246,66 @@ func (r *NodeRepository) FindOneNodeByNodeIdTx(ctx context.Context, tx *sql.Tx, 
 
 	return result, err
 }
+
+func (r *NodeRepository) FindAllNodeFormByNodeIdAndPermission(ctx context.Context, db *sql.DB, nodeId string, permission string) ([]results.NodeFormResult, error) {
+	NodeForms := table.NodeForms
+	FormData := table.FormData
+	FormFieldData := table.FormFieldData
+	FormTemplateFields := table.FormTemplateFields
+	FormTemplateVersions := table.FormTemplateVersions
+	FormTemplates := table.FormTemplates
+
+	statement := postgres.
+		SELECT(
+			NodeForms.AllColumns,
+			FormData.AllColumns,
+			FormFieldData.AllColumns,
+			FormTemplateFields.AllColumns, FormTemplateVersions.AllColumns, FormTemplates.AllColumns,
+		).
+		FROM(
+			NodeForms.
+				LEFT_JOIN(FormData, NodeForms.DataID.EQ(FormData.ID)).
+				LEFT_JOIN(FormFieldData, FormData.ID.EQ(FormFieldData.FormDataID)).
+				LEFT_JOIN(FormTemplates, NodeForms.TemplateID.EQ(FormTemplates.ID)).
+				LEFT_JOIN(FormTemplateVersions, FormTemplates.ID.EQ(FormTemplateVersions.FormTemplateID).AND(FormTemplates.CurrentVersion.EQ(FormTemplateVersions.Version))).
+				LEFT_JOIN(FormTemplateFields, FormTemplateFields.FormTemplateVersionID.EQ(FormTemplateVersions.ID)),
+		).
+		WHERE(
+			NodeForms.Permission.EQ(postgres.String(permission)).
+				AND(NodeForms.NodeID.EQ(postgres.String(nodeId))),
+		)
+
+	results := []results.NodeFormResult{}
+
+	err := statement.QueryContext(ctx, db, &results)
+
+	return results, err
+}
+
+func (r *NodeRepository) FindJiraFormByNodeId(ctx context.Context, db *sql.DB, nodeId string) (results.FormDataResult, error) {
+	Nodes := table.Nodes
+	FormData := table.FormData
+	FormFieldData := table.FormFieldData
+	FormTemplateFields := table.FormTemplateFields
+	FormTemplateVersions := table.FormTemplateVersions
+	FormTemplates := table.FormTemplates
+
+	statement := postgres.SELECT(
+		FormData.AllColumns, FormFieldData.AllColumns,
+		FormTemplateVersions.AllColumns, FormTemplates.AllColumns, FormTemplateFields.AllColumns,
+	).FROM(
+		FormData.
+			LEFT_JOIN(Nodes, FormData.ID.EQ(Nodes.FormDataID)).
+			LEFT_JOIN(FormFieldData, FormData.ID.EQ(FormFieldData.FormDataID)).
+			LEFT_JOIN(FormTemplateFields, FormFieldData.FormTemplateFieldID.EQ(FormTemplateFields.ID)).
+			LEFT_JOIN(FormTemplateVersions, FormData.FormTemplateVersionID.EQ(FormTemplateVersions.ID)).
+			LEFT_JOIN(FormTemplates, FormTemplateVersions.FormTemplateID.EQ(FormTemplates.ID).AND(FormTemplates.CurrentVersion.EQ(FormTemplateVersions.Version))),
+	).WHERE(
+		Nodes.ID.EQ(postgres.String(nodeId)),
+	)
+
+	results := results.FormDataResult{}
+	err := statement.QueryContext(ctx, db, &results)
+
+	return results, err
+}

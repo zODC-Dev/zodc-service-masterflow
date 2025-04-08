@@ -54,7 +54,7 @@ type nodesTable struct {
 	ParentID                  postgres.ColumnString
 	RequestID                 postgres.ColumnInteger
 	FormTemplateID            postgres.ColumnInteger
-	FormDataID                postgres.ColumnInteger
+	FormDataID                postgres.ColumnString
 
 	AllColumns     postgres.ColumnList
 	MutableColumns postgres.ColumnList
@@ -132,7 +132,7 @@ func newNodesTableImpl(schemaName, tableName, alias string) nodesTable {
 		ParentIDColumn                  = postgres.StringColumn("parent_id")
 		RequestIDColumn                 = postgres.IntegerColumn("request_id")
 		FormTemplateIDColumn            = postgres.IntegerColumn("form_template_id")
-		FormDataIDColumn                = postgres.IntegerColumn("form_data_id")
+		FormDataIDColumn                = postgres.StringColumn("form_data_id")
 		allColumns                      = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, KeyColumn, JiraKeyColumn, TitleColumn, AssigneeIDColumn, SubRequestIDColumn, TypeColumn, StatusColumn, IsCurrentColumn, EstimatePointColumn, PlannedStartTimeColumn, PlannedEndTimeColumn, ActualStartTimeColumn, ActualEndTimeColumn, BodyColumn, SubjectColumn, IsApprovedColumn, EndTypeColumn, TaskAssignedRequesterColumn, TaskAssignedAssigneeColumn, TaskAssignedParticipantsColumn, TaskStartedRequesterColumn, TaskStartedAssigneeColumn, TaskStartedParticipantsColumn, TaskCompletedRequesterColumn, TaskCompletedAssigneeColumn, TaskCompletedParticipantsColumn, ParentIDColumn, RequestIDColumn, FormTemplateIDColumn, FormDataIDColumn}
 		mutableColumns                  = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, KeyColumn, JiraKeyColumn, TitleColumn, AssigneeIDColumn, SubRequestIDColumn, TypeColumn, StatusColumn, IsCurrentColumn, EstimatePointColumn, PlannedStartTimeColumn, PlannedEndTimeColumn, ActualStartTimeColumn, ActualEndTimeColumn, BodyColumn, SubjectColumn, IsApprovedColumn, EndTypeColumn, TaskAssignedRequesterColumn, TaskAssignedAssigneeColumn, TaskAssignedParticipantsColumn, TaskStartedRequesterColumn, TaskStartedAssigneeColumn, TaskStartedParticipantsColumn, TaskCompletedRequesterColumn, TaskCompletedAssigneeColumn, TaskCompletedParticipantsColumn, ParentIDColumn, RequestIDColumn, FormTemplateIDColumn, FormDataIDColumn}
 	)

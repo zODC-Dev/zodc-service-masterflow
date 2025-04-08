@@ -17,6 +17,6 @@ type FormFieldData struct {
 	UpdatedAt           time.Time
 	DeletedAt           *time.Time
 	Value               string
-	FormDataID          int32
+	FormDataID          string
 	FormTemplateFieldID int32
 }

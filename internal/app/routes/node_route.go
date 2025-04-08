@@ -51,5 +51,8 @@ func NodeRoute(group *echo.Group, db *sql.DB) {
 	{
 		nodeRoute.POST("/:id/complete", nodeController.CompleteNode)
 		nodeRoute.POST("/:id/start", nodeController.StartNode)
+
+		nodeRoute.GET("/:id/forms/:permission", nodeController.GetNodeFormWithPermission)
+		nodeRoute.GET("/:id/jira-form", nodeController.GetNodeJiraForm)
 	}
 }

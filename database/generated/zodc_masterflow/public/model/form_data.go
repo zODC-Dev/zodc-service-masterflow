@@ -12,7 +12,7 @@ import (
 )
 
 type FormData struct {
-	ID                    int32 `sql:"primary_key"`
+	ID                    string `sql:"primary_key"`
 	CreatedAt             time.Time
 	UpdatedAt             time.Time
 	DeletedAt             *time.Time

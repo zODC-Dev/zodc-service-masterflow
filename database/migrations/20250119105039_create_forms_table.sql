@@ -53,7 +53,7 @@ CREATE TABLE form_template_fields (
 );
 
 CREATE TABLE form_data (
-    id SERIAL PRIMARY KEY,
+    id TEXT PRIMARY KEY,
     created_at TIMESTAMP DEFAULT now () NOT NULL,
     updated_at TIMESTAMP DEFAULT now () NOT NULL,
     deleted_at TIMESTAMP,
@@ -69,7 +69,7 @@ CREATE TABLE form_field_data (
 
     value TEXT NOT NULL DEFAULT '',
 
-    form_data_id INT NOT NULL REFERENCES form_data (id) ON DELETE CASCADE,
+    form_data_id TEXT NOT NULL REFERENCES form_data (id) ON DELETE CASCADE,
     form_template_field_id INT NOT NULL REFERENCES form_template_fields (id) ON DELETE CASCADE
 );
 

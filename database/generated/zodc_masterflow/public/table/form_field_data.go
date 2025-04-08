@@ -22,7 +22,7 @@ type formFieldDataTable struct {
 	UpdatedAt           postgres.ColumnTimestamp
 	DeletedAt           postgres.ColumnTimestamp
 	Value               postgres.ColumnString
-	FormDataID          postgres.ColumnInteger
+	FormDataID          postgres.ColumnString
 	FormTemplateFieldID postgres.ColumnInteger
 
 	AllColumns     postgres.ColumnList
@@ -69,7 +69,7 @@ func newFormFieldDataTableImpl(schemaName, tableName, alias string) formFieldDat
 		UpdatedAtColumn           = postgres.TimestampColumn("updated_at")
 		DeletedAtColumn           = postgres.TimestampColumn("deleted_at")
 		ValueColumn               = postgres.StringColumn("value")
-		FormDataIDColumn          = postgres.IntegerColumn("form_data_id")
+		FormDataIDColumn          = postgres.StringColumn("form_data_id")
 		FormTemplateFieldIDColumn = postgres.IntegerColumn("form_template_field_id")
 		allColumns                = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, ValueColumn, FormDataIDColumn, FormTemplateFieldIDColumn}
 		mutableColumns            = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, ValueColumn, FormDataIDColumn, FormTemplateFieldIDColumn}

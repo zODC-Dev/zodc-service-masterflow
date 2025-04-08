@@ -130,7 +130,7 @@ CREATE TABLE nodes (
     -- Foreign Key
     request_id INT NOT NULL REFERENCES requests (id) ON DELETE CASCADE,
     form_template_id INT REFERENCES form_templates (id) ON DELETE CASCADE,
-    form_data_id INT REFERENCES form_data (id) ON DELETE CASCADE
+    form_data_id TEXT REFERENCES form_data (id) ON DELETE CASCADE
 );
 
 CREATE TABLE node_condition_destinations (
@@ -160,6 +160,8 @@ CREATE TABLE node_forms (
     from_user_id INT,
     from_form_attached_position INT,
     is_original BOOLEAN NOT NULL DEFAULT false,
+    is_submitted BOOLEAN NOT NULL DEFAULT false,
+    is_approved BOOLEAN NOT NULL DEFAULT false,
 
     -- Form
     data_id TEXT NOT NULL,

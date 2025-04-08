@@ -17,7 +17,7 @@ type formDataTable struct {
 	postgres.Table
 
 	// Columns
-	ID                    postgres.ColumnInteger
+	ID                    postgres.ColumnString
 	CreatedAt             postgres.ColumnTimestamp
 	UpdatedAt             postgres.ColumnTimestamp
 	DeletedAt             postgres.ColumnTimestamp
@@ -62,7 +62,7 @@ func newFormDataTable(schemaName, tableName, alias string) *FormDataTable {
 
 func newFormDataTableImpl(schemaName, tableName, alias string) formDataTable {
 	var (
-		IDColumn                    = postgres.IntegerColumn("id")
+		IDColumn                    = postgres.StringColumn("id")
 		CreatedAtColumn             = postgres.TimestampColumn("created_at")
 		UpdatedAtColumn             = postgres.TimestampColumn("updated_at")
 		DeletedAtColumn             = postgres.TimestampColumn("deleted_at")

@@ -45,3 +45,37 @@ func (c *NodeController) StartNode(e echo.Context) error {
 
 	return e.JSON(http.StatusOK, map[string]string{"message": "Node started successfully"})
 }
+
+func (c *NodeController) GetNodeFormWithPermission(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	nodeId := e.Param("id")
+	permission := e.Param("permission")
+
+	if nodeId == "" || permission == "" {
+		return e.JSON(http.StatusBadRequest, map[string]string{"error": "nodeId and permission are required"})
+	}
+
+	form, err := c.nodeService.GetNodeFormWithPermission(ctx, nodeId, permission)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, form)
+}
+
+func (c *NodeController) GetNodeJiraForm(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	nodeId := e.Param("id")
+	if nodeId == "" {
+		return e.JSON(http.StatusBadRequest, map[string]string{"error": "nodeId is required"})
+	}
+
+	jiraForm, err := c.nodeService.GetNodeJiraForm(ctx, nodeId)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, jiraForm)
+}

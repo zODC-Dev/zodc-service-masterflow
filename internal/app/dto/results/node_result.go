@@ -8,3 +8,20 @@ type NodeResult struct {
 	model.Nodes
 	Request model.Requests
 }
+
+type NodeFormResult struct {
+	model.NodeForms
+	FormData             model.FormData
+	FormFieldData        []model.FormFieldData
+	FormTemplateFields   []model.FormTemplateFields
+	FormTemplateVersions model.FormTemplateVersions
+	FormTemplates        model.FormTemplates
+}
+
+type FormDataResult struct {
+	model.FormData
+	FormFieldData        []model.FormFieldData
+	FormTemplateFields   []model.FormTemplateFields
+	FormTemplateVersions model.FormTemplateVersions
+	FormTemplates        model.FormTemplates
+}
