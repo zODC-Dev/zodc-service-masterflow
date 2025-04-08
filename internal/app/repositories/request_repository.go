@@ -476,14 +476,12 @@ func (r *RequestRepository) RemoveNodesConnectionsStoriesByRequestId(ctx context
 
 	var err error
 
-	connectionModel := model.Connections{}
-	err = statementConnections.QueryContext(ctx, tx, &connectionModel)
+	_, err = statementConnections.ExecContext(ctx, tx)
 	if err != nil {
 		return err
 	}
 
-	nodeModel := model.Nodes{}
-	err = statementNodes.QueryContext(ctx, tx, &nodeModel)
+	_, err = statementNodes.ExecContext(ctx, tx)
 	if err != nil {
 		return err
 
