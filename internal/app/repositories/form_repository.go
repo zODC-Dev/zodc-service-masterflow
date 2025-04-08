@@ -152,7 +152,7 @@ func (r *FormRepository) FindAllFormSystem(ctx context.Context, db *sql.DB) ([]r
 func (r *FormRepository) CreateFormData(ctx context.Context, tx *sql.Tx, formData model.FormData) (model.FormData, error) {
 	FormData := table.FormData
 
-	columns := FormData.AllColumns.Except(FormData.ID, FormData.CreatedAt, FormData.UpdatedAt, FormData.DeletedAt)
+	columns := FormData.AllColumns.Except(FormData.CreatedAt, FormData.UpdatedAt, FormData.DeletedAt)
 
 	statement := FormData.INSERT(columns).MODEL(formData).RETURNING(FormData.AllColumns)
 

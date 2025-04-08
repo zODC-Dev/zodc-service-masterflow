@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/constants"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
@@ -320,6 +321,44 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			Status: string(constants.NodeStatusTodo),
 		}
 
+		if formSystemVersionId, exists := formSystemTagMap["TASK"]; exists {
+			// Create Form Data
+			uuid := uuid.New()
+
+			formData := model.FormData{
+				ID:                    uuid.String(),
+				FormTemplateVersionID: formSystemVersionId,
+			}
+
+			formData, err = s.FormRepo.CreateFormData(ctx, tx, formData)
+			if err != nil {
+				return fmt.Errorf("create form data system Fail: %w", err)
+			}
+
+			formFieldDatas := []model.FormFieldData{}
+			for _, form := range storyReq.Node.Form {
+				if fieldID, exists := formSystemFieldMap[form.FieldId]; exists {
+					formFieldData := model.FormFieldData{
+						Value:               form.Value,
+						FormDataID:          formData.ID,
+						FormTemplateFieldID: fieldID,
+					}
+
+					formFieldDatas = append(formFieldDatas, formFieldData)
+				}
+			}
+
+			if len(formFieldDatas) > 0 {
+				err := s.FormRepo.CreateFormFieldDatas(ctx, tx, formFieldDatas)
+				if err != nil {
+					return fmt.Errorf("create form field datas  Fail: %w", err)
+				}
+			}
+
+			storyNode.FormDataID = &formData.ID
+
+		}
+
 		if err := s.NodeRepo.CreateNodes(ctx, tx, []model.Nodes{storyNode}); err != nil {
 			return fmt.Errorf("create Story Workflow MAIN Node Fail: %w", err)
 		}
@@ -366,45 +405,42 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 				storyNode.EndType = &storyNodeReq.Data.EndType
 			}
 
-			// Form Type System Tag Story // Create Form Data
-			for _, formSystem := range formSystems {
-				if formSystem.Tag == storyNodeReq.Type {
-					// Create Form Data
-					formData := model.FormData{
-						FormTemplateVersionID: formSystem.Version.ID,
-					}
+			if formSystemVersionId, exists := formSystemTagMap[storyNodeReq.Type]; exists {
+				// Create Form Data
+				uuid := uuid.New()
 
-					formData, err = s.FormRepo.CreateFormData(ctx, tx, formData)
-					if err != nil {
-						return fmt.Errorf("create form data system Fail: %w", err)
-					}
-
-					formFieldDatas := []model.FormFieldData{}
-					for _, form := range storyNodeReq.Form {
-						for _, field := range formSystem.Fields {
-							if field.FieldID == form.FieldId {
-								formFieldData := model.FormFieldData{
-									Value:               form.Value,
-									FormDataID:          formData.ID,
-									FormTemplateFieldID: field.ID,
-								}
-
-								formFieldDatas = append(formFieldDatas, formFieldData)
-							}
-						}
-					}
-
-					if len(formFieldDatas) > 0 {
-						err := s.FormRepo.CreateFormFieldDatas(ctx, tx, formFieldDatas)
-						if err != nil {
-							return fmt.Errorf("create form field datas  Fail: %w", err)
-						}
-					}
-
-					storyNode.FormDataID = &formData.ID
-
-					break
+				formData := model.FormData{
+					ID:                    uuid.String(),
+					FormTemplateVersionID: formSystemVersionId,
 				}
+
+				formData, err = s.FormRepo.CreateFormData(ctx, tx, formData)
+				if err != nil {
+					return fmt.Errorf("create form data system Fail: %w", err)
+				}
+
+				formFieldDatas := []model.FormFieldData{}
+				for _, form := range storyNodeReq.Form {
+					if fieldID, exists := formSystemFieldMap[form.FieldId]; exists {
+						formFieldData := model.FormFieldData{
+							Value:               form.Value,
+							FormDataID:          formData.ID,
+							FormTemplateFieldID: fieldID,
+						}
+
+						formFieldDatas = append(formFieldDatas, formFieldData)
+					}
+				}
+
+				if len(formFieldDatas) > 0 {
+					err := s.FormRepo.CreateFormFieldDatas(ctx, tx, formFieldDatas)
+					if err != nil {
+						return fmt.Errorf("create form field datas  Fail: %w", err)
+					}
+				}
+
+				storyNode.FormDataID = &formData.ID
+
 			}
 
 			storyNodes = append(storyNodes, storyNode)
@@ -826,6 +862,14 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 
 		nodeResponse, err := s.MapToWorkflowNodeResponse(nodeModel)
 		nodeResponse.ParentId = nil
+
+		for _, formFieldData := range node.FormData.FormFieldData {
+			nodeResponse.Form = append(nodeResponse.Form, responses.NodeFormDataResponse{
+				FieldId: formFieldData.FormTemplateField.FieldID,
+				Value:   formFieldData.Value,
+			})
+		}
+
 		if err != nil {
 			return workflowResponse, fmt.Errorf("map workflow node response fail: %w", err)
 		}
@@ -846,7 +890,6 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 	workflowResponse.Stories = storiesResponse
 
 	// Nodes
-
 	for _, node := range request.Nodes {
 		nodeModel := model.Nodes{}
 		if err := utils.Mapper(node, &nodeModel); err != nil {
@@ -907,8 +950,13 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 
 	// Add assignee
 	userIds := make([]int32, 0, len(workflowResponse.Nodes))
+	existedUserIds := make(map[int32]bool)
 	for _, node := range workflowResponse.Nodes {
+		if existedUserIds[node.Data.Assignee.Id] {
+			continue
+		}
 		userIds = append(userIds, node.Data.Assignee.Id)
+		existedUserIds[node.Data.Assignee.Id] = true
 	}
 
 	results, err := s.UserAPI.FindUsersByUserIds(userIds)
@@ -942,6 +990,16 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 			workflowResponse.Nodes[i].Data.Assignee.Email = user.Email
 			workflowResponse.Nodes[i].Data.Assignee.AvatarUrl = user.AvatarUrl
 			workflowResponse.Nodes[i].Data.Assignee.IsSystemUser = user.IsSystemUser
+
+		}
+	}
+
+	for i := range workflowResponse.Stories {
+		if user, exists := userMap[workflowResponse.Stories[i].Node.Data.Assignee.Id]; exists {
+			workflowResponse.Stories[i].Node.Data.Assignee.Name = user.Name
+			workflowResponse.Stories[i].Node.Data.Assignee.Email = user.Email
+			workflowResponse.Stories[i].Node.Data.Assignee.AvatarUrl = user.AvatarUrl
+			workflowResponse.Stories[i].Node.Data.Assignee.IsSystemUser = user.IsSystemUser
 
 		}
 	}
