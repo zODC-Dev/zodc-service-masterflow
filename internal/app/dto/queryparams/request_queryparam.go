@@ -13,3 +13,8 @@ type RequestTaskProjectQueryParam struct {
 	Type         string
 	ProjectKey   string
 }
+
+type RequestSubRequestQueryParam struct {
+	Page     int
+	PageSize int
+}

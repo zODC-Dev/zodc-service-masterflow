@@ -53,7 +53,7 @@ CREATE TABLE requests (
 
     sprint_id INT,
 
-    parent_id INT,
+    parent_id INT REFERENCES requests (id) ON DELETE CASCADE,
 
     progress REAL NOT NULL DEFAULT 0.0,
 

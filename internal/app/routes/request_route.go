@@ -55,6 +55,8 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 
 		requestRoute.GET("/overview/:id", requestController.GetRequestOverview)
 
+		requestRoute.GET("/:id/sub-requests", requestController.FindAllSubRequestByRequestId)
+
 	}
 
 }

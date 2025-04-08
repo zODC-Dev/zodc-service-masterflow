@@ -964,19 +964,10 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 		return workflowResponse, err
 	}
 
-	userMap := make(map[int32]struct {
-		Name         string
-		Email        string
-		AvatarUrl    string
-		IsSystemUser bool
-	})
+	userMap := make(map[int32]types.Assignee)
 	for _, user := range results.Data {
-		userMap[user.ID] = struct {
-			Name         string
-			Email        string
-			AvatarUrl    string
-			IsSystemUser bool
-		}{
+		userMap[user.ID] = types.Assignee{
+			Id:           user.ID,
 			Name:         user.Name,
 			Email:        user.Email,
 			AvatarUrl:    user.AvatarUrl,
@@ -986,6 +977,7 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 
 	for i, node := range workflowResponse.Nodes {
 		if user, exists := userMap[node.Data.Assignee.Id]; exists {
+			workflowResponse.Nodes[i].Data.Assignee.Id = user.Id
 			workflowResponse.Nodes[i].Data.Assignee.Name = user.Name
 			workflowResponse.Nodes[i].Data.Assignee.Email = user.Email
 			workflowResponse.Nodes[i].Data.Assignee.AvatarUrl = user.AvatarUrl
@@ -996,6 +988,7 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 
 	for i := range workflowResponse.Stories {
 		if user, exists := userMap[workflowResponse.Stories[i].Node.Data.Assignee.Id]; exists {
+			workflowResponse.Stories[i].Node.Data.Assignee.Id = user.Id
 			workflowResponse.Stories[i].Node.Data.Assignee.Name = user.Name
 			workflowResponse.Stories[i].Node.Data.Assignee.Email = user.Email
 			workflowResponse.Stories[i].Node.Data.Assignee.AvatarUrl = user.AvatarUrl

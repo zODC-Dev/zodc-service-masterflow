@@ -202,3 +202,42 @@ func (c *RequestController) GetRequestOverview(e echo.Context) error {
 
 	return e.JSON(http.StatusOK, requestOverviewResponse)
 }
+
+func (c *RequestController) FindAllSubRequestByRequestId(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	requestId := e.Param("id")
+	requestIdInt, err := strconv.Atoi(requestId)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, fmt.Sprintf("Invalid request ID: %s", requestId))
+	}
+
+	page := 1
+	if pageStr := e.QueryParam("page"); pageStr != "" {
+		if parsedPage, err := strconv.Atoi(pageStr); err == nil && parsedPage > 0 {
+			page = parsedPage
+		}
+	}
+
+	pageSize := 10
+	if pageSizeStr := e.QueryParam("pageSize"); pageSizeStr != "" {
+		if parsedPageSize, err := strconv.Atoi(pageSizeStr); err == nil && parsedPageSize > 0 {
+			pageSize = parsedPageSize
+		}
+	}
+
+	requestSubRequestQueryParam := queryparams.RequestSubRequestQueryParam{
+		Page:     page,
+		PageSize: pageSize,
+	}
+
+	subRequests, err := c.requestService.FindAllSubRequestByRequestId(ctx, int32(requestIdInt), requestSubRequestQueryParam)
+	if err != nil {
+		return e.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, responses.Response{
+		Message: "Success",
+		Data:    subRequests,
+	})
+}

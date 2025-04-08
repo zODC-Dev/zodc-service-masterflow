@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strconv"
 
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
@@ -546,4 +547,53 @@ func (s *RequestService) GetRequestOverviewHandler(ctx context.Context, requestI
 	requestOverviewResponse.Progress = request.Progress
 
 	return requestOverviewResponse, nil
+}
+
+func (s *RequestService) FindAllSubRequestByRequestId(ctx context.Context, requestId int32, requestSubRequestQueryParam queryparams.RequestSubRequestQueryParam) (responses.Paginate[[]responses.RequestSubRequest], error) {
+	paginatedResponse := responses.Paginate[[]responses.RequestSubRequest]{}
+
+	total, requests, err := s.RequestRepo.FindAllSubRequestByParentId(ctx, s.DB, requestId, requestSubRequestQueryParam)
+	if err != nil {
+		return paginatedResponse, fmt.Errorf("find all children request by request id fail: %w", err)
+	}
+
+	subRequests := []responses.RequestSubRequest{}
+	for _, request := range requests {
+
+		assignee := types.Assignee{}
+		if request.Nodes.AssigneeID != nil {
+			users, err := s.UserAPI.FindUsersByUserIds([]int32{*request.Nodes.AssigneeID})
+			if err != nil {
+				return paginatedResponse, fmt.Errorf("find users by user ids fail: %w", err)
+			}
+
+			if err := utils.Mapper(users.Data[0], &assignee); err != nil {
+				return paginatedResponse, fmt.Errorf("mapper assignee fail: %w", err)
+			}
+		}
+
+		subRequests = append(subRequests, responses.RequestSubRequest{
+			Key:           request.ID,
+			WorkflowTitle: request.Workflows.Title,
+			TaskTitle:     request.Title,
+			Assignee:      assignee,
+			Status:        request.Status,
+			StartedAt:     request.StartedAt,
+			CompletedAt:   request.CompletedAt,
+			CanceledAt:    request.CanceledAt,
+			TerminatedAt:  request.TerminatedAt,
+		})
+	}
+
+	totalPages := (int(total) + requestSubRequestQueryParam.PageSize - 1) / requestSubRequestQueryParam.PageSize
+
+	paginatedResponse = responses.Paginate[[]responses.RequestSubRequest]{
+		Items:      subRequests,
+		Total:      int(total),
+		Page:       requestSubRequestQueryParam.Page,
+		PageSize:   requestSubRequestQueryParam.PageSize,
+		TotalPages: totalPages,
+	}
+
+	return paginatedResponse, nil
 }
