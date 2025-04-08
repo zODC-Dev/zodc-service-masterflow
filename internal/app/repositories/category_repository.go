@@ -28,7 +28,9 @@ func (r *CategoryRepository) FindAll(ctx context.Context, db *sql.DB, queryParam
 		Categories,
 	)
 
-	conditions := []postgres.BoolExpression{}
+	conditions := []postgres.BoolExpression{
+		Categories.Key.NOT_EQ(postgres.String("STORY")),
+	}
 
 	if queryParam.Type != "" {
 		conditions = append(conditions, Categories.Type.EQ(postgres.String(queryParam.Type)))

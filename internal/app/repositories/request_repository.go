@@ -191,7 +191,7 @@ func (r *RequestRepository) FindOneRequestByRequestId(ctx context.Context, db *s
 	).WHERE(
 		Requests.ID.EQ(postgres.Int32(requestId)),
 	).ORDER_BY(
-		Nodes.ActualStartTime.DESC(),
+		Nodes.ActualStartTime.ASC(),
 	)
 
 	result := results.RequestDetail{}
@@ -460,4 +460,31 @@ func (r *RequestRepository) FindAllSubRequestByParentId(ctx context.Context, db 
 	err = statementCount.QueryContext(ctx, db, &count)
 
 	return len(count), requests, err
+}
+
+func (r *RequestRepository) RemoveNodesConnectionsStoriesByRequestId(ctx context.Context, tx *sql.Tx, requestId int32) error {
+	Nodes := table.Nodes
+	Connections := table.Connections
+
+	statementNodes := Nodes.DELETE().WHERE(
+		Nodes.RequestID.EQ(postgres.Int32(requestId)),
+	)
+
+	statementConnections := Connections.DELETE().WHERE(
+		Connections.RequestID.EQ(postgres.Int32(requestId)),
+	)
+
+	var err error
+
+	err = statementNodes.QueryContext(ctx, tx, nil)
+	if err != nil {
+		return err
+	}
+
+	err = statementConnections.QueryContext(ctx, tx, nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

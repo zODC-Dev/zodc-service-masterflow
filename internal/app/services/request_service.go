@@ -9,6 +9,7 @@ import (
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/constants"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/requests"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/responses"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/results"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/externals"
@@ -596,4 +597,36 @@ func (s *RequestService) FindAllSubRequestByRequestId(ctx context.Context, reque
 	}
 
 	return paginatedResponse, nil
+}
+
+func (s *RequestService) UpdateRequestHandler(ctx context.Context, requestId int32, req *requests.RequestUpdateRequest, userId int32) error {
+	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return fmt.Errorf("begin tx fail: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Remove Nodes, Connections and Stories
+	err = s.RequestRepo.RemoveNodesConnectionsStoriesByRequestId(ctx, tx, requestId)
+	if err != nil {
+		return fmt.Errorf("remove nodes connections stories fail: %w", err)
+	}
+
+	// Create Nodes, Connections and Stories
+	nodesConnectionsStories := requests.NodesConnectionsStories{
+		Nodes:       req.Nodes,
+		Connections: req.Connections,
+		Stories:     req.Stories,
+	}
+	err = s.WorkflowService.CreateNodesConnectionsStories(ctx, tx, &nodesConnectionsStories, requestId, nil, userId)
+	if err != nil {
+		return fmt.Errorf("create nodes connections stories fail: %w", err)
+	}
+
+	//Commit
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit fail: %w", err)
+	}
+
+	return nil
 }

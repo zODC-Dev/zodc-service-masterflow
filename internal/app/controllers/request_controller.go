@@ -7,6 +7,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/requests"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/responses"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/middlewares"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/services"
@@ -240,4 +241,28 @@ func (c *RequestController) FindAllSubRequestByRequestId(e echo.Context) error {
 		Message: "Success",
 		Data:    subRequests,
 	})
+}
+
+func (c *RequestController) UpdateRequest(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	userId, _ := middlewares.GetUserID(e)
+
+	requestId := e.Param("id")
+	requestIdInt, err := strconv.Atoi(requestId)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, fmt.Sprintf("Invalid request ID: %s", requestId))
+	}
+
+	req := new(requests.RequestUpdateRequest)
+	if err := e.Bind(&req); err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	err = c.requestService.UpdateRequestHandler(ctx, int32(requestIdInt), req, userId)
+	if err != nil {
+		return e.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, fmt.Sprintf("Request updated successfully: %d", requestIdInt))
 }

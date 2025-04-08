@@ -3,13 +3,16 @@ package services
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/constants"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/responses"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
 	"github.com/zODC-Dev/zodc-service-masterflow/pkg/nats"
 	"github.com/zODC-Dev/zodc-service-masterflow/pkg/utils"
 )
@@ -174,16 +177,16 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 	}
 
 	// send notification
-	// notification := types.Notification{
-	// 	ToUserIds: []string{strconv.Itoa(int(userId))},
-	// 	Subject:   "Task completed",
-	// 	Body:      fmt.Sprintf("Task completed: %s – %s has marked this task as done.", node.Title, userId),
-	// }
-	// notificationBytes, err := json.Marshal(notification)
-	// if err != nil {
-	// 	return fmt.Errorf("marshal notification failed: %w", err)
-	// }
-	// s.NatsClient.Publish("notifications", notificationBytes)
+	notification := types.Notification{
+		ToUserIds: []string{strconv.Itoa(int(userId))},
+		Subject:   "Task completed",
+		Body:      fmt.Sprintf("Task completed: %s – %s has marked this task as done.", node.Title, userId),
+	}
+	notificationBytes, err := json.Marshal(notification)
+	if err != nil {
+		return fmt.Errorf("marshal notification failed: %w", err)
+	}
+	s.NatsClient.Publish("notifications", notificationBytes)
 
 	// Calculate Request Process
 	request, _ := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, node.RequestID)
