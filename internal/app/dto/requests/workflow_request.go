@@ -56,7 +56,7 @@ type Node struct {
 	Position types.Position
 	Size     types.Size
 	ParentId string
-	JiraKey  string
+	JiraKey  *string
 
 	Type string
 

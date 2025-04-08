@@ -488,6 +488,8 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			EndType: &workflowNodeReq.Data.EndType,
 
 			Status: string(constants.NodeStatusTodo),
+
+			JiraKey: workflowNodeReq.JiraKey,
 		}
 
 		for _, formSystem := range formSystems {
@@ -680,7 +682,7 @@ func (s *WorkflowService) CreateWorkflowHandler(ctx context.Context, req *reques
 			if (node.Type == string(constants.NodeTypeTask) ||
 				node.Type == string(constants.NodeTypeBug) ||
 				node.Type == string(constants.NodeTypeStory)) &&
-				node.JiraKey == "" {
+				node.JiraKey == nil {
 				needJiraSync = true
 				break
 			}
@@ -711,7 +713,7 @@ func (s *WorkflowService) CreateWorkflowHandler(ctx context.Context, req *reques
 			updatedNode := node
 			// Ưu tiên JiraKey từ Jira response
 			if jiraKey, exists := jiraKeyMap[node.Id]; exists && jiraKey != "" {
-				updatedNode.JiraKey = jiraKey
+				updatedNode.JiraKey = &jiraKey
 				slog.Info("Node JiraKey updated for Gantt Chart", "nodeId", node.Id, "jiraKey", jiraKey)
 			}
 			updatedNodes[i] = updatedNode
@@ -723,7 +725,7 @@ func (s *WorkflowService) CreateWorkflowHandler(ctx context.Context, req *reques
 			updatedStory := story
 			// Ưu tiên JiraKey từ Jira response
 			if jiraKey, exists := jiraKeyMap[story.Node.Id]; exists && jiraKey != "" {
-				updatedStory.Node.JiraKey = jiraKey
+				updatedStory.Node.JiraKey = &jiraKey
 				slog.Info("Story JiraKey updated for Gantt Chart", "nodeId", story.Node.Id, "jiraKey", jiraKey)
 			}
 			updatedStories[i] = updatedStory
@@ -1185,9 +1187,9 @@ func (s *WorkflowService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx,
 			Action:     "create",
 		}
 
-		if story.Node.JiraKey != "" {
+		if story.Node.JiraKey != nil {
 			issue.Action = "update"
-			issue.JiraKey = story.Node.JiraKey
+			issue.JiraKey = *story.Node.JiraKey
 		}
 
 		syncRequest.Issues = append(syncRequest.Issues, issue)
@@ -1224,9 +1226,9 @@ func (s *WorkflowService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx,
 			Action:     "create",
 		}
 
-		if node.JiraKey != "" {
+		if node.JiraKey != nil {
 			issue.Action = "update"
-			issue.JiraKey = node.JiraKey
+			issue.JiraKey = *node.JiraKey
 		}
 
 		syncRequest.Issues = append(syncRequest.Issues, issue)
@@ -1499,15 +1501,15 @@ func (s *WorkflowService) publishWorkflowToGanttChart(ctx context.Context, tx *s
 
 	// Trước tiên sử dụng JiraKeys từ parameters
 	for _, node := range nodes {
-		if node.JiraKey != "" {
-			nodeMap[node.Id] = node.JiraKey
+		if node.JiraKey != nil {
+			nodeMap[node.Id] = *node.JiraKey
 			slog.Info("Using JiraKey from request", "nodeId", node.Id, "jiraKey", node.JiraKey)
 		}
 	}
 
 	for _, story := range stories {
-		if story.Node.JiraKey != "" {
-			nodeMap[story.Node.Id] = story.Node.JiraKey
+		if story.Node.JiraKey != nil {
+			nodeMap[story.Node.Id] = *story.Node.JiraKey
 			slog.Info("Using JiraKey from request story", "nodeId", story.Node.Id, "jiraKey", story.Node.JiraKey)
 		}
 	}
@@ -1526,7 +1528,7 @@ func (s *WorkflowService) publishWorkflowToGanttChart(ctx context.Context, tx *s
 		jiraKey := story.Node.JiraKey
 		// Ưu tiên JiraKey từ database
 		if dbJiraKey, exists := nodeMap[story.Node.Id]; exists && dbJiraKey != "" {
-			jiraKey = dbJiraKey
+			jiraKey = &dbJiraKey
 		}
 
 		slog.Info("Processing story for Gantt Chart",
@@ -1540,7 +1542,7 @@ func (s *WorkflowService) publishWorkflowToGanttChart(ctx context.Context, tx *s
 		issue := natsModel.GanttChartJiraIssue{
 			NodeId:  story.Node.Id,
 			Type:    "STORY",
-			JiraKey: jiraKey,
+			JiraKey: *jiraKey,
 		}
 
 		ganttRequest.Issues = append(ganttRequest.Issues, issue)
@@ -1557,7 +1559,7 @@ func (s *WorkflowService) publishWorkflowToGanttChart(ctx context.Context, tx *s
 		jiraKey := node.JiraKey
 		// Ưu tiên JiraKey từ database
 		if dbJiraKey, exists := nodeMap[node.Id]; exists && dbJiraKey != "" {
-			jiraKey = dbJiraKey
+			jiraKey = &dbJiraKey
 		}
 
 		slog.Info("Processing node for Gantt Chart",
@@ -1569,7 +1571,7 @@ func (s *WorkflowService) publishWorkflowToGanttChart(ctx context.Context, tx *s
 			"finalJiraKey", jiraKey)
 
 		// Cảnh báo nếu không có JiraKey
-		if jiraKey == "" {
+		if jiraKey == nil {
 			slog.Warn("Node missing JiraKey for Gantt Chart calculation",
 				"nodeId", node.Id,
 				"type", node.Type,
@@ -1579,7 +1581,7 @@ func (s *WorkflowService) publishWorkflowToGanttChart(ctx context.Context, tx *s
 		issue := natsModel.GanttChartJiraIssue{
 			NodeId:  node.Id,
 			Type:    node.Type,
-			JiraKey: jiraKey,
+			JiraKey: *jiraKey,
 		}
 
 		ganttRequest.Issues = append(ganttRequest.Issues, issue)
