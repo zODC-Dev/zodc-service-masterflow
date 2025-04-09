@@ -368,20 +368,41 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 				return fmt.Errorf("find story request fail: %w", err)
 			}
 
+			nodeIdMap := make(map[string]string)
+
 			nodeModels := []model.Nodes{}
 			for _, node := range storyRequestStore.Nodes {
+				uuid := uuid.New()
+				nodeIdMap[node.ID] = uuid.String()
+
 				nodeModel := model.Nodes{}
 				utils.Mapper(node, &nodeModel)
 
+				nodeModel.ID = nodeIdMap[node.ID]
 				nodeModel.RequestID = storyRequest.ID
 
 				nodeModels = append(nodeModels, nodeModel)
 			}
-
 			if len(nodeModels) > 0 {
 				err = s.NodeRepo.CreateNodes(ctx, tx, nodeModels)
 				if err != nil {
 					return fmt.Errorf("create Story Workflow MAIN Node Fail: %w", err)
+				}
+			}
+
+			connectionModels := []model.Connections{}
+			for _, node := range storyRequestStore.Nodes {
+				connectionModels = append(connectionModels, model.Connections{
+					ID:         node.ID,
+					FromNodeID: nodeIdMap[node.ID],
+					ToNodeID:   nodeIdMap[node.ID],
+					RequestID:  storyRequest.ID,
+				})
+			}
+			if len(connectionModels) > 0 {
+				err = s.ConnectionRepo.CreateConnections(ctx, tx, connectionModels)
+				if err != nil {
+					return fmt.Errorf("create Story Workflow Connections Fail: %w", err)
 				}
 			}
 
