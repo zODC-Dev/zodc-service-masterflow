@@ -287,7 +287,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 		storyRequestModel := model.Requests{
 			Title:             storyReq.Title,
 			WorkflowVersionID: storyWorkflowVersion.ID,
-			IsTemplate:        true,
+			IsTemplate:        false,
 			Status:            string(constants.RequestStatusTodo),
 			ParentID:          &requestId,
 			UserID:            userId,
@@ -359,6 +359,32 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 		if err := s.NodeRepo.CreateNodes(ctx, tx, []model.Nodes{storyNode}); err != nil {
 			return fmt.Errorf("create Story Workflow MAIN Node Fail: %w", err)
+		}
+
+		//
+		if storyReq.IsSystemLinked {
+			storyRequestStore, err := s.RequestRepo.FindOneRequestByRequestIdTx(ctx, tx, *storyReq.Node.Data.SubRequestID)
+			if err != nil {
+				return fmt.Errorf("find story request fail: %w", err)
+			}
+
+			nodeModels := []model.Nodes{}
+			for _, node := range storyRequestStore.Nodes {
+				nodeModel := model.Nodes{}
+				utils.Mapper(node, &nodeModel)
+
+				nodeModel.RequestID = storyRequest.ID
+
+				nodeModels = append(nodeModels, nodeModel)
+			}
+
+			if len(nodeModels) > 0 {
+				err = s.NodeRepo.CreateNodes(ctx, tx, nodeModels)
+				if err != nil {
+					return fmt.Errorf("create Story Workflow MAIN Node Fail: %w", err)
+				}
+			}
+
 		}
 
 		// Create Story Nodes
@@ -830,9 +856,7 @@ func (s *WorkflowService) FindAllWorkflowHandler(ctx context.Context, workflowTe
 }
 
 func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requestId int32) (responses.WorkflowDetailResponse, error) {
-	workflowResponse := responses.WorkflowDetailResponse{
-		IsSystemLinked: true,
-	}
+	workflowResponse := responses.WorkflowDetailResponse{}
 
 	request, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, requestId)
 	if err != nil {
@@ -1047,6 +1071,7 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 			workflowResponse.Stories[i].Node.Data.Assignee.AvatarUrl = user.AvatarUrl
 			workflowResponse.Stories[i].Node.Data.Assignee.IsSystemUser = user.IsSystemUser
 
+			workflowResponse.Stories[i].IsSystemLinked = true
 		}
 	}
 

@@ -81,16 +81,16 @@ type StoryResponse struct {
 	Type        string `json:"type"`
 	CategoryKey string `json:"categoryKey"`
 
-	Node NodeResponse `json:"node"`
+	Node           NodeResponse `json:"node"`
+	IsSystemLinked bool         `json:"isSystemLinked"`
 }
 
 type WorkflowDetailResponse struct {
 	WorkflowResponse
-	LastAssignee   types.Assignee       `json:"lastAssignee"`
-	Nodes          []NodeResponse       `json:"nodes"`
-	Stories        []StoryResponse      `json:"stories"`
-	Connections    []ConnectionResponse `json:"connections"`
-	IsSystemLinked bool                 `json:"isSystemLinked"`
+	LastAssignee types.Assignee       `json:"lastAssignee"`
+	Nodes        []NodeResponse       `json:"nodes"`
+	Stories      []StoryResponse      `json:"stories"`
+	Connections  []ConnectionResponse `json:"connections"`
 }
 
 type WorkflowResponse struct {

@@ -70,8 +70,7 @@ type RequestTaskCountResponse struct {
 
 type RequestOverviewResponse struct {
 	WorkflowDetailResponse
-	Progress       float32 `json:"progress"`
-	IsSystemLinked bool    `json:"isSystemLinked"`
+	Progress float32 `json:"progress"`
 }
 
 type RequestSubRequest struct {

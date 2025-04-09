@@ -551,9 +551,7 @@ func (s *RequestService) GetRequestTaskCount(ctx context.Context, userId int32, 
 }
 
 func (s *RequestService) GetRequestOverviewHandler(ctx context.Context, requestId int32) (responses.RequestOverviewResponse, error) {
-	requestOverviewResponse := responses.RequestOverviewResponse{
-		IsSystemLinked: true,
-	}
+	requestOverviewResponse := responses.RequestOverviewResponse{}
 	workflowRequest, err := s.WorkflowService.FindOneWorkflowDetailHandler(ctx, requestId)
 	if err != nil {
 		return requestOverviewResponse, err

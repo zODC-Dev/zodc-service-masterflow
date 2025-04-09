@@ -76,6 +76,8 @@ type Story struct {
 	CategoryId  int32
 
 	Node Node
+
+	IsSystemLinked bool
 }
 
 type NodesConnectionsStories struct {
