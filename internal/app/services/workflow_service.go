@@ -946,7 +946,7 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 		}
 
 		nodeResponse, err := s.MapToWorkflowNodeResponse(nodeModel)
-		nodeResponse.ParentId = nil
+		nodeResponse.ParentId = node.ParentID
 		if err != nil {
 			return workflowResponse, fmt.Errorf("map workflow node response fail: %w", err)
 		}
