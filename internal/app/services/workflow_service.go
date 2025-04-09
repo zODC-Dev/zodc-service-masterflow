@@ -897,7 +897,7 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 		}
 
 		nodeResponse, err := s.MapToWorkflowNodeResponse(nodeModel)
-		nodeResponse.ParentId = nil
+		nodeResponse.ParentId = node.ParentID
 
 		if node.AssigneeID != nil {
 			user, err := s.UserAPI.FindUsersByUserIds([]int32{*node.AssigneeID})
