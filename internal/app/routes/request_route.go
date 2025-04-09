@@ -40,6 +40,8 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 		RequestRepo:     requestRepo,
 		UserAPI:         userApi,
 		WorkflowService: workflowService,
+		ConnectionRepo:  connectionRepo,
+		NodeRepo:        nodeRepo,
 	})
 
 	requestController := controllers.NewRequestController(requestService)

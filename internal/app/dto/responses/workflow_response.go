@@ -86,10 +86,11 @@ type StoryResponse struct {
 
 type WorkflowDetailResponse struct {
 	WorkflowResponse
-	LastAssignee types.Assignee       `json:"lastAssignee"`
-	Nodes        []NodeResponse       `json:"nodes"`
-	Stories      []StoryResponse      `json:"stories"`
-	Connections  []ConnectionResponse `json:"connections"`
+	LastAssignee   types.Assignee       `json:"lastAssignee"`
+	Nodes          []NodeResponse       `json:"nodes"`
+	Stories        []StoryResponse      `json:"stories"`
+	Connections    []ConnectionResponse `json:"connections"`
+	IsSystemLinked bool                 `json:"isSystemLinked"`
 }
 
 type WorkflowResponse struct {

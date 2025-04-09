@@ -809,7 +809,9 @@ func (s *WorkflowService) FindAllWorkflowHandler(ctx context.Context, workflowTe
 }
 
 func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requestId int32) (responses.WorkflowDetailResponse, error) {
-	workflowResponse := responses.WorkflowDetailResponse{}
+	workflowResponse := responses.WorkflowDetailResponse{
+		IsSystemLinked: true,
+	}
 
 	request, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, requestId)
 	if err != nil {
