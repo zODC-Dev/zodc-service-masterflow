@@ -196,6 +196,7 @@ func (c *NodeController) RejectNodeForm(e echo.Context) error {
 	}
 
 	return e.JSON(http.StatusOK, map[string]string{"message": "Node form rejected successfully"})
+}
 
 // GetNodeTaskDetail godoc
 // @Summary      Get task details for a node
