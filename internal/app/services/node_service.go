@@ -298,8 +298,29 @@ func (s *NodeService) GetNodeFormWithPermission(ctx context.Context, nodeId stri
 		formTemplate := responses.FormTemplateFindAll{}
 		utils.Mapper(nodeForm.FormTemplates, &formTemplate)
 
-		formTemplateFields := []responses.FormTemplateFieldsFindAll{}
-		utils.Mapper(nodeForm.FormTemplateFields, &formTemplateFields)
+		fieldsResponse := [][]responses.FormTemplateFieldsFindAll{}
+		for _, formformTemplateField := range nodeForm.FormTemplateFields {
+
+			colIndex := formformTemplateField.ColNum
+
+			for len(fieldsResponse) <= int(colIndex) {
+				fieldsResponse = append(fieldsResponse, []responses.FormTemplateFieldsFindAll{})
+			}
+
+			fieldResponse := responses.FormTemplateFieldsFindAll{}
+
+			//Mapping AdvancedOptions
+			var advancedOptions map[string]interface{}
+			if err := json.Unmarshal([]byte(*formformTemplateField.AdvancedOptions), &advancedOptions); err != nil {
+				return response, err
+			}
+			fieldResponse.AdvancedOptions = advancedOptions
+			if err := utils.Mapper(formformTemplateField, &fieldResponse); err != nil {
+				return response, err
+			}
+
+			fieldsResponse[colIndex] = append(fieldsResponse[colIndex], fieldResponse)
+		}
 
 		formDatas := []responses.NodeFormDataResponse{}
 		for _, formData := range nodeForm.FormFieldData {
@@ -311,7 +332,7 @@ func (s *NodeService) GetNodeFormWithPermission(ctx context.Context, nodeId stri
 
 		response = append(response, responses.NodeFormDetailResponse{
 			Template:    formTemplate,
-			Fields:      formTemplateFields,
+			Fields:      fieldsResponse,
 			Data:        formDatas,
 			DataId:      nodeForm.NodeForms.DataID,
 			IsSubmitted: nodeForm.NodeForms.IsSubmitted,
