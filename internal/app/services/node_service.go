@@ -3,14 +3,18 @@ package services
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/constants"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/requests"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/responses"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/externals"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
 	"github.com/zODC-Dev/zodc-service-masterflow/pkg/nats"
 	"github.com/zODC-Dev/zodc-service-masterflow/pkg/utils"
 )
@@ -23,6 +27,7 @@ type NodeService struct {
 	WorkflowService *WorkflowService
 	NatsClient      *nats.NATSClient
 	FormRepo        *repositories.FormRepository
+	UserAPI         *externals.UserAPI
 }
 
 func NewNodeService(cfg NodeService) *NodeService {
@@ -34,6 +39,7 @@ func NewNodeService(cfg NodeService) *NodeService {
 		WorkflowService: cfg.WorkflowService,
 		NatsClient:      cfg.NatsClient,
 		FormRepo:        cfg.FormRepo,
+		UserAPI:         cfg.UserAPI,
 	}
 	return &nodeService
 }
@@ -229,16 +235,16 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 	}
 
 	// send notification
-	// notification := types.Notification{
-	// 	ToUserIds: []string{strconv.Itoa(int(userId))},
-	// 	Subject:   "Task completed",
-	// 	Body:      fmt.Sprintf("Task completed: %s – %s has marked this task as done.", node.Title, userId),
-	// }
-	// notificationBytes, err := json.Marshal(notification)
-	// if err != nil {
-	// 	return fmt.Errorf("marshal notification failed: %w", err)
-	// }
-	// s.NatsClient.Publish("notifications", notificationBytes)
+	notification := types.Notification{
+		ToUserIds: []string{strconv.Itoa(int(userId))},
+		Subject:   "Task completed",
+		Body:      fmt.Sprintf("Task completed: %s – %s has marked this task as done.", node.Title, userId),
+	}
+	notificationBytes, err := json.Marshal(notification)
+	if err != nil {
+		return fmt.Errorf("marshal notification failed: %w", err)
+	}
+	s.NatsClient.Publish("notifications", notificationBytes)
 
 	// Calculate Request Process
 	request, _ := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, node.RequestID)
@@ -481,4 +487,73 @@ func (s *NodeService) RejectNodeForm(ctx context.Context, nodeId string, formId 
 	}
 
 	return nil
+}
+
+func (s *NodeService) GetNodeTaskDetail(ctx context.Context, nodeId string) (responses.TaskDetail, error) {
+
+	node, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
+	if err != nil {
+		return responses.TaskDetail{}, err
+	}
+
+	request, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, node.RequestID)
+	if err != nil {
+		return responses.TaskDetail{}, err
+	}
+
+	assignee, err := s.UserAPI.FindUsersByUserIds([]int32{*node.AssigneeID})
+	if err != nil {
+		return responses.TaskDetail{}, err
+	}
+
+	assigneeResponse := types.Assignee{
+		Id:           assignee.Data[0].ID,
+		Name:         assignee.Data[0].Name,
+		Email:        assignee.Data[0].Email,
+		AvatarUrl:    assignee.Data[0].AvatarUrl,
+		IsSystemUser: assignee.Data[0].IsSystemUser,
+	}
+
+	requestBy, err := s.UserAPI.FindUsersByUserIds([]int32{request.UserID})
+	if err != nil {
+		return responses.TaskDetail{}, err
+	}
+
+	requestByResponse := types.Assignee{
+		Id:           requestBy.Data[0].ID,
+		Name:         requestBy.Data[0].Name,
+		Email:        requestBy.Data[0].Email,
+		AvatarUrl:    requestBy.Data[0].AvatarUrl,
+		IsSystemUser: requestBy.Data[0].IsSystemUser,
+	}
+
+	taskDetail := responses.TaskDetail{
+		RequestTaskResponse: responses.RequestTaskResponse{
+			Id:               nodeId,
+			Title:            node.Title,
+			Type:             node.Type,
+			RequestID:        node.RequestID,
+			RequestTitle:     request.Title,
+			RequestProgress:  request.Progress,
+			Assignee:         assigneeResponse,
+			PlannedStartTime: node.PlannedStartTime,
+			PlannedEndTime:   node.PlannedEndTime,
+			ActualStartTime:  node.ActualStartTime,
+			ActualEndTime:    node.ActualEndTime,
+			EstimatePoint:    node.EstimatePoint,
+			Status:           node.Status,
+			IsCurrent:        node.IsCurrent,
+		},
+		RequestRequestBy: requestByResponse,
+		IsApproval:       node.IsApproved,
+		UpdatedAt:        node.UpdatedAt,
+	}
+
+	if node.JiraKey != nil {
+		taskDetail.Key = *node.JiraKey
+	} else {
+		taskDetail.Key = strconv.Itoa(int(node.Key))
+	}
+
+	return taskDetail, nil
 }

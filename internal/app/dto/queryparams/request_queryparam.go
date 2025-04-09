@@ -18,3 +18,9 @@ type RequestSubRequestQueryParam struct {
 	Page     int
 	PageSize int
 }
+
+type RequestTaskCount struct {
+	WorkflowType string
+	Type         string
+	ProjectKey   string
+}

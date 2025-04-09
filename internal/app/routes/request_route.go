@@ -42,6 +42,8 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 		RequestRepo:     requestRepo,
 		UserAPI:         userApi,
 		WorkflowService: workflowService,
+		ConnectionRepo:  connectionRepo,
+		NodeRepo:        nodeRepo,
 	})
 
 	requestController := controllers.NewRequestController(requestService)
@@ -58,6 +60,10 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 		requestRoute.GET("/overview/:id", requestController.GetRequestOverview)
 
 		requestRoute.GET("/:id/sub-requests", requestController.FindAllSubRequestByRequestId)
+
+		requestRoute.PUT("/:id", requestController.UpdateRequest)
+
+		requestRoute.GET("/tasks/count", requestController.GetRequestTasksCount)
 
 	}
 

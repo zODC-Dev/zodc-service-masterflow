@@ -18,6 +18,15 @@ func NewCategoryController(categoryService *services.CategoryService) *CategoryC
 	}
 }
 
+// FindAll godoc
+// @Summary      Lấy danh sách tất cả Category
+// @Description  Trả về danh sách tất cả các category có trong hệ thống.
+// @Tags         Categories
+// @Accept       json
+// @Produce      json
+// @Success      200  {array}  responses.CategoryFindAll  "Danh sách Category"
+// @Failure      500  {object} string "Lỗi Server Nội Bộ"
+// @Router       /api/v1/categories [get]
 func (c *CategoryController) FindAll(e echo.Context) error {
 	ctx := e.Request().Context()
 

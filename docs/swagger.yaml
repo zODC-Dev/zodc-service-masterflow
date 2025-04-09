@@ -1,0 +1,1559 @@
+basePath: /api/v1  // Adjusted BasePath for clarity (e.g., /api/v1) - Ensure routes
+  match this prefix
+definitions:
+  requests.Connection:
+    properties:
+      from:
+        type: string
+      id:
+        type: string
+      text:
+        type: string
+      to:
+        type: string
+    type: object
+  requests.CreateWorkflow:
+    properties:
+      categoryId:
+        type: integer
+      connections:
+        items:
+          $ref: '#/definitions/requests.Connection'
+        type: array
+      decoration:
+        type: string
+      description:
+        type: string
+      nodes:
+        description: ko chứa story
+        items:
+          $ref: '#/definitions/requests.Node'
+        type: array
+      projectKey:
+        type: string
+      sprintId:
+        type: integer
+      stories:
+        items:
+          $ref: '#/definitions/requests.Story'
+        type: array
+      title:
+        type: string
+      type:
+        type: string
+    type: object
+  requests.FormTemplateCreate:
+    type: object
+  requests.Node:
+    properties:
+      data:
+        $ref: '#/definitions/requests.NodeData'
+      estimatePoint:
+        type: integer
+      form:
+        items:
+          $ref: '#/definitions/requests.NodeForm'
+        type: array
+      id:
+        type: string
+      jiraKey:
+        type: string
+      parentId:
+        type: string
+      position:
+        $ref: '#/definitions/types.Position'
+      size:
+        $ref: '#/definitions/types.Size'
+      type:
+        type: string
+    type: object
+  requests.NodeData:
+    properties:
+      assignee:
+        $ref: '#/definitions/requests.NodeDataAssignee'
+      condition:
+        $ref: '#/definitions/requests.NodeDataCondition'
+      dueIn:
+        type: integer
+      endType:
+        type: string
+      formAttached:
+        items:
+          $ref: '#/definitions/requests.NodeDataFormAttached'
+        type: array
+      jiraKey:
+        type: string
+      subRequestID:
+        type: integer
+      title:
+        type: string
+      type:
+        type: string
+    type: object
+  requests.NodeDataAssignee:
+    properties:
+      id:
+        type: integer
+    type: object
+  requests.NodeDataCondition:
+    properties:
+      falseDestinations:
+        items:
+          type: string
+        type: array
+      trueDestinations:
+        items:
+          type: string
+        type: array
+    type: object
+  requests.NodeDataFormAttached:
+    properties:
+      approveUserIds:
+        items:
+          type: integer
+        type: array
+      dataId:
+        type: string
+      formTemplateId:
+        type: integer
+      fromFormAttachedPosition:
+        type: integer
+      fromUserId:
+        type: integer
+      isOriginal:
+        type: boolean
+      key:
+        type: string
+      optionId:
+        type: string
+      permission:
+        type: string
+    type: object
+  requests.NodeForm:
+    properties:
+      fieldId:
+        type: string
+      value:
+        type: string
+    type: object
+  requests.RequestUpdateRequest:
+    properties:
+      connections:
+        items:
+          $ref: '#/definitions/requests.Connection'
+        type: array
+      nodes:
+        description: ko chứa story
+        items:
+          $ref: '#/definitions/requests.Node'
+        type: array
+      stories:
+        items:
+          $ref: '#/definitions/requests.Story'
+        type: array
+    type: object
+  requests.StartWorkflow:
+    properties:
+      connections:
+        items:
+          $ref: '#/definitions/requests.Connection'
+        type: array
+      isTemplate:
+        type: boolean
+      nodes:
+        description: ko chứa story
+        items:
+          $ref: '#/definitions/requests.Node'
+        type: array
+      requestID:
+        type: integer
+      sprintID:
+        type: integer
+      stories:
+        items:
+          $ref: '#/definitions/requests.Story'
+        type: array
+      title:
+        type: string
+    type: object
+  requests.Story:
+    properties:
+      categoryId:
+        type: integer
+      categoryKey:
+        type: string
+      decoration:
+        type: string
+      description:
+        type: string
+      node:
+        $ref: '#/definitions/requests.Node'
+      title:
+        type: string
+      type:
+        type: string
+    type: object
+  responses.CategoryFindAll:
+    properties:
+      id:
+        type: integer
+      isActive:
+        type: boolean
+      key:
+        type: string
+      name:
+        type: string
+      type:
+        type: string
+    type: object
+  responses.CategoryResponse:
+    properties:
+      id:
+        type: integer
+      key:
+        type: string
+      name:
+        type: string
+      type:
+        type: string
+    type: object
+  responses.ConnectionResponse:
+    properties:
+      from:
+        type: string
+      id:
+        type: string
+      isCompleted:
+        type: boolean
+      text:
+        type: string
+      to:
+        type: string
+    type: object
+  responses.CurrentTaskResponse:
+    properties:
+      participants:
+        items:
+          $ref: '#/definitions/types.Assignee'
+        type: array
+      title:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  responses.FormTemplateFieldsFindAll:
+    properties:
+      advancedOptions:
+        additionalProperties: true
+        type: object
+      category:
+        type: string
+      colNum:
+        type: integer
+      createdAt:
+        type: string
+      deletedAt:
+        type: string
+      fieldId:
+        type: string
+      fieldName:
+        type: string
+      fieldType:
+        type: string
+      formId:
+        type: integer
+      icon:
+        type: string
+      id:
+        type: integer
+      required:
+        type: boolean
+      title:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  responses.FormTemplateFindAll:
+    properties:
+      category:
+        $ref: '#/definitions/responses.CategoryFindAll'
+      createdAt:
+        type: string
+      dataSheet:
+        additionalProperties: true
+        type: object
+      decoration:
+        type: string
+      deletedAt:
+        type: string
+      description:
+        type: string
+      fileName:
+        type: string
+      id:
+        type: integer
+      templateId:
+        type: integer
+      title:
+        type: string
+      updatedAt:
+        type: string
+      version:
+        type: integer
+    type: object
+  responses.JiraFormDetailResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/responses.NodeFormDataResponse'
+        type: array
+      fields:
+        items:
+          $ref: '#/definitions/responses.FormTemplateFieldsFindAll'
+        type: array
+      template:
+        $ref: '#/definitions/responses.FormTemplateFindAll'
+    type: object
+  responses.NodeDataResponse:
+    properties:
+      assignee:
+        $ref: '#/definitions/types.Assignee'
+      endType:
+        type: string
+      estimatePoint:
+        type: integer
+      formAttached:
+        items:
+          $ref: '#/definitions/responses.NodeFormResponse'
+        type: array
+      subRequestId:
+        type: integer
+      title:
+        type: string
+      type:
+        type: string
+    type: object
+  responses.NodeFormDataResponse:
+    properties:
+      fieldId:
+        type: string
+      value:
+        type: string
+    type: object
+  responses.NodeFormResponse:
+    properties:
+      approveUserIds:
+        items:
+          type: integer
+        type: array
+      dataId:
+        type: string
+      formTemplateId:
+        type: integer
+      fromFormAttachedPosition:
+        type: integer
+      fromUserId:
+        type: integer
+      isOriginal:
+        type: boolean
+      key:
+        type: string
+      optionKey:
+        type: string
+      permission:
+        type: string
+    type: object
+  responses.NodeResponse:
+    properties:
+      completedAt:
+        type: string
+      data:
+        $ref: '#/definitions/responses.NodeDataResponse'
+      form:
+        items:
+          $ref: '#/definitions/responses.NodeFormDataResponse'
+        type: array
+      id:
+        type: string
+      isCurrent:
+        type: boolean
+      jiraKey:
+        type: string
+      parentId:
+        type: string
+      position:
+        $ref: '#/definitions/types.Position'
+      size:
+        $ref: '#/definitions/types.Size'
+      startedAt:
+        type: string
+      status:
+        type: string
+      type:
+        type: string
+    type: object
+  responses.RequestDetailResponse:
+    properties:
+      canceledAt:
+        type: string
+      childRequests:
+        items:
+          $ref: '#/definitions/responses.RequestResponse'
+        type: array
+      completedAt:
+        type: string
+      currentTasks:
+        items:
+          $ref: '#/definitions/responses.CurrentTaskResponse'
+        type: array
+      id:
+        type: integer
+      key:
+        type: integer
+      parentKey:
+        type: integer
+      parentRequest:
+        $ref: '#/definitions/responses.RequestResponse'
+      participants:
+        items:
+          $ref: '#/definitions/types.Assignee'
+        type: array
+      progress:
+        type: integer
+      requestedBy:
+        $ref: '#/definitions/types.Assignee'
+      sprintId:
+        type: integer
+      startedAt:
+        type: string
+      status:
+        type: string
+      terminatedAt:
+        type: string
+      title:
+        type: string
+      workflow:
+        $ref: '#/definitions/responses.WorkflowResponse'
+    type: object
+  responses.RequestOverviewResponse:
+    properties:
+      category:
+        $ref: '#/definitions/responses.CategoryResponse'
+      connections:
+        items:
+          $ref: '#/definitions/responses.ConnectionResponse'
+        type: array
+      createdAt:
+        type: string
+      currentVersion:
+        type: integer
+      decoration:
+        type: string
+      deletedAt:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      isArchived:
+        type: boolean
+      lastAssignee:
+        $ref: '#/definitions/types.Assignee'
+      nodes:
+        items:
+          $ref: '#/definitions/responses.NodeResponse'
+        type: array
+      progress:
+        type: number
+      projectKey:
+        type: string
+      requestId:
+        type: integer
+      stories:
+        items:
+          $ref: '#/definitions/responses.StoryResponse'
+        type: array
+      title:
+        type: string
+      type:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  responses.RequestResponse:
+    properties:
+      canceledAt:
+        type: string
+      completedAt:
+        type: string
+      currentTasks:
+        items:
+          $ref: '#/definitions/responses.CurrentTaskResponse'
+        type: array
+      id:
+        type: integer
+      key:
+        type: integer
+      parentKey:
+        type: integer
+      progress:
+        type: integer
+      sprintId:
+        type: integer
+      startedAt:
+        type: string
+      status:
+        type: string
+      terminatedAt:
+        type: string
+      title:
+        type: string
+    type: object
+  responses.RequestSubRequest:
+    properties:
+      assignee:
+        $ref: '#/definitions/types.Assignee'
+      canceledAt:
+        type: string
+      completedAt:
+        type: string
+      key:
+        type: integer
+      startedAt:
+        type: string
+      status:
+        type: string
+      taskTitle:
+        type: string
+      terminatedAt:
+        type: string
+      workflowTitle:
+        type: string
+    type: object
+  responses.RequestTaskCountResponse:
+    properties:
+      completedCount:
+        type: integer
+      overdueCount:
+        type: integer
+      todoCount:
+        type: integer
+      totalCount:
+        type: integer
+    type: object
+  responses.RequestTaskResponse:
+    properties:
+      actualEndTime:
+        type: string
+      actualStartTime:
+        type: string
+      assignee:
+        $ref: '#/definitions/types.Assignee'
+      estimatePoint:
+        type: integer
+      id:
+        type: string
+      isCurrent:
+        type: boolean
+      key:
+        type: string
+      plannedEndTime:
+        type: string
+      plannedStartTime:
+        type: string
+      requestId:
+        type: integer
+      requestProgress:
+        type: number
+      requestTitle:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+      type:
+        type: string
+    type: object
+  responses.Response:
+    properties:
+      data: {}
+      message:
+        type: string
+    type: object
+  responses.StoryResponse:
+    properties:
+      categoryKey:
+        type: string
+      decoration:
+        type: string
+      description:
+        type: string
+      node:
+        $ref: '#/definitions/responses.NodeResponse'
+      title:
+        type: string
+      type:
+        type: string
+    type: object
+  responses.TaskDetail:
+    properties:
+      actualEndTime:
+        type: string
+      actualStartTime:
+        type: string
+      assignee:
+        $ref: '#/definitions/types.Assignee'
+      estimatePoint:
+        type: integer
+      id:
+        type: string
+      isApproval:
+        type: boolean
+      isCurrent:
+        type: boolean
+      key:
+        type: string
+      plannedEndTime:
+        type: string
+      plannedStartTime:
+        type: string
+      requestId:
+        type: integer
+      requestProgress:
+        type: number
+      requestRequestBy:
+        $ref: '#/definitions/types.Assignee'
+      requestTitle:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+      type:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  responses.WorkflowDetailResponse:
+    properties:
+      category:
+        $ref: '#/definitions/responses.CategoryResponse'
+      connections:
+        items:
+          $ref: '#/definitions/responses.ConnectionResponse'
+        type: array
+      createdAt:
+        type: string
+      currentVersion:
+        type: integer
+      decoration:
+        type: string
+      deletedAt:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      isArchived:
+        type: boolean
+      lastAssignee:
+        $ref: '#/definitions/types.Assignee'
+      nodes:
+        items:
+          $ref: '#/definitions/responses.NodeResponse'
+        type: array
+      projectKey:
+        type: string
+      requestId:
+        type: integer
+      stories:
+        items:
+          $ref: '#/definitions/responses.StoryResponse'
+        type: array
+      title:
+        type: string
+      type:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  responses.WorkflowResponse:
+    properties:
+      category:
+        $ref: '#/definitions/responses.CategoryResponse'
+      createdAt:
+        type: string
+      currentVersion:
+        type: integer
+      decoration:
+        type: string
+      deletedAt:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      isArchived:
+        type: boolean
+      projectKey:
+        type: string
+      requestId:
+        type: integer
+      title:
+        type: string
+      type:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  types.Assignee:
+    properties:
+      avatarUrl:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      isSystemUser:
+        type: boolean
+      name:
+        type: string
+    type: object
+  types.Position:
+    properties:
+      x:
+        type: number
+      "y":
+        type: number
+    type: object
+  types.Size:
+    properties:
+      height:
+        type: number
+      width:
+        type: number
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is the API documentation for the zODC Masterflow Service. It provides
+    endpoints for managing workflows, requests, forms, and nodes.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: zODC Masterflow Service API
+  version: "1.0"
+paths:
+  /api/v1/categories:
+    get:
+      consumes:
+      - application/json
+      description: Trả về danh sách tất cả các category có trong hệ thống.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Danh sách Category
+          schema:
+            items:
+              $ref: '#/definitions/responses.CategoryFindAll'
+            type: array
+        "500":
+          description: Lỗi Server Nội Bộ
+          schema:
+            type: string
+      summary: Lấy danh sách tất cả Category
+      tags:
+      - Categories
+  /forms/templates:
+    get:
+      description: Retrieves a list of form templates, optionally filtered by category
+        ID and search query.
+      parameters:
+      - description: Filter by category ID
+        in: query
+        name: categoryId
+        type: string
+      - description: Search query for form template names or descriptions
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/responses.FormTemplateFindAll'
+            type: array
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      summary: Find all form templates
+      tags:
+      - Forms
+    post:
+      consumes:
+      - application/json
+      description: Adds a new form template to the system based on the provided data.
+      parameters:
+      - description: Form Template Creation Request
+        in: body
+        name: formTemplate
+        required: true
+        schema:
+          $ref: '#/definitions/requests.FormTemplateCreate'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 'message: Form created successfully'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Error message for bad request
+          schema:
+            type: string
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      summary: Create a new form template
+      tags:
+      - Forms
+  /forms/templates/{formTemplateId}/fields:
+    get:
+      description: Retrieves all fields associated with a given form template ID.
+      parameters:
+      - description: Form Template ID
+        in: path
+        name: formTemplateId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/responses.FormTemplateFieldsFindAll'
+            type: array
+        "400":
+          description: Error message for invalid form template ID
+          schema:
+            type: string
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      summary: Find all fields for a specific form template
+      tags:
+      - Forms
+  /nodes/{id}/complete:
+    patch:
+      description: Marks a specific node as completed by the logged-in user.
+      parameters:
+      - description: Node ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: Node completed successfully'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: 'error: Error message for bad request (e.g., missing ID, invalid
+            ID, service error)'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Complete a node
+      tags:
+      - Nodes
+  /nodes/{id}/form/{permission}:
+    get:
+      description: Retrieves the form associated with a node, considering the user's
+        permission level.
+      parameters:
+      - description: Node ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Permission level (e.g., 'read', 'write')
+        in: path
+        name: permission
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.NodeFormResponse'
+        "400":
+          description: 'error: Error message for bad request (e.g., missing params,
+            service error)'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get node form based on permission
+      tags:
+      - Nodes
+  /nodes/{id}/jira-form:
+    get:
+      description: Retrieves the Jira-specific form details associated with a node.
+      parameters:
+      - description: Node ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.JiraFormDetailResponse'
+        "400":
+          description: 'error: Error message for bad request (e.g., missing ID, service
+            error)'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get Jira form for a node
+      tags:
+      - Nodes
+  /nodes/{id}/start:
+    patch:
+      description: Marks a specific node as started.
+      parameters:
+      - description: Node ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: Node started successfully'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Error message for bad request (e.g., missing ID, service error)
+          schema:
+            type: string
+      summary: Start a node
+      tags:
+      - Nodes
+  /nodes/{id}/tasks:
+    get:
+      description: Retrieves detailed information about the tasks associated with
+        a specific node.
+      parameters:
+      - description: Node ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/responses.TaskDetail'
+            type: array
+        "400":
+          description: 'error: Error message for bad request (e.g., missing ID, service
+            error)'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get task details for a node
+      tags:
+      - Nodes
+  /requests:
+    get:
+      description: Retrieves a paginated list of requests based on various filter
+        criteria for the logged-in user.
+      parameters:
+      - description: Search term for requests
+        in: query
+        name: search
+        type: string
+      - description: Filter by project key
+        in: query
+        name: projectKey
+        type: string
+      - description: Filter by request status
+        in: query
+        name: status
+        type: string
+      - description: Filter by sprint ID
+        in: query
+        name: sprintId
+        type: string
+      - description: Filter by workflow type
+        in: query
+        name: workflowType
+        type: string
+      - default: 1
+        description: Page number for pagination
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of items per page
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/responses.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/responses.RequestResponse'
+              type: object
+        "400":
+          description: 'error: Error message for bad request (e.g., service error)'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Find all requests
+      tags:
+      - Requests
+  /requests/{id}:
+    get:
+      description: Retrieves detailed information for a specific request ID for the
+        logged-in user.
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.RequestDetailResponse'
+        "400":
+          description: Error message for invalid request ID
+          schema:
+            type: string
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Get request details
+      tags:
+      - Requests
+    put:
+      consumes:
+      - application/json
+      description: Updates details of an existing request identified by its ID. Requires
+        user authentication.
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Request Update Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/requests.RequestUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'Success message: Request updated successfully: {id}'
+          schema:
+            type: string
+        "400":
+          description: Error message for invalid request ID or bad request body
+          schema:
+            type: string
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Update a request
+      tags:
+      - Requests
+  /requests/{id}/overview:
+    get:
+      description: Retrieves overview information (like counts, statuses) for a specific
+        request ID.
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.RequestOverviewResponse'
+        "400":
+          description: Error message for invalid request ID
+          schema:
+            type: string
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      summary: Get request overview
+      tags:
+      - Requests
+  /requests/{id}/sub-requests:
+    get:
+      description: Retrieves a paginated list of sub-requests associated with a specific
+        parent request ID.
+      parameters:
+      - description: Parent Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - default: 1
+        description: Page number for pagination
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of items per page
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/responses.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/responses.RequestSubRequest'
+              type: object
+        "400":
+          description: Error message for invalid request ID
+          schema:
+            type: string
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      summary: Find all sub-requests for a given request
+      tags:
+      - Requests
+  /requests/{id}/tasks:
+    get:
+      description: Retrieves a paginated list of tasks associated with a given request
+        ID.
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - default: 1
+        description: Page number for pagination
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of items per page
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/responses.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/responses.RequestTaskResponse'
+              type: object
+        "400":
+          description: Error message for invalid request ID
+          schema:
+            type: string
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      summary: Get tasks for a specific request
+      tags:
+      - Requests
+  /requests/count:
+    get:
+      description: Retrieves counts of requests grouped by status or other criteria
+        for the logged-in user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.RequestOverviewResponse'
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Get request counts
+      tags:
+      - Requests
+  /requests/tasks/by-project:
+    get:
+      description: Retrieves a paginated list of tasks across requests, filtered by
+        project, type, status, and workflow type for the logged-in user.
+      parameters:
+      - description: Filter by project key
+        in: query
+        name: projectKey
+        required: true
+        type: string
+      - description: Filter by workflow type
+        in: query
+        name: workflowType
+        type: string
+      - description: Filter by task status
+        in: query
+        name: status
+        type: string
+      - description: Filter by task type
+        in: query
+        name: type
+        type: string
+      - default: 1
+        description: Page number for pagination
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of items per page
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/responses.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/responses.RequestTaskResponse'
+              type: object
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Get request tasks by project and filters
+      tags:
+      - Requests
+  /requests/tasks/count:
+    get:
+      description: Retrieves the total count of tasks matching filter criteria like
+        project, workflow type, and task type for the logged-in user.
+      parameters:
+      - description: Filter by project key
+        in: query
+        name: projectKey
+        required: true
+        type: string
+      - description: Filter by workflow type
+        in: query
+        name: workflowType
+        type: string
+      - description: Filter by task type
+        in: query
+        name: type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.RequestTaskCountResponse'
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Get count of request tasks based on filters
+      tags:
+      - Requests
+  /utils/excel-extract:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Uploads an Excel file and extracts data from it.
+      parameters:
+      - description: Excel file to upload
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 'error: No file is received'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: 'error: Fail extract excel file'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Extract data from an Excel file
+      tags:
+      - Utils
+  /workflows:
+    get:
+      description: Retrieves a list of workflows based on various filter criteria
+        for the logged-in user.
+      parameters:
+      - description: Filter by category ID
+        in: query
+        name: categoryId
+        type: string
+      - description: Search term for workflows
+        in: query
+        name: search
+        type: string
+      - description: Filter by workflow type
+        in: query
+        name: type
+        type: string
+      - description: Filter by project key
+        in: query
+        name: projectKey
+        type: string
+      - description: Filter by whether it has sub-workflows
+        in: query
+        name: hasSubWorkflow
+        type: boolean
+      - description: Filter by archival status
+        in: query
+        name: isArchived
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/responses.WorkflowResponse'
+            type: array
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Find all workflows
+      tags:
+      - Workflows
+    post:
+      consumes:
+      - application/json
+      description: Adds a new workflow definition based on the provided data. Requires
+        user authentication.
+      parameters:
+      - description: Workflow Creation Request
+        in: body
+        name: workflow
+        required: true
+        schema:
+          $ref: '#/definitions/requests.CreateWorkflow'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 'message: Workflow created successfully'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Error message for bad request body
+          schema:
+            type: string
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new workflow
+      tags:
+      - Workflows
+  /workflows/{id}:
+    get:
+      description: Retrieves detailed information for a specific workflow version
+        ID.
+      parameters:
+      - description: Workflow Version ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.WorkflowDetailResponse'
+        "500":
+          description: Error message for invalid ID or internal server error" // Combined
+            400/500 based on current code
+          schema:
+            type: string
+      summary: Find workflow detail by version ID
+      tags:
+      - Workflows
+  /workflows/{id}/archive:
+    patch:
+      description: Marks a workflow definition as archived based on its ID.
+      parameters:
+      - description: Workflow ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: Workflow archived successfully'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Error message for invalid ID or internal server error" // Combined
+            400/500 based on current code
+          schema:
+            type: string
+      summary: Archive a workflow
+      tags:
+      - Workflows
+  /workflows/start:
+    post:
+      consumes:
+      - application/json
+      description: Initiates a new instance of a workflow based on the provided request
+        details. Requires user authentication.
+      parameters:
+      - description: Start Workflow Request
+        in: body
+        name: startRequest
+        required: true
+        schema:
+          $ref: '#/definitions/requests.StartWorkflow'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/responses.Response'
+            - properties:
+                data:
+                  type: integer
+              type: object
+        "400":
+          description: Error message for bad request body
+          schema:
+            type: string
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Start a workflow instance
+      tags:
+      - Workflows
+securityDefinitions:
+  ApiKeyAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

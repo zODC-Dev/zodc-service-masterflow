@@ -3,7 +3,6 @@ package repositories
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -67,7 +66,7 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 
 	if requestQueryParam.Status != "" {
 		if requestQueryParam.Status == "ALL" {
-			statement = statement.WHERE(Nodes.AssigneeID.EQ(postgres.Int32(userId)))
+			conditions = append(conditions, Requests.UserID.EQ(postgres.Int32(userId)))
 		} else {
 			conditions = append(conditions, requestStatus.EQ(postgres.String(requestQueryParam.Status)))
 		}
@@ -91,7 +90,6 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 
 	result := []results.Request{}
 	err := statement.QueryContext(ctx, db, &result)
-	fmt.Println(statement.DebugSql())
 
 	if err != nil {
 		return results.Count{}, result, err
@@ -119,13 +117,21 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 		conditionsCount = append(conditionsCount, Workflows.ProjectKey.EQ(postgres.String(requestQueryParam.ProjectKey)))
 	}
 
+	if requestQueryParam.Status != "" {
+		if requestQueryParam.Status == "ALL" {
+			conditionsCount = append(conditionsCount, Requests.UserID.EQ(postgres.Int32(userId)))
+		} else {
+			conditionsCount = append(conditionsCount, Requests.Status.EQ(postgres.String(requestQueryParam.Status)))
+		}
+	}
+
 	if len(conditionsCount) > 0 {
 		statementCount = statementCount.WHERE(postgres.AND(conditionsCount...))
 	}
 
 	resultCount := []model.Requests{}
 	err = statementCount.QueryContext(ctx, db, &resultCount)
-	fmt.Println(statementCount.DebugSql())
+
 	if err != nil {
 		return results.Count{}, result, err
 	}
@@ -191,7 +197,7 @@ func (r *RequestRepository) FindOneRequestByRequestId(ctx context.Context, db *s
 	).WHERE(
 		Requests.ID.EQ(postgres.Int32(requestId)),
 	).ORDER_BY(
-		Nodes.ActualStartTime.DESC(),
+		Nodes.ActualStartTime.ASC(),
 	)
 
 	result := results.RequestDetail{}
@@ -322,6 +328,60 @@ func (r *RequestRepository) CountRequestByStatusAndUserId(ctx context.Context, d
 
 }
 
+func (r *RequestRepository) CountRequestTaskByStatusAndUserIdAndQueryParams(ctx context.Context, db *sql.DB, userId int32, status constants.NodeStatus, queryparams queryparams.RequestTaskCount) (int, error) {
+	Requests := table.Requests
+	Workflows := table.Workflows
+	WorkflowVersions := table.WorkflowVersions
+	Nodes := table.Nodes
+
+	statement := postgres.SELECT(
+		Nodes.ID,
+	).FROM(
+		Nodes.
+			LEFT_JOIN(
+				Requests, Nodes.RequestID.EQ(Requests.ID),
+			).
+			LEFT_JOIN(
+				WorkflowVersions, Requests.WorkflowVersionID.EQ(WorkflowVersions.ID),
+			).
+			LEFT_JOIN(
+				Workflows, Workflows.ID.EQ(WorkflowVersions.WorkflowID),
+			),
+	)
+
+	conditions := []postgres.BoolExpression{
+		Nodes.AssigneeID.EQ(postgres.Int32(userId)),
+		Requests.IsTemplate.EQ(postgres.Bool(false)),
+		Nodes.Type.NOT_EQ(postgres.String(string(constants.NodeTypeStart))),
+		Nodes.Type.NOT_EQ(postgres.String(string(constants.NodeTypeEnd))),
+	}
+
+	if queryparams.ProjectKey != "" {
+		conditions = append(conditions, Workflows.ProjectKey.EQ(postgres.String(queryparams.ProjectKey)))
+	}
+
+	if queryparams.Type != "" {
+		conditions = append(conditions, Nodes.Type.EQ(postgres.String(queryparams.Type)))
+	}
+
+	if queryparams.WorkflowType != "" {
+		conditions = append(conditions, Workflows.Type.EQ(postgres.String(queryparams.WorkflowType)))
+	}
+
+	if status != "" {
+		conditions = append(conditions, Nodes.Status.EQ(postgres.String(string(status))))
+	}
+
+	if len(conditions) > 0 {
+		statement = statement.WHERE(postgres.AND(conditions...))
+	}
+
+	result := []model.Nodes{}
+	err := statement.QueryContext(ctx, db, &result)
+
+	return len(result), err
+}
+
 func (r *RequestRepository) CountUserAppendInRequestAndNodeUserId(ctx context.Context, db *sql.DB, userId int32) (int64, error) {
 	Requests := table.Requests
 	Nodes := table.Nodes
@@ -416,7 +476,6 @@ func (r *RequestRepository) FindAllTasksByProject(ctx context.Context, db *sql.D
 
 	result := []results.NodeResult{}
 	err := statement.QueryContext(ctx, db, &result)
-	fmt.Println(statement.DebugSql())
 
 	return result, err
 }
@@ -460,4 +519,31 @@ func (r *RequestRepository) FindAllSubRequestByParentId(ctx context.Context, db 
 	err = statementCount.QueryContext(ctx, db, &count)
 
 	return len(count), requests, err
+}
+
+func (r *RequestRepository) RemoveNodesConnectionsStoriesByRequestId(ctx context.Context, tx *sql.Tx, requestId int32) error {
+	Nodes := table.Nodes
+	Connections := table.Connections
+
+	statementNodes := Nodes.DELETE().WHERE(
+		Nodes.RequestID.EQ(postgres.Int32(requestId)),
+	)
+
+	statementConnections := Connections.DELETE().WHERE(
+		Connections.RequestID.EQ(postgres.Int32(requestId)),
+	)
+
+	var err error
+
+	_, err = statementConnections.ExecContext(ctx, tx)
+	if err != nil {
+		return err
+	}
+
+	_, err = statementNodes.ExecContext(ctx, tx)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

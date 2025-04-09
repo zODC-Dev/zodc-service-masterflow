@@ -3,8 +3,10 @@ package services
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -191,27 +193,23 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 				return fmt.Errorf("update node status to in processing fail: %w", err)
 			}
 
-			// if err := s.NodeService.UpdateNodeStatusToInProcessing(ctx, tx, nodeModel); err != nil {
-			// 	return fmt.Errorf("update node status to in processing fail: %w", err)
-			// }
-
 			// Send notification
 			if request.Nodes[i].AssigneeID != nil {
-				// notification := types.Notification{
-				// 	ToUserIds: []string{strconv.Itoa(int(*request.Nodes[i].AssigneeID))},
-				// 	Subject:   "New task assigned",
-				// 	Body:      fmt.Sprintf("New task assigned: %s – You have been assigned a new task by %d.", request.Nodes[i].Title, request.UserID),
-				// }
+				notification := types.Notification{
+					ToUserIds: []string{strconv.Itoa(int(*request.Nodes[i].AssigneeID))},
+					Subject:   "New task assigned",
+					Body:      fmt.Sprintf("New task assigned: %s – You have been assigned a new task by %d.", request.Nodes[i].Title, request.UserID),
+				}
 
-				// notificationBytes, err := json.Marshal(notification)
-				// if err != nil {
-				// 	return fmt.Errorf("marshal notification failed: %w", err)
-				// }
+				notificationBytes, err := json.Marshal(notification)
+				if err != nil {
+					return fmt.Errorf("marshal notification failed: %w", err)
+				}
 
-				// err = s.NatsClient.Publish("notifications", notificationBytes)
-				// if err != nil {
-				// 	return fmt.Errorf("publish notification failed: %w", err)
-				// }
+				err = s.NatsClient.Publish("notifications", notificationBytes)
+				if err != nil {
+					return fmt.Errorf("publish notification failed: %w", err)
+				}
 
 			}
 
@@ -219,34 +217,34 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 	}
 
 	// Notification
-	// uniqueUsers := make(map[int32]struct{})
-	// for _, node := range request.Nodes {
-	// 	if node.AssigneeID != nil {
-	// 		uniqueUsers[*node.AssigneeID] = struct{}{}
-	// 	}
-	// }
+	uniqueUsers := make(map[int32]struct{})
+	for _, node := range request.Nodes {
+		if node.AssigneeID != nil {
+			uniqueUsers[*node.AssigneeID] = struct{}{}
+		}
+	}
 
-	// userIdsStr := make([]string, 0, len(uniqueUsers))
-	// for id := range uniqueUsers {
-	// 	userIdsStr = append(userIdsStr, strconv.Itoa(int(id)))
-	// }
+	userIdsStr := make([]string, 0, len(uniqueUsers))
+	for id := range uniqueUsers {
+		userIdsStr = append(userIdsStr, strconv.Itoa(int(id)))
+	}
 
 	// Send notification
-	// notification := types.Notification{
-	// 	ToUserIds: userIdsStr,
-	// 	Subject:   "Workflow Started",
-	// 	Body:      fmt.Sprintf("Workflow started with request ID: %d", requestId),
-	// }
+	notification := types.Notification{
+		ToUserIds: userIdsStr,
+		Subject:   "Workflow Started",
+		Body:      fmt.Sprintf("Workflow started with request ID: %d", requestId),
+	}
 
-	// notificationBytes, err := json.Marshal(notification)
-	// if err != nil {
-	// 	return fmt.Errorf("marshal notification failed: %w", err)
-	// }
+	notificationBytes, err := json.Marshal(notification)
+	if err != nil {
+		return fmt.Errorf("marshal notification failed: %w", err)
+	}
 
-	// err = s.NatsClient.Publish("notifications", notificationBytes)
-	// if err != nil {
-	// 	return fmt.Errorf("publish notification failed: %w", err)
-	// }
+	err = s.NatsClient.Publish("notifications", notificationBytes)
+	if err != nil {
+		return fmt.Errorf("publish notification failed: %w", err)
+	}
 
 	return nil
 }
@@ -530,8 +528,10 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 		for _, formSystem := range formSystems {
 			if formSystem.Tag == workflowNodeReq.Type {
 				// Create Form Data
+				uuid := uuid.New()
 				formData := model.FormData{
 					FormTemplateVersionID: formSystem.Version.ID,
+					ID:                    uuid.String(),
 				}
 
 				formData, err = s.FormRepo.CreateFormData(ctx, tx, formData)
@@ -825,12 +825,29 @@ func (s *WorkflowService) FindAllWorkflowHandler(ctx context.Context, workflowTe
 }
 
 func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requestId int32) (responses.WorkflowDetailResponse, error) {
-	workflowResponse := responses.WorkflowDetailResponse{}
+	workflowResponse := responses.WorkflowDetailResponse{
+		IsSystemLinked: true,
+	}
 
 	request, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, requestId)
 	if err != nil {
 		return workflowResponse, err
 	}
+
+	users, err := s.UserAPI.FindUsersByUserIds([]int32{request.LastUpdateUserID})
+	if err != nil {
+		return workflowResponse, err
+	}
+
+	lastAssignee := types.Assignee{
+		Id:           users.Data[0].ID,
+		Name:         users.Data[0].Name,
+		Email:        users.Data[0].Email,
+		AvatarUrl:    users.Data[0].AvatarUrl,
+		IsSystemUser: users.Data[0].IsSystemUser,
+	}
+
+	workflowResponse.LastAssignee = lastAssignee
 
 	//Mapping workflow response
 	if err := utils.Mapper(request.Workflow, &workflowResponse); err != nil {
@@ -878,6 +895,19 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 
 		nodeResponse, err := s.MapToWorkflowNodeResponse(nodeModel)
 		nodeResponse.ParentId = nil
+
+		if node.AssigneeID != nil {
+			user, err := s.UserAPI.FindUsersByUserIds([]int32{*node.AssigneeID})
+			if err != nil {
+				return workflowResponse, fmt.Errorf("find user fail: %w", err)
+			}
+
+			nodeResponse.Data.Assignee.Id = user.Data[0].ID
+			nodeResponse.Data.Assignee.Name = user.Data[0].Name
+			nodeResponse.Data.Assignee.Email = user.Data[0].Email
+			nodeResponse.Data.Assignee.AvatarUrl = user.Data[0].AvatarUrl
+			nodeResponse.Data.Assignee.IsSystemUser = user.Data[0].IsSystemUser
+		}
 
 		for _, formFieldData := range node.FormData.FormFieldData {
 			nodeResponse.Form = append(nodeResponse.Form, responses.NodeFormDataResponse{
@@ -1124,8 +1154,11 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 		}
 
 		if node.Type == string(constants.NodeTypeTask) {
+			uuid := uuid.New()
+
 			formData := model.FormData{
 				FormTemplateVersionID: int32(constants.FormTemplateIDJiraSystemForm),
+				ID:                    uuid.String(),
 			}
 			formData, err := s.FormRepo.CreateFormData(ctx, tx, formData)
 			if err != nil {
@@ -1165,6 +1198,13 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 	// Run Workflow
 	if err := s.RunWorkflow(ctx, tx, newRequest.ID); err != nil {
 		return 0, fmt.Errorf("run workflow fail: %w", err)
+	}
+
+	// Archive Workflow If Workflow Is Project
+	if request.Workflow.Type == string(constants.WorkflowTypeProject) {
+		if err := s.ArchiveWorkflowHandler(ctx, request.Workflow.ID); err != nil {
+			return 0, fmt.Errorf("archive workflow fail: %w", err)
+		}
 	}
 
 	if err := tx.Commit(); err != nil {

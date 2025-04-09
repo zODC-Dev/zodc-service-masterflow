@@ -35,3 +35,8 @@ type FormTemplateFindAll struct {
 	Description string                  `json:"description"`
 	Decoration  string                  `json:"decoration"`
 }
+
+type FormTemplateDetails struct {
+	Template FormTemplateFindAll           `json:"template"`
+	Fields   [][]FormTemplateFieldsFindAll `json:"fields"`
+}
