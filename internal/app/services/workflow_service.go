@@ -249,7 +249,7 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 	return nil
 }
 
-func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx *sql.Tx, req *requests.NodesConnectionsStories, requestId int32, projectKey *string, userId int32) error {
+func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx *sql.Tx, req *requests.NodesConnectionsStories, requestId int32, projectKey *string, userId int32, isStoryIsTemplate bool) error {
 	formSystems, err := s.FormRepo.FindAllFormSystem(ctx, s.DB)
 	if err != nil {
 		return err
@@ -287,7 +287,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 		storyRequestModel := model.Requests{
 			Title:             storyReq.Title,
 			WorkflowVersionID: storyWorkflowVersion.ID,
-			IsTemplate:        false,
+			IsTemplate:        isStoryIsTemplate,
 			Status:            string(constants.RequestStatusTodo),
 			ParentID:          &requestId,
 			UserID:            userId,
@@ -752,7 +752,7 @@ func (s *WorkflowService) CreateWorkflowHandler(ctx context.Context, req *reques
 	if err := utils.Mapper(req.NodesConnectionsStories, &nodeConnectionStoryReq); err != nil {
 		return fmt.Errorf("create Main Node Connection Story Fail: %w", err)
 	}
-	if err := s.CreateNodesConnectionsStories(ctx, tx, &req.NodesConnectionsStories, request.ID, &req.ProjectKey, userId); err != nil {
+	if err := s.CreateNodesConnectionsStories(ctx, tx, &req.NodesConnectionsStories, request.ID, &req.ProjectKey, userId, true); err != nil {
 		return err
 	}
 
@@ -1150,7 +1150,7 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 		return 0, err
 	}
 
-	if err := s.CreateNodesConnectionsStories(ctx, tx, &nodeConnectionStoryReq, newRequest.ID, request.Workflow.ProjectKey, userId); err != nil {
+	if err := s.CreateNodesConnectionsStories(ctx, tx, &nodeConnectionStoryReq, newRequest.ID, request.Workflow.ProjectKey, userId, false); err != nil {
 		return 0, err
 	}
 
@@ -1180,7 +1180,7 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 			if err := utils.Mapper(subRequest, &nodeConnectionStoryReq); err != nil {
 				return 0, fmt.Errorf("map node connection story request fail: %w", err)
 			}
-			if err := s.CreateNodesConnectionsStories(ctx, tx, &nodeConnectionStoryReq, copyRequest.ID, subRequest.Workflow.ProjectKey, userId); err != nil {
+			if err := s.CreateNodesConnectionsStories(ctx, tx, &nodeConnectionStoryReq, copyRequest.ID, subRequest.Workflow.ProjectKey, userId, false); err != nil {
 				return 0, fmt.Errorf("create copy request nodes connections stories fail: %w", err)
 			}
 		}
