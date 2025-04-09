@@ -10,6 +10,7 @@ type FormTemplateResult struct {
 
 type FormSystemResult struct {
 	model.FormTemplates
-	Version model.FormTemplateVersions
-	Fields  []model.FormTemplateFields
+	Version  model.FormTemplateVersions
+	Fields   []model.FormTemplateFields
+	Category model.Categories
 }

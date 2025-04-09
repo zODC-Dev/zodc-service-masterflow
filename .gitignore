@@ -6,11 +6,6 @@ __debug_*.exe
 tmp/*
 temp/*
 
-# Auto Created
-# database/generated/*
-docs/*
-
-#
-
+# Cursor
 .cursor/*
 .cursorignore

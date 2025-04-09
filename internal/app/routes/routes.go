@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/labstack/echo/v4"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/middlewares"
 )
 
 func RegisterRoutes(e *echo.Echo, db *sql.DB) {
@@ -13,6 +14,9 @@ func RegisterRoutes(e *echo.Echo, db *sql.DB) {
 
 	// Api V1 Group
 	apiV1Group := e.Group("/api/v1")
+
+	// Middleware Setup
+	apiV1Group.Use(middlewares.ExtractUserMiddleware())
 	{
 		FormRoute(apiV1Group, db)
 		WorkflowRoute(apiV1Group, db)

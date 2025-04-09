@@ -22,6 +22,23 @@ func NewRequestController(requestService *services.RequestService) *RequestContr
 		requestService: requestService,
 	}
 }
+
+// FindAllRequest godoc
+// @Summary      Find all requests
+// @Description  Retrieves a paginated list of requests based on various filter criteria for the logged-in user.
+// @Tags         Requests
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        search query string false "Search term for requests"
+// @Param        projectKey query string false "Filter by project key"
+// @Param        status query string false "Filter by request status"
+// @Param        sprintId query string false "Filter by sprint ID"
+// @Param        workflowType query string false "Filter by workflow type"
+// @Param        page query int false "Page number for pagination" default(1)
+// @Param        pageSize query int false "Number of items per page" default(10)
+// @Success      200 {object} responses.Response{data=responses.RequestResponse} // Assuming appropriate response structure
+// @Failure      400 {object} map[string]string "error: Error message for bad request (e.g., service error)"
+// @Router       /requests [get]
 func (c *RequestController) FindAllRequest(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -68,6 +85,15 @@ func (c *RequestController) FindAllRequest(e echo.Context) error {
 	})
 }
 
+// GetRequestCount godoc
+// @Summary      Get request counts
+// @Description  Retrieves counts of requests grouped by status or other criteria for the logged-in user.
+// @Tags         Requests
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Success      200 {object} responses.RequestOverviewResponse // Assuming responses.RequestOverviewResponse exists
+// @Failure      500 {object} string "Error message for internal server error"
+// @Router       /requests/count [get]
 func (c *RequestController) GetRequestCount(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -81,6 +107,17 @@ func (c *RequestController) GetRequestCount(e echo.Context) error {
 	return e.JSON(http.StatusOK, requestOverviewResponse)
 }
 
+// GetRequestDetail godoc
+// @Summary      Get request details
+// @Description  Retrieves detailed information for a specific request ID for the logged-in user.
+// @Tags         Requests
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        id path int true "Request ID"
+// @Success      200 {object} responses.RequestDetailResponse // Assuming responses.RequestDetailResponse exists
+// @Failure      400 {object} string "Error message for invalid request ID"
+// @Failure      500 {object} string "Error message for internal server error"
+// @Router       /requests/{id} [get]
 func (c *RequestController) GetRequestDetail(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -101,6 +138,18 @@ func (c *RequestController) GetRequestDetail(e echo.Context) error {
 
 }
 
+// GetRequestTasks godoc
+// @Summary      Get tasks for a specific request
+// @Description  Retrieves a paginated list of tasks associated with a given request ID.
+// @Tags         Requests
+// @Produce      json
+// @Param        id path int true "Request ID"
+// @Param        page query int false "Page number for pagination" default(1)
+// @Param        pageSize query int false "Number of items per page" default(10)
+// @Success      200 {object} responses.Response{data=responses.RequestTaskResponse} // Assuming appropriate response structure
+// @Failure      400 {object} string "Error message for invalid request ID"
+// @Failure      500 {object} string "Error message for internal server error"
+// @Router       /requests/{id}/tasks [get]
 func (c *RequestController) GetRequestTasks(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -143,6 +192,21 @@ func (c *RequestController) GetRequestTasks(e echo.Context) error {
 	})
 }
 
+// GetRequestTasksByProject godoc
+// @Summary      Get request tasks by project and filters
+// @Description  Retrieves a paginated list of tasks across requests, filtered by project, type, status, and workflow type for the logged-in user.
+// @Tags         Requests
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        projectKey query string true "Filter by project key" // Marked as required based on context
+// @Param        workflowType query string false "Filter by workflow type"
+// @Param        status query string false "Filter by task status"
+// @Param        type query string false "Filter by task type"
+// @Param        page query int false "Page number for pagination" default(1)
+// @Param        pageSize query int false "Number of items per page" default(10)
+// @Success      200 {object} responses.Response{data=responses.RequestTaskResponse} // Assuming appropriate response structure
+// @Failure      500 {object} string "Error message for internal server error"
+// @Router       /requests/tasks/by-project [get] // Consider a more descriptive path like /projects/{projectKey}/tasks
 func (c *RequestController) GetRequestTasksByProject(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -187,6 +251,16 @@ func (c *RequestController) GetRequestTasksByProject(e echo.Context) error {
 	})
 }
 
+// GetRequestOverview godoc
+// @Summary      Get request overview
+// @Description  Retrieves overview information (like counts, statuses) for a specific request ID.
+// @Tags         Requests
+// @Produce      json
+// @Param        id path int true "Request ID"
+// @Success      200 {object} responses.RequestOverviewResponse // Assuming responses.RequestOverviewData exists
+// @Failure      400 {object} string "Error message for invalid request ID"
+// @Failure      500 {object} string "Error message for internal server error"
+// @Router       /requests/{id}/overview [get]
 func (c *RequestController) GetRequestOverview(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -204,6 +278,18 @@ func (c *RequestController) GetRequestOverview(e echo.Context) error {
 	return e.JSON(http.StatusOK, requestOverviewResponse)
 }
 
+// FindAllSubRequestByRequestId godoc
+// @Summary      Find all sub-requests for a given request
+// @Description  Retrieves a paginated list of sub-requests associated with a specific parent request ID.
+// @Tags         Requests
+// @Produce      json
+// @Param        id path int true "Parent Request ID"
+// @Param        page query int false "Page number for pagination" default(1)
+// @Param        pageSize query int false "Number of items per page" default(10)
+// @Success      200 {object} responses.Response{data=responses.RequestSubRequest} // Assuming appropriate response structure
+// @Failure      400 {object} string "Error message for invalid request ID"
+// @Failure      500 {object} string "Error message for internal server error"
+// @Router       /requests/{id}/sub-requests [get]
 func (c *RequestController) FindAllSubRequestByRequestId(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -243,6 +329,19 @@ func (c *RequestController) FindAllSubRequestByRequestId(e echo.Context) error {
 	})
 }
 
+// UpdateRequest godoc
+// @Summary      Update a request
+// @Description  Updates details of an existing request identified by its ID. Requires user authentication.
+// @Tags         Requests
+// @Accept       json
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        id path int true "Request ID"
+// @Param        request body requests.RequestUpdateRequest true "Request Update Data"
+// @Success      200 {object} string "Success message: Request updated successfully: {id}"
+// @Failure      400 {object} string "Error message for invalid request ID or bad request body"
+// @Failure      500 {object} string "Error message for internal server error"
+// @Router       /requests/{id} [put] // Or PATCH
 func (c *RequestController) UpdateRequest(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -267,6 +366,18 @@ func (c *RequestController) UpdateRequest(e echo.Context) error {
 	return e.JSON(http.StatusOK, fmt.Sprintf("Request updated successfully: %d", requestIdInt))
 }
 
+// GetRequestTasksCount godoc
+// @Summary      Get count of request tasks based on filters
+// @Description  Retrieves the total count of tasks matching filter criteria like project, workflow type, and task type for the logged-in user.
+// @Tags         Requests
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        projectKey query string true "Filter by project key" // Marked as required
+// @Param        workflowType query string false "Filter by workflow type"
+// @Param        type query string false "Filter by task type"
+// @Success      200 {object} responses.RequestTaskCountResponse // Assuming responses.RequestTaskCountResponse exists
+// @Failure      500 {object} string "Error message for internal server error"
+// @Router       /requests/tasks/count [get] // Consider a path like /projects/{projectKey}/tasks/count
 func (c *RequestController) GetRequestTasksCount(e echo.Context) error {
 	ctx := e.Request().Context()
 
