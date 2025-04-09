@@ -55,7 +55,7 @@ type Count struct {
 
 type RequestSubRequest struct {
 	model.Requests
-	Nodes            model.Nodes
+	Nodes            []model.Nodes
 	Workflows        model.Workflows
 	WorkflowVersions model.WorkflowVersions
 }

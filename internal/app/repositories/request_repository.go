@@ -483,7 +483,7 @@ func (r *RequestRepository) FindAllTasksByProject(ctx context.Context, db *sql.D
 	return result, err
 }
 
-func (r *RequestRepository) FindAllSubRequestByParentId(ctx context.Context, db *sql.DB, parentId int32, queryparams queryparams.RequestSubRequestQueryParam) (int, []results.RequestSubRequest, error) {
+func (r *RequestRepository) FindAllSubRequestByParentId(ctx context.Context, db *sql.DB, parentId int32, queryparams queryparams.RequestSubRequestQueryParam) (int, results.RequestSubRequest, error) {
 	Requests := table.Requests
 	Nodes := table.Nodes
 	Workflows := table.Workflows
@@ -501,10 +501,10 @@ func (r *RequestRepository) FindAllSubRequestByParentId(ctx context.Context, db 
 			LEFT_JOIN(WorkflowVersions, WorkflowVersions.ID.EQ(Requests.WorkflowVersionID)).
 			LEFT_JOIN(Workflows, WorkflowVersions.WorkflowID.EQ(Workflows.ID)),
 	).WHERE(
-		Requests.ParentID.EQ(postgres.Int32(parentId)),
+		Requests.ParentID.EQ(postgres.Int32(parentId)).AND(Nodes.Type.IN(postgres.String(string(constants.NodeTypeTask)), postgres.String(string(constants.NodeTypeStory)))),
 	).LIMIT(int64(queryparams.PageSize)).OFFSET(int64(queryparams.Page - 1))
 
-	requests := []results.RequestSubRequest{}
+	requests := results.RequestSubRequest{}
 	err = statement.QueryContext(ctx, db, &requests)
 	if err != nil {
 		return 0, requests, err

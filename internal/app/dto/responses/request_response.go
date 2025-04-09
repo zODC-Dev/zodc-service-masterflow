@@ -74,7 +74,7 @@ type RequestOverviewResponse struct {
 }
 
 type RequestSubRequest struct {
-	Key           int32          `json:"key"`
+	Key           string         `json:"key"`
 	WorkflowTitle string         `json:"workflowTitle"`
 	TaskTitle     string         `json:"taskTitle"`
 	Assignee      types.Assignee `json:"assignee"`
