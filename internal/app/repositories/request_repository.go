@@ -3,7 +3,6 @@ package repositories
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -329,11 +328,11 @@ func (r *RequestRepository) CountRequestByStatusAndUserId(ctx context.Context, d
 
 }
 
-func (r *RequestRepository) CountRequestTaskByStatusAndUserIdAndQueryParams(ctx context.Context, db *sql.DB, userId int32, status constants.NodeStatus, queryParams queryparams.RequestTaskCount) (int, error) {
+func (r *RequestRepository) CountRequestTaskByStatusAndUserIdAndQueryParams(ctx context.Context, db *sql.DB, userId int32, status constants.NodeStatus, queryparams queryparams.RequestTaskCount) (int, error) {
 	Requests := table.Requests
-	Nodes := table.Nodes
 	Workflows := table.Workflows
 	WorkflowVersions := table.WorkflowVersions
+	Nodes := table.Nodes
 
 	statement := postgres.SELECT(
 		Nodes.ID,
@@ -350,32 +349,37 @@ func (r *RequestRepository) CountRequestTaskByStatusAndUserIdAndQueryParams(ctx 
 			),
 	)
 
-	conditions := []postgres.BoolExpression{}
+	conditions := []postgres.BoolExpression{
+		Nodes.AssigneeID.EQ(postgres.Int32(userId)),
+		Requests.IsTemplate.EQ(postgres.Bool(false)),
+		Nodes.Type.NOT_EQ(postgres.String(string(constants.NodeTypeStart))),
+		Nodes.Type.NOT_EQ(postgres.String(string(constants.NodeTypeEnd))),
+	}
+
+	if queryparams.ProjectKey != "" {
+		conditions = append(conditions, Workflows.ProjectKey.EQ(postgres.String(queryparams.ProjectKey)))
+	}
+
+	if queryparams.Type != "" {
+		conditions = append(conditions, Nodes.Type.EQ(postgres.String(queryparams.Type)))
+	}
+
+	if queryparams.WorkflowType != "" {
+		conditions = append(conditions, Workflows.Type.EQ(postgres.String(queryparams.WorkflowType)))
+	}
 
 	if status != "" {
 		conditions = append(conditions, Nodes.Status.EQ(postgres.String(string(status))))
-	}
-
-	if queryParams.WorkflowType != "" {
-		conditions = append(conditions, Workflows.Type.EQ(postgres.String(queryParams.WorkflowType)))
-	}
-
-	if queryParams.ProjectKey != "" {
-		conditions = append(conditions, Workflows.ProjectKey.EQ(postgres.String(queryParams.ProjectKey)))
-	}
-
-	if queryParams.Type != "" {
-		conditions = append(conditions, Nodes.Type.EQ(postgres.String(queryParams.Type)))
 	}
 
 	if len(conditions) > 0 {
 		statement = statement.WHERE(postgres.AND(conditions...))
 	}
 
-	count := []model.Nodes{}
-	err := statement.QueryContext(ctx, db, &count)
+	result := []model.Nodes{}
+	err := statement.QueryContext(ctx, db, &result)
 
-	return len(count), err
+	return len(result), err
 }
 
 func (r *RequestRepository) CountUserAppendInRequestAndNodeUserId(ctx context.Context, db *sql.DB, userId int32) (int64, error) {
@@ -472,7 +476,6 @@ func (r *RequestRepository) FindAllTasksByProject(ctx context.Context, db *sql.D
 
 	result := []results.NodeResult{}
 	err := statement.QueryContext(ctx, db, &result)
-	fmt.Println(statement.DebugSql())
 
 	return result, err
 }
