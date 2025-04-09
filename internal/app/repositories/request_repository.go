@@ -67,7 +67,7 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 
 	if requestQueryParam.Status != "" {
 		if requestQueryParam.Status == "ALL" {
-			statement = statement.WHERE(Nodes.AssigneeID.EQ(postgres.Int32(userId)))
+			conditions = append(conditions, Requests.UserID.EQ(postgres.Int32(userId)))
 		} else {
 			conditions = append(conditions, requestStatus.EQ(postgres.String(requestQueryParam.Status)))
 		}
@@ -91,7 +91,6 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 
 	result := []results.Request{}
 	err := statement.QueryContext(ctx, db, &result)
-	fmt.Println(statement.DebugSql())
 
 	if err != nil {
 		return results.Count{}, result, err
@@ -119,13 +118,21 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 		conditionsCount = append(conditionsCount, Workflows.ProjectKey.EQ(postgres.String(requestQueryParam.ProjectKey)))
 	}
 
+	if requestQueryParam.Status != "" {
+		if requestQueryParam.Status == "ALL" {
+			conditionsCount = append(conditionsCount, Requests.UserID.EQ(postgres.Int32(userId)))
+		} else {
+			conditionsCount = append(conditionsCount, Requests.Status.EQ(postgres.String(requestQueryParam.Status)))
+		}
+	}
+
 	if len(conditionsCount) > 0 {
 		statementCount = statementCount.WHERE(postgres.AND(conditionsCount...))
 	}
 
 	resultCount := []model.Requests{}
 	err = statementCount.QueryContext(ctx, db, &resultCount)
-	fmt.Println(statementCount.DebugSql())
+
 	if err != nil {
 		return results.Count{}, result, err
 	}
