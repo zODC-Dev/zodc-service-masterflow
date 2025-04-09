@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -39,6 +40,7 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 	requestTitle := Requests.Title.From(rRequests)
 	requestStatus := Requests.Status.From(rRequests)
 	requestSprintId := Requests.SprintID.From(rRequests)
+	requestUserId := Requests.UserID.From(rRequests)
 
 	statement := postgres.SELECT(
 		rRequests.AllColumns(),
@@ -66,7 +68,7 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 
 	if requestQueryParam.Status != "" {
 		if requestQueryParam.Status == "ALL" {
-			conditions = append(conditions, Requests.UserID.EQ(postgres.Int32(userId)))
+			conditions = append(conditions, requestUserId.EQ(postgres.Int32(userId)))
 		} else {
 			conditions = append(conditions, requestStatus.EQ(postgres.String(requestQueryParam.Status)))
 		}
@@ -90,6 +92,7 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 
 	result := []results.Request{}
 	err := statement.QueryContext(ctx, db, &result)
+	fmt.Println(statement.DebugSql())
 
 	if err != nil {
 		return results.Count{}, result, err
@@ -480,7 +483,7 @@ func (r *RequestRepository) FindAllTasksByProject(ctx context.Context, db *sql.D
 	return result, err
 }
 
-func (r *RequestRepository) FindAllSubRequestByParentId(ctx context.Context, db *sql.DB, parentId int32, queryparams queryparams.RequestSubRequestQueryParam) (int, []results.RequestSubRequest, error) {
+func (r *RequestRepository) FindAllSubRequestByParentId(ctx context.Context, db *sql.DB, parentId int32, queryparams queryparams.RequestSubRequestQueryParam) (int, results.RequestSubRequest, error) {
 	Requests := table.Requests
 	Nodes := table.Nodes
 	Workflows := table.Workflows
@@ -498,10 +501,10 @@ func (r *RequestRepository) FindAllSubRequestByParentId(ctx context.Context, db 
 			LEFT_JOIN(WorkflowVersions, WorkflowVersions.ID.EQ(Requests.WorkflowVersionID)).
 			LEFT_JOIN(Workflows, WorkflowVersions.WorkflowID.EQ(Workflows.ID)),
 	).WHERE(
-		Requests.ParentID.EQ(postgres.Int32(parentId)),
+		Requests.ParentID.EQ(postgres.Int32(parentId)).AND(Nodes.Type.IN(postgres.String(string(constants.NodeTypeTask)), postgres.String(string(constants.NodeTypeStory)))),
 	).LIMIT(int64(queryparams.PageSize)).OFFSET(int64(queryparams.Page - 1))
 
-	requests := []results.RequestSubRequest{}
+	requests := results.RequestSubRequest{}
 	err = statement.QueryContext(ctx, db, &requests)
 	if err != nil {
 		return 0, requests, err

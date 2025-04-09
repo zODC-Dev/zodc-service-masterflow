@@ -70,12 +70,11 @@ type RequestTaskCountResponse struct {
 
 type RequestOverviewResponse struct {
 	WorkflowDetailResponse
-	Progress       float32 `json:"progress"`
-	IsSystemLinked bool    `json:"isSystemLinked"`
+	Progress float32 `json:"progress"`
 }
 
 type RequestSubRequest struct {
-	Key           int32          `json:"key"`
+	Key           string         `json:"key"`
 	WorkflowTitle string         `json:"workflowTitle"`
 	TaskTitle     string         `json:"taskTitle"`
 	Assignee      types.Assignee `json:"assignee"`

@@ -30,6 +30,7 @@ func WorkflowRoute(group *echo.Group, db *sql.DB) {
 		NodeRepo:       nodeRepo,
 		ConnectionRepo: connectionRepo,
 		RequestRepo:    requestRepo,
+		FormRepo:       formRepo,
 	})
 
 	natsService := services.NewNatsService(services.NatsService{

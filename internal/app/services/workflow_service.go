@@ -249,7 +249,7 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 	return nil
 }
 
-func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx *sql.Tx, req *requests.NodesConnectionsStories, requestId int32, projectKey *string, userId int32) error {
+func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx *sql.Tx, req *requests.NodesConnectionsStories, requestId int32, projectKey *string, userId int32, isStoryIsTemplate bool) error {
 	formSystems, err := s.FormRepo.FindAllFormSystem(ctx, s.DB)
 	if err != nil {
 		return err
@@ -287,7 +287,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 		storyRequestModel := model.Requests{
 			Title:             storyReq.Title,
 			WorkflowVersionID: storyWorkflowVersion.ID,
-			IsTemplate:        true,
+			IsTemplate:        isStoryIsTemplate,
 			Status:            string(constants.RequestStatusTodo),
 			ParentID:          &requestId,
 			UserID:            userId,
@@ -594,7 +594,6 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			formAttachedModel := model.NodeForms{
 				Key:                      formAttached.Key,
 				FromUserID:               formAttached.FromUserId,
-				DataID:                   formAttached.DataId,
 				OptionKey:                formAttached.OptionId,
 				FromFormAttachedPosition: formAttached.FromFormAttachedPosition,
 				Permission:               formAttached.Permission,
@@ -602,8 +601,30 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 				TemplateID:               formAttached.FormTemplateId,
 				NodeID:                   workflowNodeReq.Id,
 			}
+			if formAttached.DataId != "" {
+				formAttachedModel.DataID = &formAttached.DataId
+			}
 
 			formAttachedModels = append(formAttachedModels, formAttachedModel)
+
+			// Form Data
+
+			if formAttached.Permission == string("INPUT") && formAttached.DataId != "" {
+				formTemplate, err := s.FormRepo.FindOneFormTemplateByFormTemplateId(ctx, s.DB, formAttached.FormTemplateId)
+				if err != nil {
+					return fmt.Errorf("find form template fail: %w", err)
+				}
+
+				formData := model.FormData{
+					FormTemplateVersionID: formTemplate.Version.ID,
+					ID:                    formAttached.DataId,
+				}
+
+				_, err = s.FormRepo.CreateFormData(ctx, tx, formData)
+				if err != nil {
+					return fmt.Errorf("create form data fail: %w", err)
+				}
+			}
 		}
 
 	}
@@ -705,7 +726,7 @@ func (s *WorkflowService) CreateWorkflowHandler(ctx context.Context, req *reques
 	if err := utils.Mapper(req.NodesConnectionsStories, &nodeConnectionStoryReq); err != nil {
 		return fmt.Errorf("create Main Node Connection Story Fail: %w", err)
 	}
-	if err := s.CreateNodesConnectionsStories(ctx, tx, &req.NodesConnectionsStories, request.ID, &req.ProjectKey, userId); err != nil {
+	if err := s.CreateNodesConnectionsStories(ctx, tx, &req.NodesConnectionsStories, request.ID, &req.ProjectKey, userId, true); err != nil {
 		return err
 	}
 
@@ -809,9 +830,7 @@ func (s *WorkflowService) FindAllWorkflowHandler(ctx context.Context, workflowTe
 }
 
 func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requestId int32) (responses.WorkflowDetailResponse, error) {
-	workflowResponse := responses.WorkflowDetailResponse{
-		IsSystemLinked: true,
-	}
+	workflowResponse := responses.WorkflowDetailResponse{}
 
 	request, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, requestId)
 	if err != nil {
@@ -878,7 +897,7 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 		}
 
 		nodeResponse, err := s.MapToWorkflowNodeResponse(nodeModel)
-		nodeResponse.ParentId = nil
+		nodeResponse.ParentId = node.ParentID
 
 		if node.AssigneeID != nil {
 			user, err := s.UserAPI.FindUsersByUserIds([]int32{*node.AssigneeID})
@@ -927,7 +946,7 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 		}
 
 		nodeResponse, err := s.MapToWorkflowNodeResponse(nodeModel)
-		nodeResponse.ParentId = nil
+		nodeResponse.ParentId = node.ParentID
 		if err != nil {
 			return workflowResponse, fmt.Errorf("map workflow node response fail: %w", err)
 		}
@@ -943,13 +962,15 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 			formAttachedResponse := responses.NodeFormResponse{
 				Key:                      nodeForm.Key,
 				FromUserId:               nodeForm.FromUserID,
-				DataId:                   nodeForm.DataID,
 				OptionKey:                nodeForm.OptionKey,
 				FromFormAttachedPosition: nodeForm.FromFormAttachedPosition,
 				Permission:               nodeForm.Permission,
 				IsOriginal:               nodeForm.IsOriginal,
 				FormTemplateId:           nodeForm.TemplateID,
 				ApproveUserIds:           approveUserIds,
+			}
+			if nodeForm.DataID != nil {
+				formAttachedResponse.DataId = *nodeForm.DataID
 			}
 
 			nodeResponse.Data.FormAttached = append(nodeResponse.Data.FormAttached, formAttachedResponse)
@@ -1024,6 +1045,7 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 			workflowResponse.Stories[i].Node.Data.Assignee.AvatarUrl = user.AvatarUrl
 			workflowResponse.Stories[i].Node.Data.Assignee.IsSystemUser = user.IsSystemUser
 
+			workflowResponse.Stories[i].IsSystemLinked = true
 		}
 	}
 
@@ -1102,7 +1124,7 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 		return 0, err
 	}
 
-	if err := s.CreateNodesConnectionsStories(ctx, tx, &nodeConnectionStoryReq, newRequest.ID, request.Workflow.ProjectKey, userId); err != nil {
+	if err := s.CreateNodesConnectionsStories(ctx, tx, &nodeConnectionStoryReq, newRequest.ID, request.Workflow.ProjectKey, userId, false); err != nil {
 		return 0, err
 	}
 
@@ -1132,7 +1154,7 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 			if err := utils.Mapper(subRequest, &nodeConnectionStoryReq); err != nil {
 				return 0, fmt.Errorf("map node connection story request fail: %w", err)
 			}
-			if err := s.CreateNodesConnectionsStories(ctx, tx, &nodeConnectionStoryReq, copyRequest.ID, subRequest.Workflow.ProjectKey, userId); err != nil {
+			if err := s.CreateNodesConnectionsStories(ctx, tx, &nodeConnectionStoryReq, copyRequest.ID, subRequest.Workflow.ProjectKey, userId, false); err != nil {
 				return 0, fmt.Errorf("create copy request nodes connections stories fail: %w", err)
 			}
 		}

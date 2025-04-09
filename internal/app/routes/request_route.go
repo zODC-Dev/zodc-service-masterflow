@@ -18,7 +18,9 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 	connectionRepo := repositories.NewConnectionRepository()
 	nodeRepo := repositories.NewNodeRepository()
 	nodeService := services.NewNodeService(services.NodeService{
-		DB: db,
+		DB:       db,
+		NodeRepo: nodeRepo,
+		FormRepo: formRepo,
 	})
 
 	userApi := externals.NewUserAPI()

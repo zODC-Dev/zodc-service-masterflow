@@ -24,7 +24,8 @@ type NodeForms struct {
 	IsOriginal               bool
 	IsSubmitted              bool
 	IsApproved               bool
-	DataID                   string
+	IsRejected               bool
+	DataID                   *string
 	TemplateID               int32
 	NodeID                   string
 }

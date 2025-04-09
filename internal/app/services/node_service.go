@@ -11,6 +11,7 @@ import (
 
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/constants"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/requests"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/responses"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/externals"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
@@ -27,6 +28,7 @@ type NodeService struct {
 	WorkflowService *WorkflowService
 	NatsService     *NatsService
 	NatsClient      *nats.NATSClient
+	FormRepo        *repositories.FormRepository
 	UserAPI         *externals.UserAPI
 }
 
@@ -39,6 +41,7 @@ func NewNodeService(cfg NodeService) *NodeService {
 		WorkflowService: cfg.WorkflowService,
 		NatsService:     cfg.NatsService,
 		NatsClient:      cfg.NatsClient,
+		FormRepo:        cfg.FormRepo,
 		UserAPI:         cfg.UserAPI,
 	}
 	return &nodeService
@@ -56,6 +59,58 @@ func (s *NodeService) UpdateNodeStatusToInProcessing(ctx context.Context, tx *sq
 	// If Story Or Sub Workflow
 	if err := s.WorkflowService.RunWorkflowIfItStoryOrSubWorkflow(ctx, tx, node); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (s *NodeService) CheckIfAllNodeFormIsApprovedOrRejected(ctx context.Context, nodeId string) (bool, error) {
+	nodeForms, err := s.NodeRepo.FindAllNodeFormByNodeId(ctx, s.DB, nodeId)
+	if err != nil {
+		return false, err
+	}
+
+	for _, nodeForm := range nodeForms {
+		if !nodeForm.IsApproved && !nodeForm.IsRejected {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+func (s *NodeService) CheckAndCompleteNode(ctx context.Context, tx *sql.Tx, nodeId string) error {
+	// Check if all node form is approved or rejected
+	isAllNodeFormApprovedOrRejected, err := s.CheckIfAllNodeFormIsApprovedOrRejected(ctx, nodeId)
+	if err != nil {
+		return err
+	}
+
+	if isAllNodeFormApprovedOrRejected {
+		node, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
+		if err != nil {
+			return err
+		}
+
+		// Update Node Status To Completed
+		node.Status = string(constants.NodeStatusCompleted)
+		if err := s.NodeRepo.UpdateNode(ctx, tx, node); err != nil {
+			return fmt.Errorf("update node fail: %w", err)
+		}
+
+		connectionFromNode, err := s.ConnectionRepo.FindConnectionsWithToNodesByFromNodeId(ctx, s.DB, node.ID)
+		if err != nil {
+			return fmt.Errorf("find connection from node fail: %w", err)
+		}
+
+		for _, connection := range connectionFromNode {
+			connection.IsCompleted = true
+			connectionModel := model.Connections{}
+			utils.Mapper(connection, &connectionModel)
+			if err := s.ConnectionRepo.UpdateConnection(ctx, tx, connectionModel); err != nil {
+				return fmt.Errorf("update connection fail: %w", err)
+			}
+		}
 	}
 
 	return nil
@@ -237,38 +292,6 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 	return nil
 }
 
-func (s *NodeService) ApproveNodeHandler(ctx context.Context, nodeId string) error {
-	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	node, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
-	if err != nil {
-		return err
-	}
-
-	if node.Type != string(constants.NodeTypeCondition) {
-		return fmt.Errorf("node is not a condition node")
-	}
-
-	node.IsApproved = true
-
-	if err := s.NodeRepo.UpdateNode(ctx, tx, node); err != nil {
-		return err
-	}
-
-	//
-
-	// Commit
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit fail: %w", err)
-	}
-
-	return nil
-}
-
 func (s *NodeService) GetNodeFormWithPermission(ctx context.Context, nodeId string, permission string) ([]responses.NodeFormDetailResponse, error) {
 
 	nodeForm, err := s.NodeRepo.FindAllNodeFormByNodeIdAndPermission(ctx, s.DB, nodeId, permission)
@@ -287,8 +310,29 @@ func (s *NodeService) GetNodeFormWithPermission(ctx context.Context, nodeId stri
 		formTemplate := responses.FormTemplateFindAll{}
 		utils.Mapper(nodeForm.FormTemplates, &formTemplate)
 
-		formTemplateFields := []responses.FormTemplateFieldsFindAll{}
-		utils.Mapper(nodeForm.FormTemplateFields, &formTemplateFields)
+		fieldsResponse := [][]responses.FormTemplateFieldsFindAll{}
+		for _, formformTemplateField := range nodeForm.FormTemplateFields {
+
+			colIndex := formformTemplateField.ColNum
+
+			for len(fieldsResponse) <= int(colIndex) {
+				fieldsResponse = append(fieldsResponse, []responses.FormTemplateFieldsFindAll{})
+			}
+
+			fieldResponse := responses.FormTemplateFieldsFindAll{}
+
+			//Mapping AdvancedOptions
+			var advancedOptions map[string]interface{}
+			if err := json.Unmarshal([]byte(*formformTemplateField.AdvancedOptions), &advancedOptions); err != nil {
+				return response, err
+			}
+			fieldResponse.AdvancedOptions = advancedOptions
+			if err := utils.Mapper(formformTemplateField, &fieldResponse); err != nil {
+				return response, err
+			}
+
+			fieldsResponse[colIndex] = append(fieldsResponse[colIndex], fieldResponse)
+		}
 
 		formDatas := []responses.NodeFormDataResponse{}
 		for _, formData := range nodeForm.FormFieldData {
@@ -298,14 +342,18 @@ func (s *NodeService) GetNodeFormWithPermission(ctx context.Context, nodeId stri
 			})
 		}
 
-		response = append(response, responses.NodeFormDetailResponse{
+		nodeFormRes := responses.NodeFormDetailResponse{
 			Template:    formTemplate,
-			Fields:      formTemplateFields,
+			Fields:      fieldsResponse,
 			Data:        formDatas,
-			DataId:      nodeForm.NodeForms.DataID,
 			IsSubmitted: nodeForm.NodeForms.IsSubmitted,
 			IsApproved:  nodeForm.NodeForms.IsApproved,
-		})
+		}
+		if nodeForm.NodeForms.DataID != nil {
+			nodeFormRes.DataId = *nodeForm.NodeForms.DataID
+		}
+
+		response = append(response, nodeFormRes)
 	}
 
 	return response, nil
@@ -343,6 +391,139 @@ func (s *NodeService) GetNodeJiraForm(ctx context.Context, nodeId string) (respo
 	}
 
 	return response, nil
+}
+
+func (s *NodeService) ReassignNode(ctx context.Context, nodeId string, userId int32) error {
+	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	node, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
+	if err != nil {
+		return err
+	}
+
+	node.AssigneeID = &userId
+
+	if err := s.NodeRepo.UpdateNode(ctx, tx, node); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *NodeService) SubmitNodeForm(ctx context.Context, nodeId string, formDataId string, req *[]requests.SubmitNodeFormRequest) error {
+	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Get Node Form
+	formData, err := s.FormRepo.FindFormDataById(ctx, s.DB, formDataId)
+	if err != nil {
+		return fmt.Errorf("find node form by node id and form id fail: %w", err)
+	}
+
+	fieldMap := map[string]int32{}
+	for _, formField := range formData.FormTemplateFields {
+		fieldMap[formField.FieldID] = formField.ID
+	}
+
+	formFieldData := []model.FormFieldData{}
+	for _, formField := range *req {
+		formFieldData = append(formFieldData, model.FormFieldData{
+			FormTemplateFieldID: fieldMap[formField.FieldId],
+			Value:               formField.Value,
+			FormDataID:          formDataId,
+		})
+	}
+	if err := s.FormRepo.CreateFormFieldDatas(ctx, tx, formFieldData); err != nil {
+		return err
+	}
+
+	nodeForm, err := s.NodeRepo.FindOneNodeFormByNodeIdAndFormId(ctx, s.DB, nodeId, formDataId)
+	if err != nil {
+		return err
+	}
+
+	// Update Node Form Is Submitted
+	nodeFormModel := model.NodeForms{}
+	utils.Mapper(nodeForm, &nodeFormModel)
+	nodeFormModel.IsSubmitted = true
+	if err := s.NodeRepo.UpdateNodeForm(ctx, tx, nodeFormModel); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *NodeService) ApproveNodeForm(ctx context.Context, nodeId string, formId string) error {
+	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Update Node Form Is Approved
+	nodeForm, err := s.NodeRepo.FindOneNodeFormByNodeIdAndFormId(ctx, s.DB, nodeId, formId)
+	if err != nil {
+		return err
+	}
+	nodeForm.IsApproved = true
+	if err := s.NodeRepo.UpdateNodeForm(ctx, tx, nodeForm); err != nil {
+		return err
+	}
+
+	// Update Node Status To Completed
+	if err := s.CheckAndCompleteNode(ctx, tx, nodeId); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *NodeService) RejectNodeForm(ctx context.Context, nodeId string, formId string) error {
+	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Update Node Form Is Rejected
+	nodeForm, err := s.NodeRepo.FindOneNodeFormByNodeIdAndFormId(ctx, s.DB, nodeId, formId)
+	if err != nil {
+		return err
+	}
+	nodeForm.IsRejected = true
+	if err := s.NodeRepo.UpdateNodeForm(ctx, tx, nodeForm); err != nil {
+		return err
+	}
+
+	// Update Node Status To Completed
+	if err := s.CheckAndCompleteNode(ctx, tx, nodeId); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *NodeService) GetNodeTaskDetail(ctx context.Context, nodeId string) (responses.TaskDetail, error) {

@@ -551,9 +551,7 @@ func (s *RequestService) GetRequestTaskCount(ctx context.Context, userId int32, 
 }
 
 func (s *RequestService) GetRequestOverviewHandler(ctx context.Context, requestId int32) (responses.RequestOverviewResponse, error) {
-	requestOverviewResponse := responses.RequestOverviewResponse{
-		IsSystemLinked: true,
-	}
+	requestOverviewResponse := responses.RequestOverviewResponse{}
 	workflowRequest, err := s.WorkflowService.FindOneWorkflowDetailHandler(ctx, requestId)
 	if err != nil {
 		return requestOverviewResponse, err
@@ -576,17 +574,16 @@ func (s *RequestService) GetRequestOverviewHandler(ctx context.Context, requestI
 func (s *RequestService) FindAllSubRequestByRequestId(ctx context.Context, requestId int32, requestSubRequestQueryParam queryparams.RequestSubRequestQueryParam) (responses.Paginate[[]responses.RequestSubRequest], error) {
 	paginatedResponse := responses.Paginate[[]responses.RequestSubRequest]{}
 
-	total, requests, err := s.RequestRepo.FindAllSubRequestByParentId(ctx, s.DB, requestId, requestSubRequestQueryParam)
+	total, request, err := s.RequestRepo.FindAllSubRequestByParentId(ctx, s.DB, requestId, requestSubRequestQueryParam)
 	if err != nil {
 		return paginatedResponse, fmt.Errorf("find all children request by request id fail: %w", err)
 	}
 
 	subRequests := []responses.RequestSubRequest{}
-	for _, request := range requests {
-
+	for _, node := range request.Nodes {
 		assignee := types.Assignee{}
-		if request.Nodes.AssigneeID != nil {
-			users, err := s.UserAPI.FindUsersByUserIds([]int32{*request.Nodes.AssigneeID})
+		if node.AssigneeID != nil {
+			users, err := s.UserAPI.FindUsersByUserIds([]int32{*node.AssigneeID})
 			if err != nil {
 				return paginatedResponse, fmt.Errorf("find users by user ids fail: %w", err)
 			}
@@ -596,17 +593,24 @@ func (s *RequestService) FindAllSubRequestByRequestId(ctx context.Context, reque
 			}
 		}
 
-		subRequests = append(subRequests, responses.RequestSubRequest{
-			Key:           request.ID,
+		subRequest := responses.RequestSubRequest{
 			WorkflowTitle: request.Workflows.Title,
-			TaskTitle:     request.Title,
+			TaskTitle:     node.Title,
 			Assignee:      assignee,
 			Status:        request.Status,
 			StartedAt:     request.StartedAt,
 			CompletedAt:   request.CompletedAt,
 			CanceledAt:    request.CanceledAt,
 			TerminatedAt:  request.TerminatedAt,
-		})
+		}
+
+		if node.JiraKey != nil {
+			subRequest.Key = *node.JiraKey
+		} else {
+			subRequest.Key = strconv.Itoa(int(node.Key))
+		}
+
+		subRequests = append(subRequests, subRequest)
 	}
 
 	totalPages := (int(total) + requestSubRequestQueryParam.PageSize - 1) / requestSubRequestQueryParam.PageSize
@@ -727,7 +731,7 @@ func (s *RequestService) UpdateRequestHandler(ctx context.Context, requestId int
 
 	// Create the new structure using the combined nodes and connections
 	// Pass the originalRequest.WorkflowVersionID, not the potentially different one from the fetched subRequest
-	err = s.WorkflowService.CreateNodesConnectionsStories(ctx, tx, &nodesConnectionsStories, requestId, originalRequest.Workflow.ProjectKey, userId)
+	err = s.WorkflowService.CreateNodesConnectionsStories(ctx, tx, &nodesConnectionsStories, requestId, originalRequest.Workflow.ProjectKey, userId, false)
 	if err != nil {
 		return fmt.Errorf("create nodes connections stories fail: %w", err)
 	}

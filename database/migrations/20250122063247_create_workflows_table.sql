@@ -106,7 +106,7 @@ CREATE TABLE nodes (
     body TEXT,
     subject TEXT,
 
-    -- approve node
+    --
     is_approved BOOLEAN NOT NULL DEFAULT false,
 
     -- end node
@@ -159,12 +159,14 @@ CREATE TABLE node_forms (
     option_key TEXT,
     from_user_id INT,
     from_form_attached_position INT,
+
     is_original BOOLEAN NOT NULL DEFAULT false,
     is_submitted BOOLEAN NOT NULL DEFAULT false,
     is_approved BOOLEAN NOT NULL DEFAULT false,
+    is_rejected BOOLEAN NOT NULL DEFAULT false,
 
     -- Form
-    data_id TEXT NOT NULL,
+    data_id TEXT REFERENCES form_data (id) ON DELETE CASCADE,
     template_id INT NOT NULL REFERENCES form_templates (id) ON DELETE CASCADE,
 
     node_id TEXT NOT NULL REFERENCES nodes (id) ON DELETE CASCADE
