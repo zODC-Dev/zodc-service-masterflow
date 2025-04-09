@@ -423,7 +423,7 @@ func (r *RequestRepository) FindAllChildrenRequestByRequestId(ctx context.Contex
 	return result, err
 }
 
-func (r *RequestRepository) FindAllTasksByProject(ctx context.Context, db *sql.DB, userId int32, queryparams queryparams.RequestTaskProjectQueryParam) ([]results.NodeResult, error) {
+func (r *RequestRepository) FindAllTasksByProject(ctx context.Context, db *sql.DB, userId int32, queryparams queryparams.RequestTaskProjectQueryParam) (int, []results.NodeResult, error) {
 	Requests := table.Requests
 	Workflows := table.Workflows
 	WorkflowVersions := table.WorkflowVersions
@@ -448,6 +448,8 @@ func (r *RequestRepository) FindAllTasksByProject(ctx context.Context, db *sql.D
 	conditions := []postgres.BoolExpression{
 		Nodes.AssigneeID.EQ(postgres.Int32(userId)),
 		Requests.IsTemplate.EQ(postgres.Bool(false)),
+		Nodes.Type.NOT_EQ(postgres.String(string(constants.NodeTypeStart))),
+		Nodes.Type.NOT_EQ(postgres.String(string(constants.NodeTypeEnd))),
 	}
 
 	if queryparams.ProjectKey != "" {
@@ -460,8 +462,9 @@ func (r *RequestRepository) FindAllTasksByProject(ctx context.Context, db *sql.D
 			conditions = append(conditions, Nodes.Status.NOT_EQ(postgres.String(string(constants.NodeStatusCompleted))))
 		} else if queryparams.Status == "INCOMING" {
 			conditions = append(conditions, Nodes.IsCurrent.EQ(postgres.Bool(false)))
+			conditions = append(conditions, Nodes.Status.NOT_EQ(postgres.String(string(constants.NodeStatusCompleted))))
 		} else {
-			conditions = append(conditions, Requests.Status.EQ(postgres.String(queryparams.Status)))
+			conditions = append(conditions, Nodes.Status.EQ(postgres.String(queryparams.Status)))
 		}
 	}
 
@@ -479,8 +482,66 @@ func (r *RequestRepository) FindAllTasksByProject(ctx context.Context, db *sql.D
 
 	result := []results.NodeResult{}
 	err := statement.QueryContext(ctx, db, &result)
+	fmt.Println(statement.DebugSql())
+	if err != nil {
+		return 0, result, err
+	}
 
-	return result, err
+	//count
+	statementCount := postgres.SELECT(
+		Nodes.AllColumns,
+		Requests.AllColumns,
+	).FROM(
+		Nodes.
+			INNER_JOIN(
+				Requests, Nodes.RequestID.EQ(Requests.ID),
+			).
+			INNER_JOIN(
+				WorkflowVersions, Requests.WorkflowVersionID.EQ(WorkflowVersions.ID),
+			).
+			INNER_JOIN(
+				Workflows, Workflows.ID.EQ(WorkflowVersions.WorkflowID),
+			),
+	).LIMIT(int64(queryparams.PageSize)).OFFSET(int64(queryparams.Page - 1))
+
+	conditionsCount := []postgres.BoolExpression{
+		Nodes.AssigneeID.EQ(postgres.Int32(userId)),
+		Requests.IsTemplate.EQ(postgres.Bool(false)),
+		Nodes.Type.NOT_EQ(postgres.String(string(constants.NodeTypeStart))),
+		Nodes.Type.NOT_EQ(postgres.String(string(constants.NodeTypeEnd))),
+	}
+
+	if queryparams.ProjectKey != "" {
+		conditionsCount = append(conditionsCount, Workflows.ProjectKey.EQ(postgres.String(queryparams.ProjectKey)))
+	}
+
+	if queryparams.Status != "" {
+		if queryparams.Status == "TODAY" {
+			conditionsCount = append(conditionsCount, Nodes.IsCurrent.EQ(postgres.Bool(true)))
+			conditionsCount = append(conditionsCount, Nodes.Status.NOT_EQ(postgres.String(string(constants.NodeStatusCompleted))))
+		} else if queryparams.Status == "INCOMING" {
+			conditionsCount = append(conditionsCount, Nodes.IsCurrent.EQ(postgres.Bool(false)))
+		} else {
+			conditionsCount = append(conditionsCount, Requests.Status.EQ(postgres.String(queryparams.Status)))
+		}
+	}
+
+	if queryparams.Type != "" {
+		conditionsCount = append(conditionsCount, Nodes.Type.EQ(postgres.String(queryparams.Type)))
+	}
+
+	if queryparams.WorkflowType != "" {
+		conditionsCount = append(conditionsCount, Workflows.Type.EQ(postgres.String(queryparams.WorkflowType)))
+	}
+
+	if len(conditions) > 0 {
+		statementCount = statementCount.WHERE(postgres.AND(conditionsCount...))
+	}
+
+	count := []model.Nodes{}
+	err = statementCount.QueryContext(ctx, db, &count)
+
+	return len(count), result, err
 }
 
 func (r *RequestRepository) FindAllSubRequestByParentId(ctx context.Context, db *sql.DB, parentId int32, queryparams queryparams.RequestSubRequestQueryParam) (int, results.RequestSubRequest, error) {
