@@ -9,11 +9,11 @@ tasks:
 
   jet:
     cmds:
-      - /home/vphoa/go/bin/jet -dsn=$JET_DSN -path=database/generated
+      - jet -dsn=$JET_DSN -path=database/generated
 
   swagger:
     cmds:
-      - /home/vphoa/go/bin/swag init -g /cmd/main.go
+      - swag init -g /cmd/main.go
 
   setup:
     cmds:
@@ -32,16 +32,16 @@ tasks:
 
   run-dev:
     cmds:
-      - /home/vphoa/go/bin/air
+      - air
 
   migrate-up:
     cmds:
-      - /home/vphoa/go/bin/goose up
+      - goose up
       - task: jet
 
   migrate-down:
     cmds:
-      - /home/vphoa/go/bin/goose down
+      - goose down
       - task: jet
 
   migrate-reset:
@@ -51,5 +51,5 @@ tasks:
 
   cleardb:
     cmds:
-      - /home/vphoa/go/bin/goose reset
-      - /home/vphoa/go/bin/goose up
+      - goose reset
+      - goose up

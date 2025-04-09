@@ -1137,13 +1137,19 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 
 	// =========================== SYNC JIRA ===========================
 	// Tính toán Gantt Chart nếu có project key
-	if reqDetailClone.Workflow.ProjectKey != nil && reqDetailClone.SprintID != nil {
+	if reqDetailClone.Workflow.ProjectKey != nil && reqClone.SprintID != nil && s.NatsService != nil {
 		// Tạo bản đồ NodeId -> JiraKey để theo dõi các JiraKey
 		jiraKeyMap := make(map[string]string)
 
 		// Luôn đồng bộ với Jira để thiết lập mối quan hệ giữa các tasks
 		slog.Info("Synchronizing with Jira before Gantt Chart calculation")
-		jiraResponse, err := s.NatsService.publishWorkflowToJira(ctx, tx, reqClone.Nodes, reqClone.Stories, reqClone.Connections, *reqDetailClone.Workflow.ProjectKey, *reqDetailClone.SprintID)
+
+		if s.NatsService == nil {
+			slog.Error("Nats service is nil")
+			return 0, fmt.Errorf("nats service is nil")
+		}
+
+		jiraResponse, err := s.NatsService.publishWorkflowToJira(ctx, tx, reqClone.Nodes, reqClone.Stories, reqClone.Connections, *reqDetailClone.Workflow.ProjectKey, *reqClone.SprintID)
 		if err != nil {
 			slog.Error("Failed to sync with Jira", "error", err)
 			// Tiếp tục xử lý, không return error
@@ -1180,7 +1186,7 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 		}
 
 		// Tính toán Gantt Chart với JiraKey đã cập nhật
-		if err := s.NatsService.publishWorkflowToGanttChart(ctx, tx, updatedNodes, updatedStories, reqClone.Connections, *reqDetailClone.Workflow.ProjectKey, *reqDetailClone.SprintID, request.Workflow.ID); err != nil {
+		if err := s.NatsService.publishWorkflowToGanttChart(ctx, tx, updatedNodes, updatedStories, reqClone.Connections, *reqDetailClone.Workflow.ProjectKey, *reqClone.SprintID, request.Workflow.ID); err != nil {
 			slog.Error("Failed to calculate Gantt Chart", "error", err)
 			// Không return error ở đây để không làm fail luồng chính nếu tính toán Gantt Chart lỗi
 		}
