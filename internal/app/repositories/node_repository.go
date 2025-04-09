@@ -309,3 +309,58 @@ func (r *NodeRepository) FindJiraFormByNodeId(ctx context.Context, db *sql.DB, n
 
 	return results, err
 }
+
+func (r *NodeRepository) FindOneNodeFormByNodeIdAndFormId(ctx context.Context, db *sql.DB, nodeId string, formDataId string) (model.NodeForms, error) {
+	NodeForms := table.NodeForms
+	FormData := table.FormData
+	FormFieldData := table.FormFieldData
+	FormTemplateFields := table.FormTemplateFields
+
+	statement := postgres.SELECT(
+		NodeForms.AllColumns,
+		FormData.AllColumns,
+	).FROM(
+		NodeForms.
+			LEFT_JOIN(FormData, NodeForms.DataID.EQ(FormData.ID)).
+			LEFT_JOIN(FormFieldData, FormData.ID.EQ(FormFieldData.FormDataID)).
+			LEFT_JOIN(FormTemplateFields, FormFieldData.FormTemplateFieldID.EQ(FormTemplateFields.ID)),
+	).WHERE(
+		NodeForms.NodeID.EQ(postgres.String(nodeId)).
+			AND(NodeForms.DataID.EQ(postgres.String(formDataId))),
+	)
+
+	result := model.NodeForms{}
+	err := statement.QueryContext(ctx, db, &result)
+
+	return result, err
+}
+
+func (r *NodeRepository) UpdateNodeForm(ctx context.Context, tx *sql.Tx, nodeForm model.NodeForms) error {
+	NodeForms := table.NodeForms
+
+	statement := NodeForms.UPDATE(NodeForms.IsApproved).SET(nodeForm.IsApproved).WHERE(NodeForms.NodeID.EQ(postgres.String(nodeForm.NodeID)).AND(NodeForms.ID.EQ(postgres.Int32(nodeForm.ID))))
+
+	err := statement.QueryContext(ctx, tx, &nodeForm)
+
+	return err
+}
+
+func (r *NodeRepository) FindAllNodeFormByNodeId(ctx context.Context, db *sql.DB, nodeId string) ([]results.NodeFormResult, error) {
+	NodeForms := table.NodeForms
+	FormData := table.FormData
+
+	statement := postgres.SELECT(
+		NodeForms.AllColumns,
+		FormData.AllColumns,
+	).FROM(
+		NodeForms.
+			LEFT_JOIN(FormData, NodeForms.DataID.EQ(FormData.ID)),
+	).WHERE(
+		NodeForms.NodeID.EQ(postgres.String(nodeId)),
+	)
+
+	results := []results.NodeFormResult{}
+	err := statement.QueryContext(ctx, db, &results)
+
+	return results, err
+}

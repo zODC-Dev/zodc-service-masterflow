@@ -591,7 +591,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 		// Form Attached
 
 		for _, formAttached := range workflowNodeReq.Data.FormAttached {
-			formAttachedModel := model.NodeForms{
+			formAttachedModels = append(formAttachedModels, model.NodeForms{
 				Key:                      formAttached.Key,
 				FromUserID:               formAttached.FromUserId,
 				DataID:                   formAttached.DataId,
@@ -601,9 +601,25 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 				IsOriginal:               formAttached.IsOriginal,
 				TemplateID:               formAttached.FormTemplateId,
 				NodeID:                   workflowNodeReq.Id,
+			})
+
+			// Form Data
+
+			formTemplate, err := s.FormRepo.FindOneFormTemplateByFormTemplateId(ctx, s.DB, formAttached.FormTemplateId)
+			if err != nil {
+				return fmt.Errorf("find form template fail: %w", err)
 			}
 
-			formAttachedModels = append(formAttachedModels, formAttachedModel)
+			formData := model.FormData{
+				FormTemplateVersionID: formTemplate.Version.ID,
+				ID:                    formAttached.DataId,
+			}
+
+			_, err = s.FormRepo.CreateFormData(ctx, tx, formData)
+			if err != nil {
+				return fmt.Errorf("create form data fail: %w", err)
+			}
+
 		}
 
 	}
