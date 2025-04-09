@@ -518,20 +518,32 @@ func (s *RequestService) GetRequestTasksByProjectHandler(ctx context.Context, re
 	return paginatedResponse, nil
 }
 
-func (s *RequestService) GetTaskCount(ctx context.Context, userId int32, queryParams queryparams.RequestTaskProjectQueryParam) (responses.TaskCountResponse, error) {
-	taskCountResponse := responses.TaskCountResponse{}
+func (s *RequestService) GetRequestTaskCount(ctx context.Context, userId int32, queryParams queryparams.RequestTaskCount) (responses.RequestTaskCountResponse, error) {
+	taskCountResponse := responses.RequestTaskCountResponse{}
 
-	count, err := s.RequestRepo.CountRequestByStatusAndUserId(ctx, s.DB, userId, "")
+	totalCount, err := s.RequestRepo.CountRequestTaskByStatusAndUserIdAndQueryParams(ctx, s.DB, userId, "", queryParams)
 	if err != nil {
 		return taskCountResponse, err
 	}
-	taskCountResponse.TotalCount = int32(count)
+	taskCountResponse.TotalCount = int32(totalCount)
 
-	count, err = s.RequestRepo.CountRequestByStatusAndUserId(ctx, s.DB, userId, constants.RequestStatusCompleted)
+	completedCount, err := s.RequestRepo.CountRequestTaskByStatusAndUserIdAndQueryParams(ctx, s.DB, userId, constants.NodeStatusCompleted, queryParams)
 	if err != nil {
 		return taskCountResponse, err
 	}
-	taskCountResponse.CompletedCount = int32(count)
+	taskCountResponse.CompletedCount = int32(completedCount)
+
+	overdueCount, err := s.RequestRepo.CountRequestTaskByStatusAndUserIdAndQueryParams(ctx, s.DB, userId, constants.NodeStatusOverDue, queryParams)
+	if err != nil {
+		return taskCountResponse, err
+	}
+	taskCountResponse.OverdueCount = int32(overdueCount)
+
+	todoCount, err := s.RequestRepo.CountRequestTaskByStatusAndUserIdAndQueryParams(ctx, s.DB, userId, constants.NodeStatusTodo, queryParams)
+	if err != nil {
+		return taskCountResponse, err
+	}
+	taskCountResponse.TodoCount = int32(todoCount)
 
 	return taskCountResponse, nil
 }

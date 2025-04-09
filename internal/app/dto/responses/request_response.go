@@ -61,7 +61,7 @@ type RequestTaskResponse struct {
 	IsCurrent        bool           `json:"isCurrent"`
 }
 
-type TaskCountResponse struct {
+type RequestTaskCountResponse struct {
 	OverdueCount   int32 `json:"overdueCount"`
 	TotalCount     int32 `json:"totalCount"`
 	CompletedCount int32 `json:"completedCount"`

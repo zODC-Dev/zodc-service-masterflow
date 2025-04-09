@@ -266,3 +266,22 @@ func (c *RequestController) UpdateRequest(e echo.Context) error {
 
 	return e.JSON(http.StatusOK, fmt.Sprintf("Request updated successfully: %d", requestIdInt))
 }
+
+func (c *RequestController) GetRequestTasksCount(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	userId, _ := middlewares.GetUserID(e)
+
+	requestTaskCount := queryparams.RequestTaskCount{
+		WorkflowType: e.QueryParam("workflowType"),
+		Type:         e.QueryParam("type"),
+		ProjectKey:   e.QueryParam("projectKey"),
+	}
+
+	requestTaskCountResponse, err := c.requestService.GetRequestTaskCount(ctx, userId, requestTaskCount)
+	if err != nil {
+		return e.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, requestTaskCountResponse)
+}

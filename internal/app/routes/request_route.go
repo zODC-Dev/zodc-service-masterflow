@@ -59,6 +59,8 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 
 		requestRoute.PUT("/:id", requestController.UpdateRequest)
 
+		requestRoute.GET("/tasks/count", requestController.GetRequestTasksCount)
+
 	}
 
 }

@@ -322,6 +322,55 @@ func (r *RequestRepository) CountRequestByStatusAndUserId(ctx context.Context, d
 
 }
 
+func (r *RequestRepository) CountRequestTaskByStatusAndUserIdAndQueryParams(ctx context.Context, db *sql.DB, userId int32, status constants.NodeStatus, queryParams queryparams.RequestTaskCount) (int, error) {
+	Requests := table.Requests
+	Nodes := table.Nodes
+	Workflows := table.Workflows
+	WorkflowVersions := table.WorkflowVersions
+
+	statement := postgres.SELECT(
+		Nodes.ID,
+	).FROM(
+		Nodes.
+			LEFT_JOIN(
+				Requests, Nodes.RequestID.EQ(Requests.ID),
+			).
+			LEFT_JOIN(
+				WorkflowVersions, Requests.WorkflowVersionID.EQ(WorkflowVersions.ID),
+			).
+			LEFT_JOIN(
+				Workflows, Workflows.ID.EQ(WorkflowVersions.WorkflowID),
+			),
+	)
+
+	conditions := []postgres.BoolExpression{}
+
+	if status != "" {
+		conditions = append(conditions, Nodes.Status.EQ(postgres.String(string(status))))
+	}
+
+	if queryParams.WorkflowType != "" {
+		conditions = append(conditions, Workflows.Type.EQ(postgres.String(queryParams.WorkflowType)))
+	}
+
+	if queryParams.ProjectKey != "" {
+		conditions = append(conditions, Workflows.ProjectKey.EQ(postgres.String(queryParams.ProjectKey)))
+	}
+
+	if queryParams.Type != "" {
+		conditions = append(conditions, Nodes.Type.EQ(postgres.String(queryParams.Type)))
+	}
+
+	if len(conditions) > 0 {
+		statement = statement.WHERE(postgres.AND(conditions...))
+	}
+
+	count := []model.Nodes{}
+	err := statement.QueryContext(ctx, db, &count)
+
+	return len(count), err
+}
+
 func (r *RequestRepository) CountUserAppendInRequestAndNodeUserId(ctx context.Context, db *sql.DB, userId int32) (int64, error) {
 	Requests := table.Requests
 	Nodes := table.Nodes
