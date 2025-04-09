@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -39,6 +40,7 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 	requestTitle := Requests.Title.From(rRequests)
 	requestStatus := Requests.Status.From(rRequests)
 	requestSprintId := Requests.SprintID.From(rRequests)
+	requestUserId := Requests.UserID.From(rRequests)
 
 	statement := postgres.SELECT(
 		rRequests.AllColumns(),
@@ -66,7 +68,7 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 
 	if requestQueryParam.Status != "" {
 		if requestQueryParam.Status == "ALL" {
-			conditions = append(conditions, Requests.UserID.EQ(postgres.Int32(userId)))
+			conditions = append(conditions, requestUserId.EQ(postgres.Int32(userId)))
 		} else {
 			conditions = append(conditions, requestStatus.EQ(postgres.String(requestQueryParam.Status)))
 		}
@@ -90,6 +92,7 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 
 	result := []results.Request{}
 	err := statement.QueryContext(ctx, db, &result)
+	fmt.Println(statement.DebugSql())
 
 	if err != nil {
 		return results.Count{}, result, err

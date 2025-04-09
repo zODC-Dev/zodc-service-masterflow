@@ -591,21 +591,25 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 		// Form Attached
 
 		for _, formAttached := range workflowNodeReq.Data.FormAttached {
-			formAttachedModels = append(formAttachedModels, model.NodeForms{
+			formAttachedModel := model.NodeForms{
 				Key:                      formAttached.Key,
 				FromUserID:               formAttached.FromUserId,
-				DataID:                   formAttached.DataId,
 				OptionKey:                formAttached.OptionId,
 				FromFormAttachedPosition: formAttached.FromFormAttachedPosition,
 				Permission:               formAttached.Permission,
 				IsOriginal:               formAttached.IsOriginal,
 				TemplateID:               formAttached.FormTemplateId,
 				NodeID:                   workflowNodeReq.Id,
-			})
+			}
+			if formAttached.DataId != "" {
+				formAttachedModel.DataID = &formAttached.DataId
+			}
+
+			formAttachedModels = append(formAttachedModels, formAttachedModel)
 
 			// Form Data
 
-			if formAttached.Permission == string("INPUT") {
+			if formAttached.Permission == string("INPUT") && formAttached.DataId != "" {
 				formTemplate, err := s.FormRepo.FindOneFormTemplateByFormTemplateId(ctx, s.DB, formAttached.FormTemplateId)
 				if err != nil {
 					return fmt.Errorf("find form template fail: %w", err)
@@ -960,13 +964,15 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 			formAttachedResponse := responses.NodeFormResponse{
 				Key:                      nodeForm.Key,
 				FromUserId:               nodeForm.FromUserID,
-				DataId:                   nodeForm.DataID,
 				OptionKey:                nodeForm.OptionKey,
 				FromFormAttachedPosition: nodeForm.FromFormAttachedPosition,
 				Permission:               nodeForm.Permission,
 				IsOriginal:               nodeForm.IsOriginal,
 				FormTemplateId:           nodeForm.TemplateID,
 				ApproveUserIds:           approveUserIds,
+			}
+			if nodeForm.DataID != nil {
+				formAttachedResponse.DataId = *nodeForm.DataID
 			}
 
 			nodeResponse.Data.FormAttached = append(nodeResponse.Data.FormAttached, formAttachedResponse)

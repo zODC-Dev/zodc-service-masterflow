@@ -330,14 +330,18 @@ func (s *NodeService) GetNodeFormWithPermission(ctx context.Context, nodeId stri
 			})
 		}
 
-		response = append(response, responses.NodeFormDetailResponse{
+		nodeFormRes := responses.NodeFormDetailResponse{
 			Template:    formTemplate,
 			Fields:      fieldsResponse,
 			Data:        formDatas,
-			DataId:      nodeForm.NodeForms.DataID,
 			IsSubmitted: nodeForm.NodeForms.IsSubmitted,
 			IsApproved:  nodeForm.NodeForms.IsApproved,
-		})
+		}
+		if nodeForm.NodeForms.DataID != nil {
+			nodeFormRes.DataId = *nodeForm.NodeForms.DataID
+		}
+
+		response = append(response, nodeFormRes)
 	}
 
 	return response, nil

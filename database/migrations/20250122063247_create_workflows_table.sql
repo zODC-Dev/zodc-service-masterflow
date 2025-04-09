@@ -166,7 +166,7 @@ CREATE TABLE node_forms (
     is_rejected BOOLEAN NOT NULL DEFAULT false,
 
     -- Form
-    data_id TEXT NOT NULL REFERENCES form_data (id) ON DELETE CASCADE,
+    data_id TEXT REFERENCES form_data (id) ON DELETE CASCADE,
     template_id INT NOT NULL REFERENCES form_templates (id) ON DELETE CASCADE,
 
     node_id TEXT NOT NULL REFERENCES nodes (id) ON DELETE CASCADE
