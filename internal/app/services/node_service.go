@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"time"
 
@@ -24,6 +25,7 @@ type NodeService struct {
 	ConnectionRepo  *repositories.ConnectionRepository
 	RequestRepo     *repositories.RequestRepository
 	WorkflowService *WorkflowService
+	NatsService     *NatsService
 	NatsClient      *nats.NATSClient
 	UserAPI         *externals.UserAPI
 }
@@ -35,6 +37,7 @@ func NewNodeService(cfg NodeService) *NodeService {
 		ConnectionRepo:  cfg.ConnectionRepo,
 		RequestRepo:     cfg.RequestRepo,
 		WorkflowService: cfg.WorkflowService,
+		NatsService:     cfg.NatsService,
 		NatsClient:      cfg.NatsClient,
 		UserAPI:         cfg.UserAPI,
 	}
@@ -67,7 +70,6 @@ func (s *NodeService) StartNodeHandler(ctx context.Context, nodeId string) error
 	}
 	defer tx.Rollback()
 
-	//
 	node, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
 	if err != nil {
 		return fmt.Errorf("find node by node id fail: %w", err)
@@ -82,6 +84,11 @@ func (s *NodeService) StartNodeHandler(ctx context.Context, nodeId string) error
 
 	if err := s.NodeRepo.UpdateNode(ctx, tx, node); err != nil {
 		return fmt.Errorf("update node fail: %w", err)
+	}
+
+	// Sync with Jira
+	if err := s.SyncJiraWhenStartNode(ctx, tx, node); err != nil {
+		return fmt.Errorf("sync jira when start node fail: %w", err)
 	}
 
 	//Commit
@@ -183,7 +190,7 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 	notification := types.Notification{
 		ToUserIds: []string{strconv.Itoa(int(userId))},
 		Subject:   "Task completed",
-		Body:      fmt.Sprintf("Task completed: %s – %s has marked this task as done.", node.Title, userId),
+		Body:      fmt.Sprintf("Task completed: %s – %d has marked this task as done.", node.Title, userId),
 	}
 	notificationBytes, err := json.Marshal(notification)
 	if err != nil {
@@ -215,6 +222,11 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 	}
 	if err := s.RequestRepo.UpdateRequest(ctx, tx, requestModel); err != nil {
 		return err
+	}
+
+	// Sync with Jira
+	if err := s.SyncJiraWhenCompleteNode(ctx, tx, node); err != nil {
+		return fmt.Errorf("sync jira when complete node fail: %w", err)
 	}
 
 	// Commit
@@ -400,4 +412,42 @@ func (s *NodeService) GetNodeTaskDetail(ctx context.Context, nodeId string) (res
 	}
 
 	return taskDetail, nil
+}
+
+func (s *NodeService) SyncJiraWhenCompleteNode(ctx context.Context, tx *sql.Tx, node model.Nodes) error {
+	// Update node status to completed
+	node.Status = string(constants.NodeStatusCompleted)
+
+	// Get request info for Jira sync
+	request, err := s.RequestRepo.FindOneRequestByRequestIdTx(ctx, tx, node.RequestID)
+	if err != nil {
+		return fmt.Errorf("get request info fail: %w", err)
+	}
+
+	// Sync with Jira
+	if err := s.NatsService.SyncNodeStatusToJira(ctx, tx, node, request.Requests, request.Workflow); err != nil {
+		slog.Error("Failed to sync with Jira", "error", err)
+		// Continue execution even if Jira sync fails
+	}
+
+	return nil
+}
+
+func (s *NodeService) SyncJiraWhenStartNode(ctx context.Context, tx *sql.Tx, node model.Nodes) error {
+	// Update node status to in progress
+	node.Status = string(constants.NodeStatusInProgress)
+
+	// Get request info for Jira sync
+	request, err := s.RequestRepo.FindOneRequestByRequestIdTx(ctx, tx, node.RequestID)
+	if err != nil {
+		return fmt.Errorf("get request info fail: %w", err)
+	}
+
+	// Sync with Jira
+	if err := s.NatsService.SyncNodeStatusToJira(ctx, tx, node, request.Requests, request.Workflow); err != nil {
+		slog.Error("Failed to sync with Jira", "error", err)
+		// Continue execution even if Jira sync fails
+	}
+
+	return nil
 }

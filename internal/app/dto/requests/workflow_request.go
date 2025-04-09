@@ -1,6 +1,8 @@
 package requests
 
 import (
+	"time"
+
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
 )
 
@@ -52,11 +54,12 @@ type NodeForm struct {
 }
 
 type Node struct {
-	Id       string
-	Position types.Position
-	Size     types.Size
-	ParentId string
-	JiraKey  *string
+	Id           string
+	Position     types.Position
+	Size         types.Size
+	ParentId     string
+	JiraKey      *string
+	LastSyncedAt *time.Time
 
 	Type string
 

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/constants"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/requests"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
@@ -19,14 +20,16 @@ import (
 //////////////////// JIRA ////////////////////
 
 type NatsService struct {
-	NodeRepo   *repositories.NodeRepository
-	NatsClient *nats.NATSClient
+	NodeRepo    *repositories.NodeRepository
+	NatsClient  *nats.NATSClient
+	RequestRepo *repositories.RequestRepository
 }
 
 func NewNatsService(cfg NatsService) *NatsService {
 	natsService := NatsService{
-		NodeRepo:   cfg.NodeRepo,
-		NatsClient: cfg.NatsClient,
+		NodeRepo:    cfg.NodeRepo,
+		NatsClient:  cfg.NatsClient,
+		RequestRepo: cfg.RequestRepo,
 	}
 	return &natsService
 }
@@ -99,11 +102,12 @@ func (s *NatsService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx, nod
 			"jiraKey", node.JiraKey)
 
 		issue := natsModel.WorkflowSyncIssue{
-			NodeId:     node.Id,
-			Type:       node.Type,
-			Title:      node.Data.Title,
-			AssigneeId: &node.Data.Assignee.Id,
-			Action:     "create",
+			NodeId:        node.Id,
+			Type:          node.Type,
+			Title:         node.Data.Title,
+			AssigneeId:    &node.Data.Assignee.Id,
+			EstimatePoint: node.EstimatePoint,
+			Action:        "create",
 		}
 
 		if node.JiraKey != nil {
@@ -655,5 +659,56 @@ func (s *NatsService) publishWorkflowToGanttChart(ctx context.Context, tx *sql.T
 	}
 
 	slog.Info("Completed Gantt Chart calculation", "projectKey", projectKey)
+	return nil
+}
+
+// SyncNodeStatusToJira syncs node status changes to Jira
+func (s *NatsService) SyncNodeStatusToJira(ctx context.Context, tx *sql.Tx, node model.Nodes, request model.Requests, workflow model.Workflows) error {
+	// Only sync if it's a project workflow with project key
+	if workflow.Type != string(constants.WorkflowTypeProject) || workflow.ProjectKey == nil {
+		return nil
+	}
+
+	// Skip if no Jira key
+	if node.JiraKey == nil {
+		return nil
+	}
+
+	// Create sync request with only node status update
+	syncRequest := natsModel.NodeStatusSyncRequest{
+		TransactionId: uuid.New().String(),
+		ProjectKey:    *workflow.ProjectKey,
+		JiraKey:       *node.JiraKey,
+		NodeId:        node.ID,
+		Status:        node.Status,
+	}
+
+	// Send to NATS
+	slog.Info("Sending node status update to Jira", "nodeId", node.ID, "jiraKey", node.JiraKey, "status", node.Status)
+	requestBytes, err := json.Marshal(syncRequest)
+	if err != nil {
+		return fmt.Errorf("failed to marshal sync request: %w", err)
+	}
+
+	response, err := s.NatsClient.Request(constants.NatsTopicWorkflowSyncRequest, requestBytes, 30*time.Second)
+	if err != nil {
+		return fmt.Errorf("failed to sync with Jira: %w", err)
+	}
+
+	// Process response
+	var syncResponse natsModel.NodeStatusSyncResponse
+	if err := json.Unmarshal(response.Data, &syncResponse); err != nil {
+		return fmt.Errorf("failed to unmarshal Jira response: %w", err)
+	}
+
+	// Check response success
+	if !syncResponse.Success || !syncResponse.Data.Success {
+		slog.Error("Jira synchronization failed",
+			"outerSuccess", syncResponse.Success,
+			"innerSuccess", syncResponse.Data.Success)
+		return fmt.Errorf("Jira synchronization failed")
+	}
+
+	slog.Info("Successfully synced node status to Jira", "nodeId", node.ID, "jiraKey", node.JiraKey)
 	return nil
 }

@@ -683,7 +683,7 @@ func (s *RequestService) UpdateRequestHandler(ctx context.Context, requestId int
 					var subNodeReq requests.Node
 					// Assuming utils.Mapper can handle this conversion. Adjust if manual mapping is needed.
 					if err := utils.Mapper(subNodeModel, &subNodeReq); err != nil {
-						return fmt.Errorf("map sub-request node %d fail: %w", subNodeModel.ID, err)
+						return fmt.Errorf("map sub-request node %s fail: %w", subNodeModel.ID, err)
 					}
 					// Important: Associate these nodes with the main request ID for creation
 					// subNodeReq.RequestID = requestId // Ensure CreateNodesConnectionsStories handles this or set it here if needed.
