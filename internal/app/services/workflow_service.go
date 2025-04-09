@@ -605,21 +605,22 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 			// Form Data
 
-			formTemplate, err := s.FormRepo.FindOneFormTemplateByFormTemplateId(ctx, s.DB, formAttached.FormTemplateId)
-			if err != nil {
-				return fmt.Errorf("find form template fail: %w", err)
-			}
+			if formAttached.Permission == string("INPUT") {
+				formTemplate, err := s.FormRepo.FindOneFormTemplateByFormTemplateId(ctx, s.DB, formAttached.FormTemplateId)
+				if err != nil {
+					return fmt.Errorf("find form template fail: %w", err)
+				}
 
-			formData := model.FormData{
-				FormTemplateVersionID: formTemplate.Version.ID,
-				ID:                    formAttached.DataId,
-			}
+				formData := model.FormData{
+					FormTemplateVersionID: formTemplate.Version.ID,
+					ID:                    formAttached.DataId,
+				}
 
-			_, err = s.FormRepo.CreateFormData(ctx, tx, formData)
-			if err != nil {
-				return fmt.Errorf("create form data fail: %w", err)
+				_, err = s.FormRepo.CreateFormData(ctx, tx, formData)
+				if err != nil {
+					return fmt.Errorf("create form data fail: %w", err)
+				}
 			}
-
 		}
 
 	}
