@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/labstack/echo/v4"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/requests"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/middlewares"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/services"
 )
@@ -103,58 +104,58 @@ func (c *NodeController) ReassignNode(e echo.Context) error {
 	return e.JSON(http.StatusOK, map[string]string{"message": "Node re-assigned successfully"})
 }
 
-// func (c *NodeController) SubmitNodeForm(e echo.Context) error {
-// 	ctx := e.Request().Context()
+func (c *NodeController) SubmitNodeForm(e echo.Context) error {
+	ctx := e.Request().Context()
 
-// 	nodeId := e.Param("id")
-// 	formId := e.Param("formId")
+	nodeId := e.Param("id")
+	formId := e.Param("formId")
 
-// 	req := new(requests.SubmitNodeFormRequest)
-// 	if err := e.Bind(req); err != nil {
-// 		return e.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
-// 	}
+	req := new([]requests.SubmitNodeFormRequest)
+	if err := e.Bind(req); err != nil {
+		return e.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+	}
 
-// 	if nodeId == "" || formId == "" {
-// 		return e.JSON(http.StatusBadRequest, map[string]string{"error": "nodeId and formId are required"})
-// 	}
+	if nodeId == "" || formId == "" {
+		return e.JSON(http.StatusBadRequest, map[string]string{"error": "nodeId and formId are required"})
+	}
 
-// 	if err := c.nodeService.SubmitNodeForm(ctx, nodeId, formId, req); err != nil {
-// 		return e.JSON(http.StatusBadRequest, err.Error())
-// 	}
+	if err := c.nodeService.SubmitNodeForm(ctx, nodeId, formId, req); err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
 
-// 	return e.JSON(http.StatusOK, map[string]string{"message": "Node form submitted successfully"})
-// }
+	return e.JSON(http.StatusOK, map[string]string{"message": "Node form submitted successfully"})
+}
 
-// func (c *NodeController) ApproveNodeForm(e echo.Context) error {
-// 	ctx := e.Request().Context()
+func (c *NodeController) ApproveNodeForm(e echo.Context) error {
+	ctx := e.Request().Context()
 
-// 	nodeId := e.Param("id")
-// 	formId := e.Param("formId")
+	nodeId := e.Param("id")
+	formId := e.Param("formId")
 
-// 	if nodeId == "" || formId == "" {
-// 		return e.JSON(http.StatusBadRequest, map[string]string{"error": "nodeId and formId are required"})
-// 	}
+	if nodeId == "" || formId == "" {
+		return e.JSON(http.StatusBadRequest, map[string]string{"error": "nodeId and formId are required"})
+	}
 
-// 	if err := c.nodeService.ApproveNodeForm(ctx, nodeId, formId); err != nil {
-// 		return e.JSON(http.StatusBadRequest, err.Error())
-// 	}
+	if err := c.nodeService.ApproveNodeForm(ctx, nodeId, formId); err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
 
-// 	return e.JSON(http.StatusOK, map[string]string{"message": "Node form approved successfully"})
-// }
+	return e.JSON(http.StatusOK, map[string]string{"message": "Node form approved successfully"})
+}
 
-// func (c *NodeController) RejectNodeForm(e echo.Context) error {
-// 	ctx := e.Request().Context()
+func (c *NodeController) RejectNodeForm(e echo.Context) error {
+	ctx := e.Request().Context()
 
-// 	nodeId := e.Param("id")
-// 	formId := e.Param("formId")
+	nodeId := e.Param("id")
+	formId := e.Param("formId")
 
-// 	if nodeId == "" || formId == "" {
-// 		return e.JSON(http.StatusBadRequest, map[string]string{"error": "nodeId and formId are required"})
-// 	}
+	if nodeId == "" || formId == "" {
+		return e.JSON(http.StatusBadRequest, map[string]string{"error": "nodeId and formId are required"})
+	}
 
-// 	if err := c.nodeService.RejectNodeForm(ctx, nodeId, formId); err != nil {
-// 		return e.JSON(http.StatusBadRequest, err.Error())
-// 	}
+	if err := c.nodeService.RejectNodeForm(ctx, nodeId, formId); err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
 
-// 	return e.JSON(http.StatusOK, map[string]string{"message": "Node form rejected successfully"})
-// }
+	return e.JSON(http.StatusOK, map[string]string{"message": "Node form rejected successfully"})
+}

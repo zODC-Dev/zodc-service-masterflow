@@ -29,6 +29,7 @@ type nodeFormsTable struct {
 	IsOriginal               postgres.ColumnBool
 	IsSubmitted              postgres.ColumnBool
 	IsApproved               postgres.ColumnBool
+	IsRejected               postgres.ColumnBool
 	DataID                   postgres.ColumnString
 	TemplateID               postgres.ColumnInteger
 	NodeID                   postgres.ColumnString
@@ -84,11 +85,12 @@ func newNodeFormsTableImpl(schemaName, tableName, alias string) nodeFormsTable {
 		IsOriginalColumn               = postgres.BoolColumn("is_original")
 		IsSubmittedColumn              = postgres.BoolColumn("is_submitted")
 		IsApprovedColumn               = postgres.BoolColumn("is_approved")
+		IsRejectedColumn               = postgres.BoolColumn("is_rejected")
 		DataIDColumn                   = postgres.StringColumn("data_id")
 		TemplateIDColumn               = postgres.IntegerColumn("template_id")
 		NodeIDColumn                   = postgres.StringColumn("node_id")
-		allColumns                     = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, PermissionColumn, KeyColumn, OptionKeyColumn, FromUserIDColumn, FromFormAttachedPositionColumn, IsOriginalColumn, IsSubmittedColumn, IsApprovedColumn, DataIDColumn, TemplateIDColumn, NodeIDColumn}
-		mutableColumns                 = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, PermissionColumn, KeyColumn, OptionKeyColumn, FromUserIDColumn, FromFormAttachedPositionColumn, IsOriginalColumn, IsSubmittedColumn, IsApprovedColumn, DataIDColumn, TemplateIDColumn, NodeIDColumn}
+		allColumns                     = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, PermissionColumn, KeyColumn, OptionKeyColumn, FromUserIDColumn, FromFormAttachedPositionColumn, IsOriginalColumn, IsSubmittedColumn, IsApprovedColumn, IsRejectedColumn, DataIDColumn, TemplateIDColumn, NodeIDColumn}
+		mutableColumns                 = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, PermissionColumn, KeyColumn, OptionKeyColumn, FromUserIDColumn, FromFormAttachedPositionColumn, IsOriginalColumn, IsSubmittedColumn, IsApprovedColumn, IsRejectedColumn, DataIDColumn, TemplateIDColumn, NodeIDColumn}
 	)
 
 	return nodeFormsTable{
@@ -107,6 +109,7 @@ func newNodeFormsTableImpl(schemaName, tableName, alias string) nodeFormsTable {
 		IsOriginal:               IsOriginalColumn,
 		IsSubmitted:              IsSubmittedColumn,
 		IsApproved:               IsApprovedColumn,
+		IsRejected:               IsRejectedColumn,
 		DataID:                   DataIDColumn,
 		TemplateID:               TemplateIDColumn,
 		NodeID:                   NodeIDColumn,
