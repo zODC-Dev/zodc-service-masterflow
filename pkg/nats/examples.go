@@ -54,12 +54,6 @@ func ExampleSubscribe(client *NATSClient) {
 			return
 		}
 
-		slog.Info("Received message",
-			"subject", msg.Subject,
-			"id", receivedMsg.ID,
-			"content", receivedMsg.Content,
-			"time", receivedMsg.Time)
-
 		// If the message has a reply subject, send a response
 		if msg.Reply != "" {
 			response := []byte("Message received")
@@ -88,8 +82,6 @@ func ExampleRequestReply(client *NATSClient) {
 	// Set up a responder
 	responder := func(msg *nats.Msg) {
 		// Process the request
-		slog.Info("Received request", "subject", msg.Subject, "data", string(msg.Data))
-
 		// Send a reply
 		response := fmt.Sprintf("Response to: %s", string(msg.Data))
 		err := client.Reply(msg, []byte(response))

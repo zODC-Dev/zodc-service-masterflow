@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -42,6 +43,7 @@ func (c *WorkflowController) CreateWorkflow(e echo.Context) error {
 	req := new(requests.CreateWorkflow)
 
 	if err := e.Bind(req); err != nil {
+		slog.Error("Failed to bind request", "error", err)
 		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 

@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strconv"
 )
 
@@ -30,4 +31,22 @@ func StringToInt32(value string) (int32, error) {
 	}
 	valueInt, _ := strconv.Atoi(value)
 	return int32(valueInt), nil
+}
+
+func PtrStringToPtrInt32(value *string) (*int32, error) {
+	slog.Info("value", "value", value)
+	if value == nil {
+		return nil, fmt.Errorf("value is empty")
+	}
+	valueInt, _ := strconv.Atoi(*value)
+	result := int32(valueInt)
+	return &result, nil
+}
+
+func StringToFloat64(value string) *float64 {
+	if value == "" {
+		return nil
+	}
+	valueFloat, _ := strconv.ParseFloat(value, 64)
+	return &valueFloat
 }

@@ -35,13 +35,14 @@ type NodeDataCondition struct {
 }
 
 type NodeData struct {
-	Type         string
-	Title        string
-	DueIn        int32
-	Assignee     NodeDataAssignee
-	EndType      string
-	SubRequestID *int32
-	JiraKey      string
+	Type          string
+	Title         string
+	DueIn         int32
+	Assignee      NodeDataAssignee
+	EndType       string
+	SubRequestID  *int32
+	JiraKey       string
+	EstimatePoint *int32
 
 	Condition NodeDataCondition
 
@@ -64,8 +65,6 @@ type Node struct {
 	Type string
 
 	Data NodeData
-
-	EstimatePoint *int32
 
 	Form []NodeForm
 }

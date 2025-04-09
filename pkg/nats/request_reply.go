@@ -24,6 +24,10 @@ func DefaultRequestOptions() RequestOptions {
 
 // Request sends a request and waits for a reply
 func (c *NATSClient) Request(subject string, data []byte, timeout time.Duration) (*nats.Msg, error) {
+	if c == nil {
+		return nil, errors.New("NATSClient is nil")
+	}
+
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -36,6 +40,10 @@ func (c *NATSClient) Request(subject string, data []byte, timeout time.Duration)
 
 // RequestWithOptions sends a request with options and waits for a reply
 func (c *NATSClient) RequestWithOptions(subject string, data []byte, opts RequestOptions) (*nats.Msg, error) {
+	if c == nil {
+		return nil, errors.New("NATSClient is nil")
+	}
+
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -54,6 +62,10 @@ func (c *NATSClient) RequestWithOptions(subject string, data []byte, opts Reques
 
 // RequestWithContext sends a request with context for timeout/cancellation
 func (c *NATSClient) RequestWithContext(ctx context.Context, subject string, data []byte) (*nats.Msg, error) {
+	if c == nil {
+		return nil, errors.New("NATSClient is nil")
+	}
+
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -66,6 +78,10 @@ func (c *NATSClient) RequestWithContext(ctx context.Context, subject string, dat
 
 // Reply sends a reply to a message
 func (c *NATSClient) Reply(msg *nats.Msg, data []byte) error {
+	if c == nil {
+		return errors.New("NATSClient is nil")
+	}
+
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -78,6 +94,10 @@ func (c *NATSClient) Reply(msg *nats.Msg, data []byte) error {
 
 // ReplyWithHeaders sends a reply with headers to a message
 func (c *NATSClient) ReplyWithHeaders(msg *nats.Msg, data []byte, headers nats.Header) error {
+	if c == nil {
+		return errors.New("NATSClient is nil")
+	}
+
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 

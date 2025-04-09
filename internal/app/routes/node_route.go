@@ -6,6 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/controllers"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/externals"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/nats"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/services"
 )
@@ -22,7 +23,14 @@ func NodeRoute(group *echo.Group, db *sql.DB) {
 	// Apis
 	userApi := externals.NewUserAPI()
 
-	//
+	// Nats
+	natsClient := nats.GetNATSClient()
+
+	natsService := services.NewNatsService(services.NatsService{
+		NatsClient:  natsClient,
+		NodeRepo:    nodeRepo,
+		RequestRepo: requestRepo,
+	})
 
 	nodeService := services.NewNodeService(services.NodeService{
 		NodeRepo:       nodeRepo,
@@ -30,6 +38,8 @@ func NodeRoute(group *echo.Group, db *sql.DB) {
 		RequestRepo:    requestRepo,
 		DB:             db,
 		FormRepo:       formRepo,
+		NatsClient:     natsClient,
+		NatsService:    natsService,
 	})
 
 	workflowService := services.NewWorkflowService(services.WorkflowService{
@@ -42,6 +52,8 @@ func NodeRoute(group *echo.Group, db *sql.DB) {
 		ConnectionRepo: connectionRepo,
 		NodeRepo:       nodeRepo,
 		NodeService:    nodeService,
+		NatsService:    natsService,
+		NatsClient:     natsClient,
 	})
 
 	nodeService.WorkflowService = workflowService

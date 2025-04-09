@@ -314,7 +314,8 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			Title:      storyReq.Node.Data.Title,
 			AssigneeID: &storyReq.Node.Data.Assignee.Id,
 
-			SubRequestID: &storyRequest.ID,
+			SubRequestID:  &storyRequest.ID,
+			EstimatePoint: storyReq.Node.Data.EstimatePoint,
 
 			Status: string(constants.NodeStatusTodo),
 		}
@@ -390,7 +391,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 				Status: string(constants.NodeStatusTodo),
 
-				EstimatePoint: storyNodeReq.EstimatePoint,
+				EstimatePoint: storyNodeReq.Data.EstimatePoint,
 			}
 
 			if storyNodeReq.ParentId != "" {
@@ -520,7 +521,8 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			Title:   workflowNodeReq.Data.Title,
 			EndType: &workflowNodeReq.Data.EndType,
 
-			Status: string(constants.NodeStatusTodo),
+			Status:        string(constants.NodeStatusTodo),
+			EstimatePoint: workflowNodeReq.Data.EstimatePoint,
 
 			JiraKey: workflowNodeReq.JiraKey,
 		}
@@ -1056,6 +1058,7 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{
 		Isolation: sql.LevelReadCommitted,
 	})
+
 	if err != nil {
 		return 0, fmt.Errorf("start workflow handler fail: %w", err)
 	}
@@ -1065,6 +1068,10 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 	if err != nil {
 		return 0, fmt.Errorf("find request fail: %w", err)
 	}
+
+	// Create Clone Request for Sync Jira
+	reqClone := req
+	reqDetailClone := request
 
 	workflowVersionId := request.Version.ID
 
@@ -1127,6 +1134,59 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 	if err := s.CreateNodesConnectionsStories(ctx, tx, &nodeConnectionStoryReq, newRequest.ID, request.Workflow.ProjectKey, userId, false); err != nil {
 		return 0, err
 	}
+
+	// =========================== SYNC JIRA ===========================
+	// Tính toán Gantt Chart nếu có project key
+	if reqDetailClone.Workflow.ProjectKey != nil && reqDetailClone.SprintID != nil {
+		// Tạo bản đồ NodeId -> JiraKey để theo dõi các JiraKey
+		jiraKeyMap := make(map[string]string)
+
+		// Luôn đồng bộ với Jira để thiết lập mối quan hệ giữa các tasks
+		slog.Info("Synchronizing with Jira before Gantt Chart calculation")
+		jiraResponse, err := s.NatsService.publishWorkflowToJira(ctx, tx, reqClone.Nodes, reqClone.Stories, reqClone.Connections, *reqDetailClone.Workflow.ProjectKey, *reqDetailClone.SprintID)
+		if err != nil {
+			slog.Error("Failed to sync with Jira", "error", err)
+			// Tiếp tục xử lý, không return error
+		} else {
+			// Cập nhật jiraKeyMap từ response
+			for _, issue := range jiraResponse.Data.Data.Issues {
+				jiraKeyMap[issue.NodeId] = issue.JiraKey
+				slog.Info("JiraKey mapping from Jira response", "nodeId", issue.NodeId, "jiraKey", issue.JiraKey)
+			}
+		}
+
+		// Dùng lại bản đồ ID -> JiraKey đã có hoặc JiraKey từ database
+		updatedNodes := make([]requests.Node, len(reqClone.Nodes))
+		for i, node := range reqClone.Nodes {
+			updatedNode := node
+			// Ưu tiên JiraKey từ Jira response
+			if jiraKey, exists := jiraKeyMap[node.Id]; exists && jiraKey != "" {
+				updatedNode.JiraKey = &jiraKey
+				slog.Info("Node JiraKey updated for Gantt Chart", "nodeId", node.Id, "jiraKey", jiraKey)
+			}
+			updatedNodes[i] = updatedNode
+		}
+
+		// Cập nhật JiraKey cho stories
+		updatedStories := make([]requests.Story, len(reqClone.Stories))
+		for i, story := range reqClone.Stories {
+			updatedStory := story
+			// Ưu tiên JiraKey từ Jira response
+			if jiraKey, exists := jiraKeyMap[story.Node.Id]; exists && jiraKey != "" {
+				updatedStory.Node.JiraKey = &jiraKey
+				slog.Info("Story JiraKey updated for Gantt Chart", "nodeId", story.Node.Id, "jiraKey", jiraKey)
+			}
+			updatedStories[i] = updatedStory
+		}
+
+		// Tính toán Gantt Chart với JiraKey đã cập nhật
+		if err := s.NatsService.publishWorkflowToGanttChart(ctx, tx, updatedNodes, updatedStories, reqClone.Connections, *reqDetailClone.Workflow.ProjectKey, *reqDetailClone.SprintID, request.Workflow.ID); err != nil {
+			slog.Error("Failed to calculate Gantt Chart", "error", err)
+			// Không return error ở đây để không làm fail luồng chính nếu tính toán Gantt Chart lỗi
+		}
+	}
+
+	// =========================== END SYNC JIRA ===========================
 
 	// Create Sub Workflow and Stories
 	for _, node := range req.Nodes {

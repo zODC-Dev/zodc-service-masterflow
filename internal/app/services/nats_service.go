@@ -26,12 +26,11 @@ type NatsService struct {
 }
 
 func NewNatsService(cfg NatsService) *NatsService {
-	natsService := NatsService{
+	return &NatsService{
 		NodeRepo:    cfg.NodeRepo,
 		NatsClient:  cfg.NatsClient,
 		RequestRepo: cfg.RequestRepo,
 	}
-	return &natsService
 }
 
 // publishWorkflowToJira gửi dữ liệu workflow đến Jira và trả về phản hồi
@@ -106,7 +105,7 @@ func (s *NatsService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx, nod
 			Type:          node.Type,
 			Title:         node.Data.Title,
 			AssigneeId:    &node.Data.Assignee.Id,
-			EstimatePoint: node.EstimatePoint,
+			EstimatePoint: node.Data.EstimatePoint,
 			Action:        "create",
 		}
 
@@ -234,6 +233,10 @@ func (s *NatsService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx, nod
 	requestBytes, err := json.Marshal(syncRequest)
 	if err != nil {
 		return natsModel.WorkflowSyncResponse{}, fmt.Errorf("failed to marshal sync request: %w", err)
+	}
+
+	if s.NatsClient == nil {
+		return natsModel.WorkflowSyncResponse{}, fmt.Errorf("NatsClient is nil")
 	}
 
 	response, err := s.NatsClient.Request(constants.NatsTopicWorkflowSyncRequest, requestBytes, 30*time.Second)
@@ -690,7 +693,7 @@ func (s *NatsService) SyncNodeStatusToJira(ctx context.Context, tx *sql.Tx, node
 		return fmt.Errorf("failed to marshal sync request: %w", err)
 	}
 
-	response, err := s.NatsClient.Request(constants.NatsTopicWorkflowSyncRequest, requestBytes, 30*time.Second)
+	response, err := s.NatsClient.Request(constants.NatsTopicNodeStatusSyncRequest, requestBytes, 30*time.Second)
 	if err != nil {
 		return fmt.Errorf("failed to sync with Jira: %w", err)
 	}
