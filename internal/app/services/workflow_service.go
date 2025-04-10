@@ -188,9 +188,12 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 			}
 
 			nodeModel.IsCurrent = true
-
 			if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
 				return fmt.Errorf("update node status to in processing fail: %w", err)
+			}
+
+			if nodeModel.Type == string(constants.NodeTypeStory) || nodeModel.Type == string(constants.NodeTypeSubWorkflow) {
+				s.RunWorkflow(ctx, tx, *nodeModel.SubRequestID)
 			}
 
 			// Send notification
