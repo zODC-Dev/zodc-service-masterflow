@@ -96,7 +96,7 @@ CREATE TABLE nodes (
     is_current BOOLEAN NOT NULL DEFAULT false,
 
     -- estimate
-    estimate_point INT,
+    estimate_point REAL,
     planned_start_time TIMESTAMP,
     planned_end_time TIMESTAMP,
     actual_start_time TIMESTAMP,

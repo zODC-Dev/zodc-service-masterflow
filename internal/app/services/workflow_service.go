@@ -394,6 +394,8 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 				Status: string(constants.NodeStatusTodo),
 
 				EstimatePoint: storyNodeReq.Data.EstimatePoint,
+
+				JiraKey: storyNodeReq.JiraKey,
 			}
 
 			if storyNodeReq.ParentId != "" {
