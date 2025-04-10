@@ -4,6 +4,7 @@ const (
 	NatsTopicRoleAssignmentRequest = "role.assign.request"
 	NatsTopicWorkflowSyncRequest   = "workflow.sync.request"
 	NatsTopicNodeStatusSyncRequest = "node.status.sync.request"
+	NatsTopicWorkflowEditRequest   = "workflow.edit.request"
 
 	// Gantt Chart calculation
 	NatsTopicGanttChartCalculationRequest  = "ganttchart.calculation.request"

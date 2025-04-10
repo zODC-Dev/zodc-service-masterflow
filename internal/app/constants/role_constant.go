@@ -1,6 +1,6 @@
 package constants
 
 const (
-	RoleFeatureLeader = "feature_leader"
+	RoleFeatureLeader = "project_feature_leader"
 	RoleProductOwner  = "product_owner"
 )
