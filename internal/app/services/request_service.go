@@ -419,35 +419,30 @@ func (s *RequestService) GetRequestTasksByProjectHandler(ctx context.Context, re
 	// Get all nodes from request
 	for _, node := range tasks {
 
-		// Skip Start and End Node
-		if node.Type == string(constants.NodeTypeStart) || node.Type == string(constants.NodeTypeEnd) {
-			continue
-		}
-
 		// If Node is Story or SubWorkflow, get all nodes from subRequest
 		if node.Type == string(constants.NodeTypeStory) || node.Type == string(constants.NodeTypeSubWorkflow) {
-			subRequest, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, *node.SubRequestID)
-			if err != nil {
-				return paginatedResponse, err
-			}
+			// subRequest, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, *node.SubRequestID)
+			// if err != nil {
+			// 	return paginatedResponse, err
+			// }
 
-			for _, subNode := range subRequest.Nodes {
-				if subNode.Type == string(constants.NodeTypeStart) || subNode.Type == string(constants.NodeTypeEnd) {
-					continue
-				}
-				// Only unique userIds
-				if _, exists := existingUserIds[*subNode.AssigneeID]; !exists {
-					existingUserIds[*subNode.AssigneeID] = true
-					userIds = append(userIds, *subNode.AssigneeID)
-				}
+			// for _, subNode := range subRequest.Nodes {
+			// 	if subNode.Type == string(constants.NodeTypeStart) || subNode.Type == string(constants.NodeTypeEnd) {
+			// 		continue
+			// 	}
+			// 	// Only unique userIds
+			// 	if _, exists := existingUserIds[*subNode.AssigneeID]; !exists {
+			// 		existingUserIds[*subNode.AssigneeID] = true
+			// 		userIds = append(userIds, *subNode.AssigneeID)
+			// 	}
 
-				// Append node
-				subNodeModel := results.NodeResult{}
-				if err := utils.Mapper(subNode, &subNodeModel); err != nil {
-					return paginatedResponse, err
-				}
-				nodes = append(nodes, subNodeModel)
-			}
+			// 	// Append node
+			// 	subNodeModel := results.NodeResult{}
+			// 	if err := utils.Mapper(subNode, &subNodeModel); err != nil {
+			// 		return paginatedResponse, err
+			// 	}
+			// 	nodes = append(nodes, subNodeModel)
+			// }
 		} else {
 			// Only unique userIds
 			if _, exists := existingUserIds[*node.AssigneeID]; !exists {
