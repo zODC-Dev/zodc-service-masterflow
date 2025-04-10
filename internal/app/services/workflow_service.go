@@ -188,9 +188,12 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 			}
 
 			nodeModel.IsCurrent = true
-
 			if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
 				return fmt.Errorf("update node status to in processing fail: %w", err)
+			}
+
+			if nodeModel.Type == string(constants.NodeTypeStory) || nodeModel.Type == string(constants.NodeTypeSubWorkflow) {
+				s.RunWorkflow(ctx, tx, *nodeModel.SubRequestID)
 			}
 
 			// Send notification
@@ -253,6 +256,14 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 	formSystems, err := s.FormRepo.FindAllFormSystem(ctx, s.DB)
 	if err != nil {
 		return err
+	}
+
+	parentId := ""
+	node, err := s.NodeRepo.FindOneNodeBySubRequestID(ctx, tx, requestId)
+	if err == nil {
+		if node.Type == string(constants.NodeTypeStory) || node.Type == string(constants.NodeTypeSubWorkflow) {
+			parentId = node.ID
+		}
 	}
 
 	formSystemFieldMap := make(map[string]int32)
@@ -318,6 +329,8 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			EstimatePoint: storyReq.Node.Data.EstimatePoint,
 
 			Status: string(constants.NodeStatusTodo),
+
+			JiraKey: storyReq.Node.JiraKey,
 		}
 
 		if formSystemVersionId, exists := formSystemTagMap["TASK"]; exists {
@@ -392,6 +405,8 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 				Status: string(constants.NodeStatusTodo),
 
 				EstimatePoint: storyNodeReq.Data.EstimatePoint,
+
+				JiraKey: storyNodeReq.JiraKey,
 			}
 
 			if storyNodeReq.ParentId != "" {
@@ -525,6 +540,10 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			EstimatePoint: workflowNodeReq.Data.EstimatePoint,
 
 			JiraKey: workflowNodeReq.JiraKey,
+		}
+
+		if parentId != "" {
+			workflowNode.ParentID = &parentId
 		}
 
 		for _, formSystem := range formSystems {
@@ -900,6 +919,7 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 
 		nodeResponse, err := s.MapToWorkflowNodeResponse(nodeModel)
 		nodeResponse.ParentId = node.ParentID
+		nodeResponse.JiraKey = node.JiraKey
 
 		if node.AssigneeID != nil {
 			user, err := s.UserAPI.FindUsersByUserIds([]int32{*node.AssigneeID})
@@ -1040,6 +1060,7 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 	}
 
 	for i := range workflowResponse.Stories {
+		workflowResponse.Stories[i].IsSystemLinked = true
 		if user, exists := userMap[workflowResponse.Stories[i].Node.Data.Assignee.Id]; exists {
 			workflowResponse.Stories[i].Node.Data.Assignee.Id = user.Id
 			workflowResponse.Stories[i].Node.Data.Assignee.Name = user.Name
@@ -1047,7 +1068,6 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 			workflowResponse.Stories[i].Node.Data.Assignee.AvatarUrl = user.AvatarUrl
 			workflowResponse.Stories[i].Node.Data.Assignee.IsSystemUser = user.IsSystemUser
 
-			workflowResponse.Stories[i].IsSystemLinked = true
 		}
 	}
 

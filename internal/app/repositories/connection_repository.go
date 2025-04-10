@@ -28,6 +28,17 @@ func (r *ConnectionRepository) FindConnectionsByToNodeId(ctx context.Context, db
 	return result, err
 }
 
+func (r *ConnectionRepository) FindConnectionsByToNodeIdTx(ctx context.Context, tx *sql.Tx, toNodeId string) ([]model.Connections, error) {
+	Connections := table.Connections
+
+	statement := postgres.SELECT(Connections.AllColumns).FROM(Connections).WHERE(Connections.ToNodeID.EQ(postgres.String(toNodeId)))
+
+	result := []model.Connections{}
+	err := statement.QueryContext(ctx, tx, &result)
+
+	return result, err
+}
+
 func (r *ConnectionRepository) FindConnectionsWithToNodesByFromNodeId(ctx context.Context, db *sql.DB, fromNodeId string) ([]results.ConnectionWithNode, error) {
 	Connections := table.Connections
 	Nodes := table.Nodes

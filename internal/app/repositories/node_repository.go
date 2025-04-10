@@ -348,3 +348,14 @@ func (r *NodeRepository) FindAllNodeFormByNodeId(ctx context.Context, db *sql.DB
 
 	return results, err
 }
+
+func (r *NodeRepository) FindOneNodeBySubRequestID(ctx context.Context, tx *sql.Tx, requestId int32) (model.Nodes, error) {
+	Nodes := table.Nodes
+
+	statement := postgres.SELECT(Nodes.AllColumns).FROM(Nodes).WHERE(Nodes.SubRequestID.EQ(postgres.Int32(requestId)))
+
+	result := model.Nodes{}
+	err := statement.QueryContext(ctx, tx, &result)
+
+	return result, err
+}
