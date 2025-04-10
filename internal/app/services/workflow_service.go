@@ -1043,6 +1043,7 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 	}
 
 	for i := range workflowResponse.Stories {
+		workflowResponse.Stories[i].IsSystemLinked = true
 		if user, exists := userMap[workflowResponse.Stories[i].Node.Data.Assignee.Id]; exists {
 			workflowResponse.Stories[i].Node.Data.Assignee.Id = user.Id
 			workflowResponse.Stories[i].Node.Data.Assignee.Name = user.Name
@@ -1050,7 +1051,6 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 			workflowResponse.Stories[i].Node.Data.Assignee.AvatarUrl = user.AvatarUrl
 			workflowResponse.Stories[i].Node.Data.Assignee.IsSystemUser = user.IsSystemUser
 
-			workflowResponse.Stories[i].IsSystemLinked = true
 		}
 	}
 
