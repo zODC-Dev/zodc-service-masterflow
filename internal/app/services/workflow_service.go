@@ -318,6 +318,8 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			EstimatePoint: storyReq.Node.Data.EstimatePoint,
 
 			Status: string(constants.NodeStatusTodo),
+
+			JiraKey: storyReq.Node.JiraKey,
 		}
 
 		if formSystemVersionId, exists := formSystemTagMap["TASK"]; exists {
@@ -900,6 +902,7 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 
 		nodeResponse, err := s.MapToWorkflowNodeResponse(nodeModel)
 		nodeResponse.ParentId = node.ParentID
+		nodeResponse.JiraKey = node.JiraKey
 
 		if node.AssigneeID != nil {
 			user, err := s.UserAPI.FindUsersByUserIds([]int32{*node.AssigneeID})
