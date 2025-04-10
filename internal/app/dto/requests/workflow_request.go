@@ -1,6 +1,8 @@
 package requests
 
 import (
+	"time"
+
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
 )
 
@@ -33,13 +35,14 @@ type NodeDataCondition struct {
 }
 
 type NodeData struct {
-	Type         string
-	Title        string
-	DueIn        int32
-	Assignee     NodeDataAssignee
-	EndType      string
-	SubRequestID *int32
-	JiraKey      string
+	Type          string
+	Title         string
+	DueIn         int32
+	Assignee      NodeDataAssignee
+	EndType       string
+	SubRequestID  *int32
+	JiraKey       string
+	EstimatePoint *int32
 
 	Condition NodeDataCondition
 
@@ -52,17 +55,16 @@ type NodeForm struct {
 }
 
 type Node struct {
-	Id       string
-	Position types.Position
-	Size     types.Size
-	ParentId string
-	JiraKey  *string
+	Id           string
+	Position     types.Position
+	Size         types.Size
+	ParentId     string
+	JiraKey      *string
+	LastSyncedAt *time.Time
 
 	Type string
 
 	Data NodeData
-
-	EstimatePoint *int32
 
 	Form []NodeForm
 }

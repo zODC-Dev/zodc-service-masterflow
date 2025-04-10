@@ -2,12 +2,13 @@ package nats
 
 // WorkflowSyncIssue represents an issue to be created/updated in Jira
 type WorkflowSyncIssue struct {
-	NodeId     string `json:"node_id"`
-	Type       string `json:"type"`
-	Title      string `json:"title"`
-	AssigneeId *int32 `json:"assignee_id,omitempty"`
-	JiraKey    string `json:"jira_key,omitempty"`
-	Action     string `json:"action"`
+	NodeId        string `json:"node_id"`
+	Type          string `json:"type"`
+	Title         string `json:"title"`
+	AssigneeId    *int32 `json:"assignee_id,omitempty"`
+	JiraKey       string `json:"jira_key,omitempty"`
+	EstimatePoint *int32 `json:"estimate_point,omitempty"`
+	Action        string `json:"action"`
 }
 
 // JiraSyncLink represents a link between two issues in Jira

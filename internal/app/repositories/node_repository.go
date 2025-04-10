@@ -165,18 +165,9 @@ func (r *NodeRepository) UpdateNodePlannedTimes(ctx context.Context, tx *sql.Tx,
 		return nil
 	}
 
-	slog.Info("Starting to update planned times in database", "count", len(nodeTimesUpdates))
-
 	// Thực hiện các updates riêng lẻ trong cùng một transaction
-	for i, update := range nodeTimesUpdates {
+	for _, update := range nodeTimesUpdates {
 		Nodes := table.Nodes
-
-		// Log thông tin chi tiết của mỗi node đang được cập nhật
-		slog.Info("Updating node planned times",
-			"index", i,
-			"nodeId", update.NodeId,
-			"startTime", update.PlannedStartTime.Format(time.RFC3339),
-			"endTime", update.PlannedEndTime.Format(time.RFC3339))
 
 		// Tạo model để cập nhật
 		nodeModel := model.Nodes{
@@ -193,10 +184,6 @@ func (r *NodeRepository) UpdateNodePlannedTimes(ctx context.Context, tx *sql.Tx,
 			Nodes.UpdatedAt,
 		).MODEL(nodeModel).WHERE(Nodes.ID.EQ(postgres.String(update.NodeId)))
 
-		// Hiển thị SQL statement để debug
-		sql, args := statement.Sql()
-		slog.Info("SQL statement", "sql", sql, "args", args)
-
 		result, err := statement.ExecContext(ctx, tx)
 		if err != nil {
 			slog.Error("Failed to update node", "nodeId", update.NodeId, "error", err)
@@ -205,14 +192,11 @@ func (r *NodeRepository) UpdateNodePlannedTimes(ctx context.Context, tx *sql.Tx,
 
 		// Kiểm tra số lượng row bị ảnh hưởng
 		rowsAffected, _ := result.RowsAffected()
-		slog.Info("Update result", "nodeId", update.NodeId, "rowsAffected", rowsAffected)
-
 		if rowsAffected == 0 {
 			slog.Warn("No rows affected when updating node", "nodeId", update.NodeId)
 		}
 	}
 
-	slog.Info("Completed updating planned times in database")
 	return nil
 }
 

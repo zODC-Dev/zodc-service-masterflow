@@ -24,7 +24,11 @@ func NodeRoute(group *echo.Group, db *sql.DB) {
 	// Apis
 	userApi := externals.NewUserAPI()
 
-	//
+	natsService := services.NewNatsService(services.NatsService{
+		NatsClient:  natsClient,
+		NodeRepo:    nodeRepo,
+		RequestRepo: requestRepo,
+	})
 
 	nodeService := services.NewNodeService(services.NodeService{
 		NodeRepo:       nodeRepo,
@@ -33,6 +37,7 @@ func NodeRoute(group *echo.Group, db *sql.DB) {
 		DB:             db,
 		FormRepo:       formRepo,
 		NatsClient:     natsClient,
+		NatsService:    natsService,
 	})
 
 	workflowService := services.NewWorkflowService(services.WorkflowService{
@@ -45,6 +50,8 @@ func NodeRoute(group *echo.Group, db *sql.DB) {
 		ConnectionRepo: connectionRepo,
 		NodeRepo:       nodeRepo,
 		NodeService:    nodeService,
+		NatsService:    natsService,
+		NatsClient:     natsClient,
 	})
 
 	nodeService.WorkflowService = workflowService
