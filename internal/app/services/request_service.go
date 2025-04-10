@@ -595,7 +595,7 @@ func (s *RequestService) FindAllSubRequestByRequestId(ctx context.Context, reque
 		}
 
 		subRequest := responses.RequestSubRequest{
-			WorkflowTitle: request.Workflows.Title,
+			WorkflowTitle: node.Title,
 			TaskTitle:     node.Title,
 			Assignee:      assignee,
 			Status:        request.Status,

@@ -257,6 +257,10 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 	parentId := ""
 	node, err := s.NodeRepo.FindOneNodeBySubRequestID(ctx, tx, requestId)
+	if err != nil {
+		return fmt.Errorf("find node by sub request id fail: %w", err)
+	}
+
 	if node.Type == string(constants.NodeTypeStory) || node.Type == string(constants.NodeTypeSubWorkflow) {
 		parentId = node.ID
 	}
