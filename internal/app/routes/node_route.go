@@ -19,12 +19,10 @@ func NodeRoute(group *echo.Group, db *sql.DB) {
 	requestRepo := repositories.NewRequestRepository()
 	connectionRepo := repositories.NewConnectionRepository()
 	nodeRepo := repositories.NewNodeRepository()
+	natsClient := nats.GetNATSClient()
 
 	// Apis
 	userApi := externals.NewUserAPI()
-
-	// Nats
-	natsClient := nats.GetNATSClient()
 
 	natsService := services.NewNatsService(services.NatsService{
 		NatsClient:  natsClient,

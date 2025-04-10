@@ -311,6 +311,9 @@ func (s *RequestService) GetRequestTasksHandler(ctx context.Context, requestId i
 			}
 
 			for _, subNode := range subRequest.Nodes {
+				if subNode.Type == string(constants.NodeTypeStart) || subNode.Type == string(constants.NodeTypeEnd) {
+					continue
+				}
 				// Only unique userIds
 				if _, exists := existingUserIds[*subNode.AssigneeID]; !exists {
 					existingUserIds[*subNode.AssigneeID] = true
@@ -400,14 +403,7 @@ func (s *RequestService) GetRequestTasksByProjectHandler(ctx context.Context, re
 	paginatedResponse := responses.Paginate[[]responses.RequestTaskResponse]{}
 	requestTaskResponse := []responses.RequestTaskResponse{}
 
-	count, err := s.RequestRepo.CountRequestByStatusAndUserId(ctx, s.DB, userId, "")
-	if err != nil {
-		return paginatedResponse, err
-	}
-
-	total := count
-
-	tasks, err := s.RequestRepo.FindAllTasksByProject(ctx, s.DB, userId, requestTaskProjectQueryParam)
+	total, tasks, err := s.RequestRepo.FindAllTasksByProject(ctx, s.DB, userId, requestTaskProjectQueryParam)
 	if err != nil {
 		return paginatedResponse, err
 	}
@@ -433,6 +429,9 @@ func (s *RequestService) GetRequestTasksByProjectHandler(ctx context.Context, re
 			}
 
 			for _, subNode := range subRequest.Nodes {
+				if subNode.Type == string(constants.NodeTypeStart) || subNode.Type == string(constants.NodeTypeEnd) {
+					continue
+				}
 				// Only unique userIds
 				if _, exists := existingUserIds[*subNode.AssigneeID]; !exists {
 					existingUserIds[*subNode.AssigneeID] = true
@@ -523,11 +522,11 @@ func (s *RequestService) GetRequestTasksByProjectHandler(ctx context.Context, re
 func (s *RequestService) GetRequestTaskCount(ctx context.Context, userId int32, queryParams queryparams.RequestTaskCount) (responses.RequestTaskCountResponse, error) {
 	taskCountResponse := responses.RequestTaskCountResponse{}
 
-	totalCount, err := s.RequestRepo.CountRequestTaskByStatusAndUserIdAndQueryParams(ctx, s.DB, userId, "", queryParams)
-	if err != nil {
-		return taskCountResponse, err
-	}
-	taskCountResponse.TotalCount = int32(totalCount)
+	// totalCount, err := s.RequestRepo.CountRequestTaskByStatusAndUserIdAndQueryParams(ctx, s.DB, userId, "", queryParams)
+	// if err != nil {
+	// 	return taskCountResponse, err
+	// }
+	// taskCountResponse.TotalCount = int32(totalCount)
 
 	completedCount, err := s.RequestRepo.CountRequestTaskByStatusAndUserIdAndQueryParams(ctx, s.DB, userId, constants.NodeStatusCompleted, queryParams)
 	if err != nil {
@@ -546,6 +545,8 @@ func (s *RequestService) GetRequestTaskCount(ctx context.Context, userId int32, 
 		return taskCountResponse, err
 	}
 	taskCountResponse.TodoCount = int32(todoCount)
+
+	taskCountResponse.TotalCount = taskCountResponse.CompletedCount + taskCountResponse.OverdueCount + taskCountResponse.TodoCount
 
 	return taskCountResponse, nil
 }
