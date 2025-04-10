@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"strconv"
 
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
@@ -25,6 +26,7 @@ type RequestService struct {
 	NodeRepo        *repositories.NodeRepository
 	ConnectionRepo  *repositories.ConnectionRepository
 	WorkflowService *WorkflowService
+	NatsService     *NatsService
 }
 
 func NewRequestService(cfg RequestService) *RequestService {
@@ -35,6 +37,7 @@ func NewRequestService(cfg RequestService) *RequestService {
 		NodeRepo:        cfg.NodeRepo,
 		ConnectionRepo:  cfg.ConnectionRepo,
 		WorkflowService: cfg.WorkflowService,
+		NatsService:     cfg.NatsService,
 	}
 }
 
@@ -639,6 +642,10 @@ func (s *RequestService) UpdateRequestHandler(ctx context.Context, requestId int
 		return fmt.Errorf("find one original request by request id fail: %w", err)
 	}
 
+	// Get original nodes and connections for Jira sync
+	origNodes := originalRequest.Nodes
+	origConnections := originalRequest.Connections
+
 	// Remove existing nodes/connections for the main request and its original sub-requests first
 	for _, node := range originalRequest.Nodes {
 		if node.Type == string(constants.NodeTypeStory) || node.Type == string(constants.NodeTypeSubWorkflow) {
@@ -735,6 +742,45 @@ func (s *RequestService) UpdateRequestHandler(ctx context.Context, requestId int
 	err = s.WorkflowService.CreateNodesConnectionsStories(ctx, tx, &nodesConnectionsStories, requestId, originalRequest.Workflow.ProjectKey, userId, false)
 	if err != nil {
 		return fmt.Errorf("create nodes connections stories fail: %w", err)
+	}
+
+	// Sync with Jira if this is a project workflow with project key
+	if originalRequest.Workflow.Type == string(constants.WorkflowTypeProject) && originalRequest.Workflow.ProjectKey != nil {
+		// Get the NatsService from WorkflowService
+		// slog.Info("originalRequest", "originalRequest", originalRequest)
+		// slog.Info("Syncing with Jira", "projectKey", *originalRequest.Workflow.ProjectKey, "sprintId", *originalRequest.SprintID)
+
+		// Need to convert the original nodes and connections to the proper types
+		var modelNodes []model.Nodes
+		var modelConnections []model.Connections
+
+		// Convert original nodes to model.Nodes
+		for _, node := range origNodes {
+			var modelNode model.Nodes
+			if err := utils.Mapper(node, &modelNode); err != nil {
+				slog.Error("Failed to map original node", "error", err)
+				continue
+			}
+			modelNodes = append(modelNodes, modelNode)
+		}
+
+		// Convert original connections to model.Connections
+		for _, conn := range origConnections {
+			var modelConn model.Connections
+			if err := utils.Mapper(conn, &modelConn); err != nil {
+				slog.Error("Failed to map original connection", "error", err)
+				continue
+			}
+			modelConnections = append(modelConnections, modelConn)
+		}
+
+		// Sync the updated workflow with Jira using edit mode
+		_, err := s.NatsService.publishWorkflowEditToJira(ctx, tx, finalNodes, modelNodes, req.Stories,
+			finalConnections, modelConnections, *originalRequest.Workflow.ProjectKey, originalRequest.SprintID)
+		if err != nil {
+			// Log the error but continue - we don't want to fail the update if Jira sync fails
+			slog.Error("Failed to sync workflow edit with Jira", "error", err)
+		}
 	}
 
 	//Commit

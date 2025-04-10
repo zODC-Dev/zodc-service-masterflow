@@ -715,3 +715,285 @@ func (s *NatsService) SyncNodeStatusToJira(ctx context.Context, tx *sql.Tx, node
 	slog.Info("Successfully synced node status to Jira", "nodeId", node.ID, "jiraKey", node.JiraKey)
 	return nil
 }
+
+// publishWorkflowEditToJira sends workflow edit data to Jira and returns the response
+func (s *NatsService) publishWorkflowEditToJira(ctx context.Context, tx *sql.Tx,
+	nodes []requests.Node, origNodes []model.Nodes,
+	stories []requests.Story,
+	connections []requests.Connection, origConnections []model.Connections,
+	projectKey string, sprintId *int32) (natsModel.WorkflowEditResponse, error) {
+
+	slog.Info("Starting Jira edit synchronization", "projectKey", projectKey, "sprintId", sprintId)
+	slog.Info("Processing edit", "len stories", len(stories), "len nodes", len(nodes), "len connections", len(connections))
+
+	// First, ensure story assignees have feature_leader role
+	if err := s.assignFeatureLeaderRoles(stories, projectKey); err != nil {
+		return natsModel.WorkflowEditResponse{}, fmt.Errorf("failed to assign feature leader roles: %w", err)
+	}
+
+	syncRequest := natsModel.WorkflowEditRequest{
+		TransactionId:       uuid.New().String(),
+		ProjectKey:          projectKey,
+		SprintId:            sprintId,
+		Issues:              make([]natsModel.WorkflowEditIssue, 0),
+		Connections:         make([]natsModel.WorkflowEditConnection, 0),
+		ConnectionsToRemove: make([]natsModel.WorkflowEditConnection, 0),
+		NodeMappings:        make([]natsModel.NodeJiraMapping, 0),
+	}
+
+	// Create maps for original nodes for quick lookup
+	origNodeMap := make(map[string]model.Nodes)
+	for _, origNode := range origNodes {
+		origNodeMap[origNode.ID] = origNode
+
+		// Add existing mappings to the request
+		if origNode.JiraKey != nil {
+			syncRequest.NodeMappings = append(syncRequest.NodeMappings, natsModel.NodeJiraMapping{
+				NodeId:  origNode.ID,
+				JiraKey: *origNode.JiraKey,
+			})
+		}
+	}
+
+	// Process Stories
+	for _, story := range stories {
+		slog.Info("Processing story for edit",
+			"id", story.Node.Id,
+			"title", story.Title,
+			"jiraKey", story.Node.JiraKey)
+
+		issue := natsModel.WorkflowEditIssue{
+			NodeId:     story.Node.Id,
+			Type:       "Story",
+			Title:      story.Title,
+			AssigneeId: &story.Node.Data.Assignee.Id,
+			Action:     "create",
+		}
+
+		// Check if story existed before
+		origNode, storyExisted := origNodeMap[story.Node.Id]
+		if storyExisted && origNode.JiraKey != nil {
+			issue.Action = "update"
+			issue.JiraKey = *origNode.JiraKey
+		} else if story.Node.JiraKey != nil {
+			issue.Action = "update"
+			issue.JiraKey = *story.Node.JiraKey
+
+			// Also add to mapping
+			syncRequest.NodeMappings = append(syncRequest.NodeMappings, natsModel.NodeJiraMapping{
+				NodeId:  story.Node.Id,
+				JiraKey: *story.Node.JiraKey,
+			})
+		}
+
+		syncRequest.Issues = append(syncRequest.Issues, issue)
+	}
+
+	// Process Tasks and Bugs
+	for _, node := range nodes {
+		slog.Info("Processing node for edit",
+			"id", node.Id,
+			"type", node.Type,
+			"title", node.Data.Title,
+			"jiraKey", node.JiraKey)
+
+		if node.Type != string(constants.NodeTypeTask) && node.Type != string(constants.NodeTypeBug) {
+			slog.Info("Skipping node - not a task or bug",
+				"id", node.Id,
+				"type", node.Type)
+			continue
+		}
+
+		issue := natsModel.WorkflowEditIssue{
+			NodeId:     node.Id,
+			Type:       node.Type,
+			Title:      node.Data.Title,
+			AssigneeId: &node.Data.Assignee.Id,
+			Action:     "create",
+		}
+
+		// Check if node existed before
+		origNode, nodeExisted := origNodeMap[node.Id]
+		if nodeExisted && origNode.JiraKey != nil {
+			issue.Action = "update"
+			issue.JiraKey = *origNode.JiraKey
+		} else if node.JiraKey != nil {
+			issue.Action = "update"
+			issue.JiraKey = *node.JiraKey
+
+			// Also add to mapping
+			syncRequest.NodeMappings = append(syncRequest.NodeMappings, natsModel.NodeJiraMapping{
+				NodeId:  node.Id,
+				JiraKey: *node.JiraKey,
+			})
+		}
+
+		syncRequest.Issues = append(syncRequest.Issues, issue)
+	}
+
+	// Create maps to track processed connections to avoid duplicates
+	newConnectionsMap := make(map[string]bool)
+	oldConnectionsMap := make(map[string]bool)
+
+	// Process new connections
+	for _, conn := range connections {
+		fromNode := findNodeByIdFromRequest(nodes, stories, conn.From)
+		toNode := findNodeByIdFromRequest(nodes, stories, conn.To)
+
+		if fromNode == nil || toNode == nil {
+			slog.Info("Skipping connection - node not found",
+				"fromId", conn.From,
+				"toId", conn.To)
+			continue
+		}
+
+		// Skip START/END connections
+		if fromNode.Type == string(constants.NodeTypeStart) ||
+			toNode.Type == string(constants.NodeTypeEnd) {
+			continue
+		}
+
+		// Create a unique key for this connection
+		connectionKey := fmt.Sprintf("%s-%s-%s", fromNode.Id, toNode.Id, "relates to")
+		if newConnectionsMap[connectionKey] {
+			continue
+		}
+
+		connection := natsModel.WorkflowEditConnection{
+			FromIssueKey: fromNode.Id,
+			ToIssueKey:   toNode.Id,
+			Type:         "relates to",
+		}
+
+		syncRequest.Connections = append(syncRequest.Connections, connection)
+		newConnectionsMap[connectionKey] = true
+	}
+
+	// Process parent-child relationships for new connections
+	for _, node := range nodes {
+		if node.ParentId == "" {
+			continue
+		}
+
+		// Find parent node
+		parentNode := findNodeByIdFromRequest(nodes, stories, node.ParentId)
+		if parentNode == nil {
+			continue
+		}
+
+		// Skip if parent is START/END
+		if parentNode.Type == string(constants.NodeTypeStart) ||
+			parentNode.Type == string(constants.NodeTypeEnd) {
+			continue
+		}
+
+		// Create a unique key for this connection
+		connectionKey := fmt.Sprintf("%s-%s-%s", parentNode.Id, node.Id, "contains")
+		if newConnectionsMap[connectionKey] {
+			continue
+		}
+
+		connection := natsModel.WorkflowEditConnection{
+			FromIssueKey: parentNode.Id,
+			ToIssueKey:   node.Id,
+			Type:         "contains",
+		}
+
+		syncRequest.Connections = append(syncRequest.Connections, connection)
+		newConnectionsMap[connectionKey] = true
+	}
+
+	// Process original connections to identify those to be removed
+	for _, origConn := range origConnections {
+		// Create map of original connections
+		// For connections we'll use "relates to" as default type since it's the common one
+		connType := "relates to"
+
+		// Create a unique key for this connection
+		connectionKey := fmt.Sprintf("%s-%s-%s", origConn.FromNodeID, origConn.ToNodeID, connType)
+		oldConnectionsMap[connectionKey] = true
+
+		// If this connection doesn't exist in the new connections, it should be removed
+		if !newConnectionsMap[connectionKey] {
+			connection := natsModel.WorkflowEditConnection{
+				FromIssueKey: origConn.FromNodeID,
+				ToIssueKey:   origConn.ToNodeID,
+				Type:         connType,
+			}
+
+			syncRequest.ConnectionsToRemove = append(syncRequest.ConnectionsToRemove, connection)
+		}
+	}
+
+	// Sort and deduplicate node mappings
+	nodeMapSet := make(map[string]string)
+	for _, mapping := range syncRequest.NodeMappings {
+		nodeMapSet[mapping.NodeId] = mapping.JiraKey
+	}
+
+	// Recreate the node mappings without duplicates
+	syncRequest.NodeMappings = make([]natsModel.NodeJiraMapping, 0, len(nodeMapSet))
+	for nodeId, jiraKey := range nodeMapSet {
+		syncRequest.NodeMappings = append(syncRequest.NodeMappings, natsModel.NodeJiraMapping{
+			NodeId:  nodeId,
+			JiraKey: jiraKey,
+		})
+	}
+
+	// Send to NATS
+	slog.Info("Sending workflow edit request to NATS",
+		"issues", len(syncRequest.Issues),
+		"connections", len(syncRequest.Connections),
+		"connectionsToRemove", len(syncRequest.ConnectionsToRemove),
+		"nodeMappings", len(syncRequest.NodeMappings))
+
+	requestBytes, err := json.Marshal(syncRequest)
+	if err != nil {
+		return natsModel.WorkflowEditResponse{}, fmt.Errorf("failed to marshal workflow edit request: %w", err)
+	}
+
+	response, err := s.NatsClient.Request(constants.NatsTopicWorkflowEditRequest, requestBytes, 30*time.Second)
+	if err != nil {
+		return natsModel.WorkflowEditResponse{}, fmt.Errorf("failed to sync workflow edit with Jira: %w", err)
+	}
+
+	// Process response
+	var syncResponse natsModel.WorkflowEditResponse
+	if err := json.Unmarshal(response.Data, &syncResponse); err != nil {
+		return natsModel.WorkflowEditResponse{}, fmt.Errorf("failed to unmarshal Jira response: %w", err)
+	}
+
+	// Check response success
+	if !syncResponse.Success || !syncResponse.Data.Success {
+		slog.Error("Jira edit synchronization failed",
+			"outerSuccess", syncResponse.Success,
+			"innerSuccess", syncResponse.Data.Success)
+		return natsModel.WorkflowEditResponse{}, fmt.Errorf("Jira edit synchronization failed")
+	}
+
+	// Update JiraKeys in database from response
+	for _, issue := range syncResponse.Data.Data.Issues {
+		slog.Info("Updating JiraKey from edit response",
+			"nodeId", issue.NodeId,
+			"jiraKey", issue.JiraKey)
+
+		if err := s.NodeRepo.UpdateJiraKey(ctx, tx, issue.NodeId, issue.JiraKey); err != nil {
+			return natsModel.WorkflowEditResponse{}, fmt.Errorf("failed to update JiraKey: %w", err)
+		}
+	}
+
+	// Also process the node mappings from the response
+	if len(syncResponse.Data.Data.NodeMappings) > 0 {
+		slog.Info("Processing node mappings from response", "count", len(syncResponse.Data.Data.NodeMappings))
+		for _, mapping := range syncResponse.Data.Data.NodeMappings {
+			slog.Info("Mapping from response", "nodeId", mapping.NodeId, "jiraKey", mapping.JiraKey)
+			if err := s.NodeRepo.UpdateJiraKey(ctx, tx, mapping.NodeId, mapping.JiraKey); err != nil {
+				slog.Error("Failed to update node mapping", "error", err, "nodeId", mapping.NodeId)
+				// Continue processing other mappings
+			}
+		}
+	}
+
+	slog.Info("Completed Jira edit synchronization", "projectKey", projectKey)
+	return syncResponse, nil
+}
