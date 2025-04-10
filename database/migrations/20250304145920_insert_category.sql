@@ -2,9 +2,9 @@
 INSERT INTO public.categories
     ("name", "type", "key")
 VALUES
-    ('HR', 'GENERAL', 'HR'),
+    ('Recruitment', 'GENERAL', 'HR'),
     ('Employee Onboarding', 'GENERAL', 'EMPLOYEE_ONBOARDING'),
-    ('Project ZODC', 'PROJECT', 'PROJECT_ZODC'),
+    ('Sprint', 'PROJECT', 'SPRINT'),
     ('Story', 'PROJECT', 'STORY');
 
 

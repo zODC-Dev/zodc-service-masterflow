@@ -421,6 +421,9 @@ func (s *RequestService) GetRequestTasksByProjectHandler(ctx context.Context, re
 
 		// If Node is Story or SubWorkflow, get all nodes from subRequest
 		if node.Type == string(constants.NodeTypeStory) || node.Type == string(constants.NodeTypeSubWorkflow) {
+			if node.Status == string(constants.NodeStatusTodo) {
+				total--
+			}
 			// subRequest, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, *node.SubRequestID)
 			// if err != nil {
 			// 	return paginatedResponse, err

@@ -357,6 +357,7 @@ func (r *RequestRepository) CountRequestTaskByStatusAndUserIdAndQueryParams(ctx 
 		Requests.IsTemplate.EQ(postgres.Bool(false)),
 		Nodes.Type.NOT_EQ(postgres.String(string(constants.NodeTypeStart))),
 		Nodes.Type.NOT_EQ(postgres.String(string(constants.NodeTypeEnd))),
+		Nodes.Type.NOT_EQ(postgres.String(string(constants.NodeTypeStory))),
 	}
 
 	if queryparams.ProjectKey != "" {
@@ -381,6 +382,7 @@ func (r *RequestRepository) CountRequestTaskByStatusAndUserIdAndQueryParams(ctx 
 
 	result := []model.Nodes{}
 	err := statement.QueryContext(ctx, db, &result)
+	fmt.Println(statement.DebugSql())
 
 	return len(result), err
 }
