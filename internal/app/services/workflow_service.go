@@ -255,6 +255,12 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 		return err
 	}
 
+	parentId := ""
+	node, err := s.NodeRepo.FindOneNodeBySubRequestID(ctx, tx, requestId)
+	if node.Type == string(constants.NodeTypeStory) || node.Type == string(constants.NodeTypeSubWorkflow) {
+		parentId = node.ID
+	}
+
 	formSystemFieldMap := make(map[string]int32)
 	formSystemTagMap := make(map[string]int32)
 
@@ -529,6 +535,10 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			EstimatePoint: workflowNodeReq.Data.EstimatePoint,
 
 			JiraKey: workflowNodeReq.JiraKey,
+		}
+
+		if parentId != "" {
+			workflowNode.ParentID = &parentId
 		}
 
 		for _, formSystem := range formSystems {
