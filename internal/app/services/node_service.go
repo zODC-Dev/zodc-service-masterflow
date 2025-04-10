@@ -202,7 +202,7 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 		// If Prevous Nodes not finish yet // If More than one node not completed then next node dont need to update status
 		isUpdateNodeStatus := true
 
-		connections, err := s.ConnectionRepo.FindConnectionsByToNodeId(ctx, s.DB, connectionsToNode[i].Node.ID)
+		connections, err := s.ConnectionRepo.FindConnectionsByToNodeIdTx(ctx, tx, connectionsToNode[i].Node.ID)
 		if err != nil {
 			return err
 		}
@@ -233,7 +233,8 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 				}
 			} else {
 				connectionsToNode[i].Node.IsCurrent = true
-				if err := s.UpdateNodeStatusToInProcessing(ctx, tx, connectionsToNode[i].Node); err != nil {
+				err := s.NodeRepo.UpdateNode(ctx, tx, connectionsToNode[i].Node)
+				if err != nil {
 					return err
 				}
 

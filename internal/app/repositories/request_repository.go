@@ -200,7 +200,7 @@ func (r *RequestRepository) FindOneRequestByRequestId(ctx context.Context, db *s
 	).WHERE(
 		Requests.ID.EQ(postgres.Int32(requestId)),
 	).ORDER_BY(
-		Nodes.ActualStartTime.ASC(),
+		Nodes.Key.DESC(),
 	)
 
 	result := results.RequestDetail{}
