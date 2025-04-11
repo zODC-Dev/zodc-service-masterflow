@@ -569,6 +569,13 @@ func (s *RequestService) GetRequestOverviewHandler(ctx context.Context, requestI
 	}
 
 	requestOverviewResponse.Progress = request.Progress
+	requestOverviewResponse.Category = responses.CategoryFindAll{
+		ID:       request.Category.ID,
+		Name:     request.Category.Name,
+		Type:     request.Category.Type,
+		Key:      request.Category.Key,
+		IsActive: request.Category.IsActive,
+	}
 
 	return requestOverviewResponse, nil
 }

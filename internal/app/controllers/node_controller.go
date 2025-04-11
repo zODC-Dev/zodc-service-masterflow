@@ -123,8 +123,8 @@ func (c *NodeController) GetNodeJiraForm(e echo.Context) error {
 func (c *NodeController) ReassignNode(e echo.Context) error {
 	ctx := e.Request().Context()
 
-	nodeId := e.QueryParam("id")
-	userId := e.QueryParam("userId")
+	nodeId := e.Param("id")
+	userId := e.Param("userId")
 
 	if nodeId == "" || userId == "" {
 		return e.JSON(http.StatusBadRequest, map[string]string{"error": "nodeId and userId are required"})
