@@ -248,7 +248,7 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 
 	nodeResult, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
 	if err != nil {
-		return err
+		return fmt.Errorf("find node by node id fail: %w", err)
 	}
 
 	node := model.Nodes{}
@@ -610,23 +610,23 @@ func (s *NodeService) SubmitNodeForm(ctx context.Context, userId int32, nodeId s
 		})
 	}
 	if err := s.FormRepo.CreateFormFieldDatas(ctx, tx, formFieldData); err != nil {
-		return err
+		return fmt.Errorf("create form field data fail: %w", err)
 	}
 
 	nodeForm, err := s.NodeRepo.FindOneNodeFormByNodeIdAndFormId(ctx, s.DB, nodeId, formDataId)
 	if err != nil {
-		return err
+		return fmt.Errorf("find node form by node id and form id fail: %w", err)
 	}
 
 	// Update Node Form Is Submitted
 	nodeForm.IsSubmitted = true
 	if err := s.NodeRepo.UpdateNodeForm(ctx, tx, nodeForm); err != nil {
-		return err
+		return fmt.Errorf("update node form is submitted fail: %w", err)
 	}
 
 	node, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
 	if err != nil {
-		return err
+		return fmt.Errorf("find node by node id fail: %w", err)
 	}
 
 	isCompletedNode := true
@@ -639,13 +639,20 @@ func (s *NodeService) SubmitNodeForm(ctx context.Context, userId int32, nodeId s
 
 	// Update Node To Completed
 	if isCompletedNode {
+		nodeModel := model.Nodes{}
+		utils.Mapper(node, &nodeModel)
+		nodeModel.Status = string(constants.NodeStatusCompleted)
+		if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
+			return fmt.Errorf("update node status to completed fail: %w", err)
+		}
+
 		if err := s.CompleteNodeHandler(ctx, nodeId, userId); err != nil {
-			return err
+			return fmt.Errorf("complete node handler fail: %w", err)
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
-		return err
+		return fmt.Errorf("commit fail: %w", err)
 	}
 
 	return nil
