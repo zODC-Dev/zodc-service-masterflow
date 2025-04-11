@@ -985,20 +985,29 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 		// Form Attached
 		for _, nodeForm := range node.NodeForms {
 
-			approveUserIds := []int32{}
+			approveUserIds := []responses.NodeFormApprovalOrRejectUsersResponse{}
 			for _, approveUser := range nodeForm.NodeFormApproveOrRejectUsers {
-				approveUserIds = append(approveUserIds, approveUser.UserID)
+				approveUserIds = append(approveUserIds, responses.NodeFormApprovalOrRejectUsersResponse{
+					IsApproved: approveUser.IsApproved,
+					Assignee: types.Assignee{
+						Id:           approveUser.UserID,
+						Name:         "",
+						Email:        "",
+						AvatarUrl:    "",
+						IsSystemUser: false,
+					},
+				})
 			}
 
 			formAttachedResponse := responses.NodeFormResponse{
-				Key:                      nodeForm.Key,
-				FromUserId:               nodeForm.FromUserID,
-				OptionKey:                nodeForm.OptionKey,
-				FromFormAttachedPosition: nodeForm.FromFormAttachedPosition,
-				Permission:               nodeForm.Permission,
-				IsOriginal:               nodeForm.IsOriginal,
-				FormTemplateId:           nodeForm.TemplateID,
-				ApproveUserIds:           approveUserIds,
+				Key:                           nodeForm.Key,
+				FromUserId:                    nodeForm.FromUserID,
+				OptionKey:                     nodeForm.OptionKey,
+				FromFormAttachedPosition:      nodeForm.FromFormAttachedPosition,
+				Permission:                    nodeForm.Permission,
+				IsOriginal:                    nodeForm.IsOriginal,
+				FormTemplateId:                nodeForm.TemplateID,
+				NodeFormApprovalOrRejectUsers: approveUserIds,
 			}
 			if nodeForm.DataID != nil {
 				formAttachedResponse.DataId = *nodeForm.DataID

@@ -27,16 +27,21 @@ type NodeDataResponse struct {
 	FormAttached []NodeFormResponse `json:"formAttached"`
 }
 
+type NodeFormApprovalOrRejectUsersResponse struct {
+	IsApproved bool           `json:"isApproved"`
+	Assignee   types.Assignee `json:"assignee"`
+}
+
 type NodeFormResponse struct {
-	Key                      string  `json:"key"`
-	FormTemplateId           int32   `json:"formTemplateId"`
-	DataId                   string  `json:"dataId"`
-	OptionKey                *string `json:"optionKey"`
-	FromUserId               *int32  `json:"fromUserId"`
-	FromFormAttachedPosition *int32  `json:"fromFormAttachedPosition"`
-	Permission               string  `json:"permission"`
-	IsOriginal               bool    `json:"isOriginal"`
-	ApproveUserIds           []int32 `json:"approveUserIds"`
+	Key                           string                                  `json:"key"`
+	FormTemplateId                int32                                   `json:"formTemplateId"`
+	DataId                        string                                  `json:"dataId"`
+	OptionKey                     *string                                 `json:"optionKey"`
+	FromUserId                    *int32                                  `json:"fromUserId"`
+	FromFormAttachedPosition      *int32                                  `json:"fromFormAttachedPosition"`
+	Permission                    string                                  `json:"permission"`
+	IsOriginal                    bool                                    `json:"isOriginal"`
+	NodeFormApprovalOrRejectUsers []NodeFormApprovalOrRejectUsersResponse `json:"nodeFormApprovalOrRejectUsers"`
 }
 
 type NodeFormDataResponse struct {
