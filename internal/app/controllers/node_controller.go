@@ -145,6 +145,8 @@ func (c *NodeController) ReassignNode(e echo.Context) error {
 func (c *NodeController) SubmitNodeForm(e echo.Context) error {
 	ctx := e.Request().Context()
 
+	userId, _ := middlewares.GetUserID(e)
+
 	nodeId := e.Param("id")
 	formId := e.Param("formId")
 
@@ -157,7 +159,7 @@ func (c *NodeController) SubmitNodeForm(e echo.Context) error {
 		return e.JSON(http.StatusBadRequest, map[string]string{"error": "nodeId and formId are required"})
 	}
 
-	if err := c.nodeService.SubmitNodeForm(ctx, nodeId, formId, req); err != nil {
+	if err := c.nodeService.SubmitNodeForm(ctx, userId, nodeId, formId, req); err != nil {
 		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
@@ -167,6 +169,8 @@ func (c *NodeController) SubmitNodeForm(e echo.Context) error {
 func (c *NodeController) ApproveNodeForm(e echo.Context) error {
 	ctx := e.Request().Context()
 
+	userId, _ := middlewares.GetUserID(e)
+
 	nodeId := e.Param("id")
 	formId := e.Param("formId")
 
@@ -174,7 +178,7 @@ func (c *NodeController) ApproveNodeForm(e echo.Context) error {
 		return e.JSON(http.StatusBadRequest, map[string]string{"error": "nodeId and formId are required"})
 	}
 
-	if err := c.nodeService.ApproveNodeForm(ctx, nodeId, formId); err != nil {
+	if err := c.nodeService.ApproveNodeForm(ctx, nodeId, formId, int32(userId)); err != nil {
 		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
@@ -184,6 +188,8 @@ func (c *NodeController) ApproveNodeForm(e echo.Context) error {
 func (c *NodeController) RejectNodeForm(e echo.Context) error {
 	ctx := e.Request().Context()
 
+	userId, _ := middlewares.GetUserID(e)
+
 	nodeId := e.Param("id")
 	formId := e.Param("formId")
 
@@ -191,7 +197,7 @@ func (c *NodeController) RejectNodeForm(e echo.Context) error {
 		return e.JSON(http.StatusBadRequest, map[string]string{"error": "nodeId and formId are required"})
 	}
 
-	if err := c.nodeService.RejectNodeForm(ctx, nodeId, formId); err != nil {
+	if err := c.nodeService.RejectNodeForm(ctx, nodeId, formId, int32(userId)); err != nil {
 		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 

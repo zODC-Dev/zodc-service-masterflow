@@ -75,11 +75,12 @@ type ConnectionResponse struct {
 }
 
 type StoryResponse struct {
-	Decoration  string `json:"decoration"`
-	Description string `json:"description"`
-	Title       string `json:"title"`
-	Type        string `json:"type"`
-	CategoryKey string `json:"categoryKey"`
+	Decoration  string  `json:"decoration"`
+	Description string  `json:"description"`
+	Title       string  `json:"title"`
+	Type        string  `json:"type"`
+	CategoryKey string  `json:"categoryKey"`
+	Progress    float32 `json:"progress"`
 
 	Node           NodeResponse `json:"node"`
 	IsSystemLinked bool         `json:"isSystemLinked"`

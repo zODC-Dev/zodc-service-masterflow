@@ -79,7 +79,7 @@ func (s *NodeService) CheckIfAllNodeFormIsApprovedOrRejected(ctx context.Context
 	return true, nil
 }
 
-func (s *NodeService) CheckAndCompleteNode(ctx context.Context, tx *sql.Tx, nodeId string) error {
+func (s *NodeService) CheckAndCompleteNode(ctx context.Context, tx *sql.Tx, nodeId string, userId int32) error {
 	// Check if all node form is approved or rejected
 	isAllNodeFormApprovedOrRejected, err := s.CheckIfAllNodeFormIsApprovedOrRejected(ctx, nodeId)
 	if err != nil {
@@ -87,29 +87,9 @@ func (s *NodeService) CheckAndCompleteNode(ctx context.Context, tx *sql.Tx, node
 	}
 
 	if isAllNodeFormApprovedOrRejected {
-		node, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
-		if err != nil {
+		// Update Node To Completed
+		if err := s.CompleteNodeHandler(ctx, nodeId, userId); err != nil {
 			return err
-		}
-
-		// Update Node Status To Completed
-		node.Status = string(constants.NodeStatusCompleted)
-		if err := s.NodeRepo.UpdateNode(ctx, tx, node); err != nil {
-			return fmt.Errorf("update node fail: %w", err)
-		}
-
-		connectionFromNode, err := s.ConnectionRepo.FindConnectionsWithToNodesByFromNodeId(ctx, s.DB, node.ID)
-		if err != nil {
-			return fmt.Errorf("find connection from node fail: %w", err)
-		}
-
-		for _, connection := range connectionFromNode {
-			connection.IsCompleted = true
-			connectionModel := model.Connections{}
-			utils.Mapper(connection, &connectionModel)
-			if err := s.ConnectionRepo.UpdateConnection(ctx, tx, connectionModel); err != nil {
-				return fmt.Errorf("update connection fail: %w", err)
-			}
 		}
 	}
 
@@ -227,7 +207,10 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 				if err != nil {
 					return err
 				}
+
 				request.Status = string(constants.RequestStatusCompleted)
+				request.CompletedAt = &now
+
 				if err := s.RequestRepo.UpdateRequest(ctx, tx, request); err != nil {
 					return err
 				}
@@ -255,7 +238,7 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 	s.NatsClient.Publish("notifications", notificationBytes)
 
 	// Calculate Request Process
-	request, _ := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, node.RequestID)
+	request, _ := s.RequestRepo.FindOneRequestByRequestIdTx(ctx, tx, node.RequestID)
 	totalCompletedNode := 0
 	totalNode := len(request.Nodes)
 	for _, requestNode := range request.Nodes {
@@ -419,7 +402,7 @@ func (s *NodeService) ReassignNode(ctx context.Context, nodeId string, userId in
 	return nil
 }
 
-func (s *NodeService) SubmitNodeForm(ctx context.Context, nodeId string, formDataId string, req *[]requests.SubmitNodeFormRequest) error {
+func (s *NodeService) SubmitNodeForm(ctx context.Context, userId int32, nodeId string, formDataId string, req *[]requests.SubmitNodeFormRequest) error {
 	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
@@ -455,10 +438,13 @@ func (s *NodeService) SubmitNodeForm(ctx context.Context, nodeId string, formDat
 	}
 
 	// Update Node Form Is Submitted
-	nodeFormModel := model.NodeForms{}
-	utils.Mapper(nodeForm, &nodeFormModel)
-	nodeFormModel.IsSubmitted = true
-	if err := s.NodeRepo.UpdateNodeForm(ctx, tx, nodeFormModel); err != nil {
+	nodeForm.IsSubmitted = true
+	if err := s.NodeRepo.UpdateNodeForm(ctx, tx, nodeForm); err != nil {
+		return err
+	}
+
+	// Update Node To Completed
+	if err := s.CompleteNodeHandler(ctx, nodeId, userId); err != nil {
 		return err
 	}
 
@@ -469,7 +455,7 @@ func (s *NodeService) SubmitNodeForm(ctx context.Context, nodeId string, formDat
 	return nil
 }
 
-func (s *NodeService) ApproveNodeForm(ctx context.Context, nodeId string, formId string) error {
+func (s *NodeService) ApproveNodeForm(ctx context.Context, nodeId string, formId string, userId int32) error {
 	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
@@ -487,7 +473,7 @@ func (s *NodeService) ApproveNodeForm(ctx context.Context, nodeId string, formId
 	}
 
 	// Update Node Status To Completed
-	if err := s.CheckAndCompleteNode(ctx, tx, nodeId); err != nil {
+	if err := s.CheckAndCompleteNode(ctx, tx, nodeId, userId); err != nil {
 		return err
 	}
 
@@ -498,7 +484,7 @@ func (s *NodeService) ApproveNodeForm(ctx context.Context, nodeId string, formId
 	return nil
 }
 
-func (s *NodeService) RejectNodeForm(ctx context.Context, nodeId string, formId string) error {
+func (s *NodeService) RejectNodeForm(ctx context.Context, nodeId string, formId string, userId int32) error {
 	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
@@ -516,7 +502,7 @@ func (s *NodeService) RejectNodeForm(ctx context.Context, nodeId string, formId 
 	}
 
 	// Update Node Status To Completed
-	if err := s.CheckAndCompleteNode(ctx, tx, nodeId); err != nil {
+	if err := s.CheckAndCompleteNode(ctx, tx, nodeId, userId); err != nil {
 		return err
 	}
 

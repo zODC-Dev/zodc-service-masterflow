@@ -42,7 +42,7 @@ type NodeData struct {
 	EndType       string
 	SubRequestID  *int32
 	JiraKey       string
-	EstimatePoint *int32
+	EstimatePoint *float32
 
 	Condition NodeDataCondition
 

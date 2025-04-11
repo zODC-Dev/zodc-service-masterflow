@@ -188,6 +188,13 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 			}
 
 			nodeModel.IsCurrent = true
+			if request.Workflow.Type == string(constants.WorkflowTypeGeneral) {
+				nodeModel.Status = string(constants.NodeStatusInProgress)
+
+				currentTime := time.Now()
+				nodeModel.ActualStartTime = &currentTime
+			}
+
 			if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
 				return fmt.Errorf("update node status to in processing fail: %w", err)
 			}
@@ -953,6 +960,8 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 			Description: request.Workflow.Description,
 			Title:       request.Workflow.Title,
 			CategoryKey: storyRequest.Category.Key,
+
+			Progress: storyRequest.Progress,
 		}
 
 		storiesResponse = append(storiesResponse, story)

@@ -322,7 +322,11 @@ func (r *NodeRepository) FindOneNodeFormByNodeIdAndFormId(ctx context.Context, d
 func (r *NodeRepository) UpdateNodeForm(ctx context.Context, tx *sql.Tx, nodeForm model.NodeForms) error {
 	NodeForms := table.NodeForms
 
-	statement := NodeForms.UPDATE(NodeForms.IsApproved).SET(nodeForm.IsApproved).WHERE(NodeForms.NodeID.EQ(postgres.String(nodeForm.NodeID)).AND(NodeForms.ID.EQ(postgres.Int32(nodeForm.ID)))).RETURNING(NodeForms.ID)
+	nodeForm.UpdatedAt = time.Now()
+
+	columns := NodeForms.AllColumns.Except(NodeForms.ID, NodeForms.CreatedAt, NodeForms.DeletedAt)
+
+	statement := NodeForms.UPDATE(columns).MODEL(nodeForm).WHERE(NodeForms.ID.EQ(postgres.Int32(nodeForm.ID))).RETURNING(NodeForms.ID)
 
 	err := statement.QueryContext(ctx, tx, &nodeForm)
 

@@ -57,7 +57,7 @@ type RequestTaskResponse struct {
 	PlannedEndTime   *time.Time     `json:"plannedEndTime"`
 	ActualStartTime  *time.Time     `json:"actualStartTime"`
 	ActualEndTime    *time.Time     `json:"actualEndTime"`
-	EstimatePoint    *int32         `json:"estimatePoint"`
+	EstimatePoint    *float32       `json:"estimatePoint"`
 	IsCurrent        bool           `json:"isCurrent"`
 }
 

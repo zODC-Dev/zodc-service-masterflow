@@ -28,7 +28,7 @@ type Nodes struct {
 	Type                      string
 	Status                    string
 	IsCurrent                 bool
-	EstimatePoint             *int32
+	EstimatePoint             *float32
 	PlannedStartTime          *time.Time
 	PlannedEndTime            *time.Time
 	ActualStartTime           *time.Time

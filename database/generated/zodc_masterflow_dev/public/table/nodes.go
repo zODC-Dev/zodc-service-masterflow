@@ -33,7 +33,7 @@ type nodesTable struct {
 	Type                      postgres.ColumnString
 	Status                    postgres.ColumnString
 	IsCurrent                 postgres.ColumnBool
-	EstimatePoint             postgres.ColumnInteger
+	EstimatePoint             postgres.ColumnFloat
 	PlannedStartTime          postgres.ColumnTimestamp
 	PlannedEndTime            postgres.ColumnTimestamp
 	ActualStartTime           postgres.ColumnTimestamp
@@ -111,7 +111,7 @@ func newNodesTableImpl(schemaName, tableName, alias string) nodesTable {
 		TypeColumn                      = postgres.StringColumn("type")
 		StatusColumn                    = postgres.StringColumn("status")
 		IsCurrentColumn                 = postgres.BoolColumn("is_current")
-		EstimatePointColumn             = postgres.IntegerColumn("estimate_point")
+		EstimatePointColumn             = postgres.FloatColumn("estimate_point")
 		PlannedStartTimeColumn          = postgres.TimestampColumn("planned_start_time")
 		PlannedEndTimeColumn            = postgres.TimestampColumn("planned_end_time")
 		ActualStartTimeColumn           = postgres.TimestampColumn("actual_start_time")
