@@ -40,7 +40,7 @@ func (c *NodeController) CompleteNode(e echo.Context) error {
 		return e.JSON(http.StatusBadRequest, map[string]string{"error": "nodeId is required"})
 	}
 
-	if err := c.nodeService.CompleteNodeHandler(ctx, nodeId, userId); err != nil {
+	if err := c.nodeService.CompleteNodeHandler(ctx, nodeId, int32(userId)); err != nil {
 		return e.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 	}
 
@@ -202,6 +202,40 @@ func (c *NodeController) RejectNodeForm(e echo.Context) error {
 	}
 
 	return e.JSON(http.StatusOK, map[string]string{"message": "Node form rejected successfully"})
+}
+
+func (c *NodeController) ApproveNode(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	userId, _ := middlewares.GetUserID(e)
+
+	nodeId := e.Param("id")
+	if nodeId == "" {
+		return e.JSON(http.StatusBadRequest, map[string]string{"error": "nodeId is required"})
+	}
+
+	if err := c.nodeService.ApproveNode(ctx, int32(userId), nodeId); err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, map[string]string{"message": "Node approved successfully"})
+}
+
+func (c *NodeController) RejectNode(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	userId, _ := middlewares.GetUserID(e)
+
+	nodeId := e.Param("id")
+	if nodeId == "" {
+		return e.JSON(http.StatusBadRequest, map[string]string{"error": "nodeId is required"})
+	}
+
+	if err := c.nodeService.RejectNode(ctx, int32(userId), nodeId); err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, map[string]string{"message": "Node rejected successfully"})
 }
 
 // GetNodeTaskDetail godoc

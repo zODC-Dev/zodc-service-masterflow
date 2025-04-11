@@ -6,7 +6,8 @@ import (
 
 type NodeResult struct {
 	model.Nodes
-	Request model.Requests
+	Request   model.Requests
+	NodeForms []model.NodeForms
 }
 
 type NodeFormResult struct {

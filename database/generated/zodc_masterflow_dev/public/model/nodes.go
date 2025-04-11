@@ -36,6 +36,7 @@ type Nodes struct {
 	Body                      *string
 	Subject                   *string
 	IsApproved                bool
+	IsRejected                bool
 	EndType                   *string
 	TaskAssignedRequester     bool
 	TaskAssignedAssignee      bool

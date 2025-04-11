@@ -13,16 +13,21 @@ type Connection struct {
 	Text string
 }
 
+type NodeDataFormAttachedApprovalOrRejectUsers struct {
+	IsApproved bool
+	Assignee   types.Assignee
+}
+
 type NodeDataFormAttached struct {
-	Key                      string
-	FormTemplateId           int32
-	DataId                   string
-	OptionId                 *string
-	FromUserId               *int32
-	FromFormAttachedPosition *int32
-	Permission               string
-	IsOriginal               bool
-	ApproveUserIds           []int32
+	Key                           string
+	FormTemplateId                int32
+	DataId                        string
+	OptionId                      *string
+	FromUserId                    *int32
+	FromFormAttachedPosition      *int32
+	Permission                    string
+	IsOriginal                    bool
+	NodeFormApprovalOrRejectUsers []NodeDataFormAttachedApprovalOrRejectUsers
 }
 
 type NodeDataAssignee struct {

@@ -14,7 +14,7 @@ type RequestDetailFormData struct {
 
 type RequestDetailNodeForm struct {
 	model.NodeForms
-	NodeFormApproveUsers []model.NodeFormApproveUsers
+	NodeFormApproveOrRejectUsers []model.NodeFormApproveOrRejectUsers
 }
 
 type RequestDetailNode struct {

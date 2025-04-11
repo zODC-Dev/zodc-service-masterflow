@@ -986,7 +986,7 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 		for _, nodeForm := range node.NodeForms {
 
 			approveUserIds := []int32{}
-			for _, approveUser := range nodeForm.NodeFormApproveUsers {
+			for _, approveUser := range nodeForm.NodeFormApproveOrRejectUsers {
 				approveUserIds = append(approveUserIds, approveUser.UserID)
 			}
 

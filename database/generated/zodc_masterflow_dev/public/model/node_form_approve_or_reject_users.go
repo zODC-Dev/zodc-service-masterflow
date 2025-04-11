@@ -11,11 +11,12 @@ import (
 	"time"
 )
 
-type NodeFormApproveUsers struct {
+type NodeFormApproveOrRejectUsers struct {
 	ID         int32 `sql:"primary_key"`
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 	DeletedAt  *time.Time
+	IsApproved bool
 	UserID     int32
 	NodeFormID int32
 }

@@ -79,25 +79,126 @@ func (s *NodeService) CheckIfAllNodeFormIsApprovedOrRejected(ctx context.Context
 	return true, nil
 }
 
-func (s *NodeService) CheckAndCompleteNode(ctx context.Context, tx *sql.Tx, nodeId string, userId int32) error {
-	// Check if all node form is approved or rejected
-	isAllNodeFormApprovedOrRejected, err := s.CheckIfAllNodeFormIsApprovedOrRejected(ctx, nodeId)
+func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nodeId string, isTrue bool) error {
+	// Update Node Form
+	node, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
+	if err != nil {
+		return err
+	}
+	for _, nodeForm := range node.NodeForms {
+		if !nodeForm.IsApproved && !nodeForm.IsRejected {
+			if isTrue {
+				nodeForm.IsApproved = true
+			} else {
+				nodeForm.IsRejected = true
+			}
+
+			if err := s.NodeRepo.UpdateNodeForm(ctx, tx, nodeForm); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Next node will alway be Condition Node
+	connections, err := s.ConnectionRepo.FindConnectionsWithToNodesByFromNodeId(ctx, s.DB, nodeId)
 	if err != nil {
 		return err
 	}
 
-	if isAllNodeFormApprovedOrRejected {
-		// Update Node To Completed
-		if err := s.CompleteNodeHandler(ctx, nodeId, userId); err != nil {
-			return err
+	for _, connection := range connections {
+		if connection.Node.Type == string(constants.NodeTypeCondition) {
+			connection.IsCompleted = true
+			connectionModel := model.Connections{}
+			if err := utils.Mapper(connection, &connectionModel); err != nil {
+				return err
+			}
+			if err := s.ConnectionRepo.UpdateConnection(ctx, tx, connectionModel); err != nil {
+				return err
+			}
+
+			// Update Condition Node
+			conditionNode := model.Nodes{}
+			utils.Mapper(connection.Node, &conditionNode)
+			conditionNode.Status = string(constants.NodeStatusCompleted)
+			if err := s.NodeRepo.UpdateNode(ctx, tx, conditionNode); err != nil {
+				return err
+			}
+
+			// condition destination
+			nodeConditionDestinations, err := s.NodeRepo.FindAllNodeConditionDestinationByNodeId(ctx, s.DB, connection.Node.ID, isTrue)
+			if err != nil {
+				return err
+			}
+
+			// Update Connection Condition Destination Node To Completed
+			for _, nodeConditionDestination := range nodeConditionDestinations {
+
+				node, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeConditionDestination.DestinationNodeID)
+				if err != nil {
+					return err
+				}
+
+				if node.Type == string(constants.NodeTypeEnd) {
+					nodeModel := model.Nodes{}
+					utils.Mapper(node, &nodeModel)
+					nodeModel.IsCurrent = true
+					nodeModel.Status = string(constants.NodeStatusCompleted)
+					if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
+						return err
+					}
+
+					// Update Request
+					now := time.Now()
+
+					request, err := s.RequestRepo.FindOneRequestByRequestIdTx(ctx, tx, node.RequestID)
+					if err != nil {
+						return err
+					}
+
+					requestModel := model.Requests{}
+					utils.Mapper(request, &requestModel)
+
+					requestModel.Status = string(constants.RequestStatusCompleted)
+					requestModel.CompletedAt = &now
+					requestModel.Progress = 100
+					if err := s.RequestRepo.UpdateRequest(ctx, tx, requestModel); err != nil {
+						return err
+					}
+
+					return nil
+				}
+
+				nodeModel := model.Nodes{}
+				utils.Mapper(node, &nodeModel)
+				nodeModel.IsCurrent = true
+				if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
+					return err
+				}
+
+				// Update Connection Condition Destination Node To Completed
+				connectionConditionDestination, err := s.ConnectionRepo.FindConnectionsByToNodeIdTx(ctx, tx, nodeConditionDestination.DestinationNodeID)
+				if err != nil {
+					return err
+				}
+				for _, connection := range connectionConditionDestination {
+					connection.IsCompleted = true
+					connectionModel := model.Connections{}
+					if err := utils.Mapper(connection, &connectionModel); err != nil {
+						return err
+					}
+					if err := s.ConnectionRepo.UpdateConnection(ctx, tx, connectionModel); err != nil {
+						return err
+					}
+
+				}
+			}
 		}
 	}
 
 	return nil
 }
 
-//
-
+// handler
 func (s *NodeService) StartNodeHandler(ctx context.Context, nodeId string) error {
 	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
@@ -105,10 +206,13 @@ func (s *NodeService) StartNodeHandler(ctx context.Context, nodeId string) error
 	}
 	defer tx.Rollback()
 
-	node, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
+	nodeResult, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
 	if err != nil {
 		return fmt.Errorf("find node by node id fail: %w", err)
 	}
+
+	node := model.Nodes{}
+	utils.Mapper(nodeResult, &node)
 
 	// Update Current Node Status To In Process
 	node.Status = string(constants.NodeStatusInProgress)
@@ -135,16 +239,20 @@ func (s *NodeService) StartNodeHandler(ctx context.Context, nodeId string) error
 }
 
 func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, userId int32) error {
+
 	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	node, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
+	nodeResult, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
 	if err != nil {
 		return err
 	}
+
+	node := model.Nodes{}
+	utils.Mapper(nodeResult, &node)
 
 	if node.Type == string(constants.NodeTypeStory) || node.Type == string(constants.NodeTypeSubWorkflow) {
 		return fmt.Errorf("story or sub workflow is auto complete by system, cant mark as complete by user")
@@ -384,14 +492,87 @@ func (s *NodeService) ReassignNode(ctx context.Context, nodeId string, userId in
 	}
 	defer tx.Rollback()
 
-	node, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
+	nodeResult, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
 	if err != nil {
 		return err
 	}
 
+	node := model.Nodes{}
+	utils.Mapper(nodeResult, &node)
+
 	node.AssigneeID = &userId
 
 	if err := s.NodeRepo.UpdateNode(ctx, tx, node); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Only For Condition Node
+func (s *NodeService) ApproveNode(ctx context.Context, userId int32, nodeId string) error {
+	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	nodeResult, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
+	if err != nil {
+		return err
+	}
+
+	node := model.Nodes{}
+	utils.Mapper(nodeResult, &node)
+
+	node.IsApproved = true
+	node.Status = string(constants.NodeStatusCompleted)
+	if err := s.NodeRepo.UpdateNode(ctx, tx, node); err != nil {
+		return err
+	}
+
+	//
+	err = s.LogicForConditionNode(ctx, tx, nodeId, true)
+	if err != nil {
+		return err
+	}
+
+	// Commit
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *NodeService) RejectNode(ctx context.Context, userId int32, nodeId string) error {
+	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	nodeResult, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
+	if err != nil {
+		return err
+	}
+
+	node := model.Nodes{}
+	utils.Mapper(nodeResult, &node)
+
+	node.IsRejected = true
+	node.Status = string(constants.NodeStatusCompleted)
+	if err := s.NodeRepo.UpdateNode(ctx, tx, node); err != nil {
+		return err
+	}
+
+	//
+	err = s.LogicForConditionNode(ctx, tx, nodeId, false)
+	if err != nil {
 		return err
 	}
 
@@ -443,9 +624,24 @@ func (s *NodeService) SubmitNodeForm(ctx context.Context, userId int32, nodeId s
 		return err
 	}
 
-	// Update Node To Completed
-	if err := s.CompleteNodeHandler(ctx, nodeId, userId); err != nil {
+	node, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
+	if err != nil {
 		return err
+	}
+
+	isCompletedNode := true
+	for _, nodeForm := range node.NodeForms {
+		if !nodeForm.IsSubmitted {
+			isCompletedNode = false
+			break
+		}
+	}
+
+	// Update Node To Completed
+	if isCompletedNode {
+		if err := s.CompleteNodeHandler(ctx, nodeId, userId); err != nil {
+			return err
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -472,11 +668,6 @@ func (s *NodeService) ApproveNodeForm(ctx context.Context, nodeId string, formId
 		return err
 	}
 
-	// Update Node Status To Completed
-	if err := s.CheckAndCompleteNode(ctx, tx, nodeId, userId); err != nil {
-		return err
-	}
-
 	if err := tx.Commit(); err != nil {
 		return err
 	}
@@ -498,11 +689,6 @@ func (s *NodeService) RejectNodeForm(ctx context.Context, nodeId string, formId 
 	}
 	nodeForm.IsRejected = true
 	if err := s.NodeRepo.UpdateNodeForm(ctx, tx, nodeForm); err != nil {
-		return err
-	}
-
-	// Update Node Status To Completed
-	if err := s.CheckAndCompleteNode(ctx, tx, nodeId, userId); err != nil {
 		return err
 	}
 

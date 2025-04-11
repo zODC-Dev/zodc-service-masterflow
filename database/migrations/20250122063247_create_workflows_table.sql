@@ -108,6 +108,7 @@ CREATE TABLE nodes (
 
     --
     is_approved BOOLEAN NOT NULL DEFAULT false,
+    is_rejected BOOLEAN NOT NULL DEFAULT false,
 
     -- end node
     end_type TEXT,
@@ -172,11 +173,13 @@ CREATE TABLE node_forms (
     node_id TEXT NOT NULL REFERENCES nodes (id) ON DELETE CASCADE
 );
 
-CREATE TABLE node_form_approve_users (
+CREATE TABLE node_form_approve_or_reject_users (
     id SERIAL PRIMARY KEY,
     created_at TIMESTAMP DEFAULT now () NOT NULL,
     updated_at TIMESTAMP DEFAULT now () NOT NULL,
     deleted_at TIMESTAMP,
+
+    is_approved BOOLEAN NOT NULL,
 
     user_id INT NOT NULL,
 

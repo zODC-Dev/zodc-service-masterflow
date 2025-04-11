@@ -169,7 +169,7 @@ func (r *RequestRepository) FindOneRequestByRequestId(ctx context.Context, db *s
 	FormData := table.FormData
 	FormFieldData := table.FormFieldData
 	FormTemplateFields := table.FormTemplateFields
-	NodeFormApproveUsers := table.NodeFormApproveUsers
+	NodeFormApproveOrRejectUsers := table.NodeFormApproveOrRejectUsers
 	Connections := table.Connections
 	Categories := table.Categories
 
@@ -179,7 +179,7 @@ func (r *RequestRepository) FindOneRequestByRequestId(ctx context.Context, db *s
 		Workflows.AllColumns,
 		Nodes.AllColumns,
 		NodeForms.AllColumns,
-		NodeFormApproveUsers.AllColumns,
+		NodeFormApproveOrRejectUsers.AllColumns,
 		Connections.AllColumns,
 		Categories.AllColumns,
 		FormData.AllColumns,
@@ -191,7 +191,7 @@ func (r *RequestRepository) FindOneRequestByRequestId(ctx context.Context, db *s
 			LEFT_JOIN(Workflows, Workflows.ID.EQ(WorkflowVersions.WorkflowID)).
 			LEFT_JOIN(Nodes, Nodes.RequestID.EQ(Requests.ID)).
 			LEFT_JOIN(NodeForms, NodeForms.NodeID.EQ(Nodes.ID)).
-			LEFT_JOIN(NodeFormApproveUsers, NodeFormApproveUsers.NodeFormID.EQ(NodeForms.ID)).
+			LEFT_JOIN(NodeFormApproveOrRejectUsers, NodeFormApproveOrRejectUsers.NodeFormID.EQ(NodeForms.ID)).
 			LEFT_JOIN(FormData, FormData.ID.EQ(Nodes.FormDataID)).
 			LEFT_JOIN(FormFieldData, FormFieldData.FormDataID.EQ(FormData.ID)).
 			LEFT_JOIN(FormTemplateFields, FormTemplateFields.ID.EQ(FormFieldData.FormTemplateFieldID)).

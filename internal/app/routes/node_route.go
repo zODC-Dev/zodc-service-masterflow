@@ -62,6 +62,8 @@ func NodeRoute(group *echo.Group, db *sql.DB) {
 	{
 		nodeRoute.POST("/:id/complete", nodeController.CompleteNode)
 		nodeRoute.POST("/:id/start", nodeController.StartNode)
+		nodeRoute.POST("/:id/approve", nodeController.ApproveNode)
+		nodeRoute.POST("/:id/reject", nodeController.RejectNode)
 
 		nodeRoute.POST("/:id/reassign/:userId", nodeController.ReassignNode)
 

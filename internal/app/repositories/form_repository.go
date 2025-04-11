@@ -203,14 +203,17 @@ func (r *FormRepository) FindOneFormTemplateByFormTemplateId(ctx context.Context
 
 func (r *FormRepository) FindFormDataById(ctx context.Context, db *sql.DB, formDataId string) (results.FormDataResult, error) {
 	FormData := table.FormData
+	FormFieldData := table.FormFieldData
 	FormTemplateVersions := table.FormTemplateVersions
 	FormTemplateFields := table.FormTemplateFields
 
 	statement := FormData.SELECT(
 		FormData.AllColumns,
 		FormTemplateFields.AllColumns,
+		FormFieldData.AllColumns,
 	).FROM(
 		FormData.
+			LEFT_JOIN(FormFieldData, FormData.ID.EQ(FormFieldData.FormDataID)).
 			LEFT_JOIN(FormTemplateVersions, FormData.FormTemplateVersionID.EQ(FormTemplateVersions.ID)).
 			LEFT_JOIN(FormTemplateFields, FormTemplateVersions.ID.EQ(FormTemplateFields.FormTemplateVersionID)),
 	).WHERE(

@@ -19,7 +19,7 @@ func UseSchema(schema string) {
 	FormTemplates = FormTemplates.FromSchema(schema)
 	GooseDbVersion = GooseDbVersion.FromSchema(schema)
 	NodeConditionDestinations = NodeConditionDestinations.FromSchema(schema)
-	NodeFormApproveUsers = NodeFormApproveUsers.FromSchema(schema)
+	NodeFormApproveOrRejectUsers = NodeFormApproveOrRejectUsers.FromSchema(schema)
 	NodeForms = NodeForms.FromSchema(schema)
 	Nodes = Nodes.FromSchema(schema)
 	Requests = Requests.FromSchema(schema)

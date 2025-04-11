@@ -34,14 +34,21 @@ func (r *NodeRepository) UpdateNode(ctx context.Context, tx *sql.Tx, node model.
 	return err
 }
 
-func (r *NodeRepository) FindOneNodeByNodeId(ctx context.Context, db *sql.DB, nodeId string) (model.Nodes, error) {
+func (r *NodeRepository) FindOneNodeByNodeId(ctx context.Context, db *sql.DB, nodeId string) (results.NodeResult, error) {
 	Nodes := table.Nodes
+	NodeForms := table.NodeForms
 
-	statement := postgres.SELECT(Nodes.AllColumns).
-		FROM(Nodes).
-		WHERE(Nodes.ID.EQ(postgres.String(nodeId)))
+	statement := postgres.SELECT(
+		Nodes.AllColumns,
+		NodeForms.AllColumns,
+	).FROM(
+		Nodes.
+			LEFT_JOIN(NodeForms, Nodes.ID.EQ(NodeForms.NodeID)),
+	).WHERE(
+		Nodes.ID.EQ(postgres.String(nodeId)),
+	)
 
-	result := model.Nodes{}
+	result := results.NodeResult{}
 	err := statement.QueryContext(ctx, db, &result)
 
 	return result, err
@@ -360,6 +367,25 @@ func (r *NodeRepository) FindOneNodeBySubRequestID(ctx context.Context, tx *sql.
 
 	result := model.Nodes{}
 	err := statement.QueryContext(ctx, tx, &result)
+
+	return result, err
+}
+
+func (r *NodeRepository) FindAllNodeConditionDestinationByNodeId(ctx context.Context, db *sql.DB, nodeId string, isTrue bool) ([]model.NodeConditionDestinations, error) {
+	NodeConditionDestinations := table.NodeConditionDestinations
+
+	statement := postgres.SELECT(
+		NodeConditionDestinations.AllColumns,
+	).FROM(
+		NodeConditionDestinations,
+	).WHERE(
+		NodeConditionDestinations.NodeID.EQ(postgres.String(nodeId)).AND(
+			NodeConditionDestinations.IsTrue.EQ(postgres.Bool(isTrue)),
+		),
+	)
+
+	result := []model.NodeConditionDestinations{}
+	err := statement.QueryContext(ctx, db, &result)
 
 	return result, err
 }
