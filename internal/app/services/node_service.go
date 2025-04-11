@@ -639,15 +639,15 @@ func (s *NodeService) SubmitNodeForm(ctx context.Context, userId int32, nodeId s
 
 	// Update Node To Completed
 	if isCompletedNode {
+		if err := s.CompleteNodeHandler(ctx, nodeId, userId); err != nil {
+			return fmt.Errorf("complete node handler fail: %w", err)
+		}
+
 		nodeModel := model.Nodes{}
 		utils.Mapper(node, &nodeModel)
 		nodeModel.Status = string(constants.NodeStatusCompleted)
 		if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
 			return fmt.Errorf("update node status to completed fail: %w", err)
-		}
-
-		if err := s.CompleteNodeHandler(ctx, nodeId, userId); err != nil {
-			return fmt.Errorf("complete node handler fail: %w", err)
 		}
 	}
 

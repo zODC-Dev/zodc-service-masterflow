@@ -205,7 +205,7 @@ CREATE TABLE connections (
 );
 
 -- +goose Down
-DROP TABLE node_form_approve_users;
+DROP TABLE node_form_approve_or_reject_users;
 
 DROP TABLE node_forms;
 
