@@ -254,10 +254,6 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 	node := model.Nodes{}
 	utils.Mapper(nodeResult, &node)
 
-	if node.Type == string(constants.NodeTypeStory) || node.Type == string(constants.NodeTypeSubWorkflow) {
-		return fmt.Errorf("story or sub workflow is auto complete by system, cant mark as complete by user")
-	}
-
 	// Update Current Node Status To Completed
 	node.Status = string(constants.NodeStatusCompleted)
 
@@ -322,6 +318,21 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 				if err := s.RequestRepo.UpdateRequest(ctx, tx, request); err != nil {
 					return err
 				}
+
+				//
+				nodeSubRequest, err := s.NodeRepo.FindOneNodeBySubRequestID(ctx, tx, request.ID)
+				if err != nil {
+					errStr := err.Error()
+					if errStr != "qrm: no rows in result set" {
+						return err
+					}
+				} else {
+					err = s.CompleteNodeHandler(ctx, nodeSubRequest.ID, userId)
+					if err != nil {
+						return err
+					}
+				}
+
 			} else {
 				connectionsToNode[i].Node.IsCurrent = true
 				err := s.NodeRepo.UpdateNode(ctx, tx, connectionsToNode[i].Node)
@@ -366,6 +377,7 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 	if err := utils.Mapper(request, &requestModel); err != nil {
 		return err
 	}
+
 	if err := s.RequestRepo.UpdateRequest(ctx, tx, requestModel); err != nil {
 		return err
 	}

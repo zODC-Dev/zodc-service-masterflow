@@ -258,7 +258,7 @@ func (s *NatsService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx, nod
 		slog.Error("Jira synchronization failed",
 			"outerSuccess", syncResponse.Success,
 			"innerSuccess", syncResponse.Data.Success)
-		return natsModel.WorkflowSyncResponse{}, fmt.Errorf("Jira synchronization failed")
+		return natsModel.WorkflowSyncResponse{}, fmt.Errorf("jira synchronization failed")
 	}
 
 	// Update JiraKeys in database from nested structure
@@ -617,7 +617,7 @@ func (s *NatsService) publishWorkflowToGanttChart(ctx context.Context, tx *sql.T
 		slog.Error("Gantt Chart calculation failed",
 			"outerSuccess", ganttResponse.Success,
 			"innerSuccess", ganttResponse.Data.Success)
-		return fmt.Errorf("Gantt Chart calculation failed")
+		return fmt.Errorf("gantt Chart calculation failed")
 	}
 
 	// Log cụ thể các node được cập nhật
@@ -709,7 +709,7 @@ func (s *NatsService) SyncNodeStatusToJira(ctx context.Context, tx *sql.Tx, node
 		slog.Error("Jira synchronization failed",
 			"outerSuccess", syncResponse.Success,
 			"innerSuccess", syncResponse.Data.Success)
-		return fmt.Errorf("Jira synchronization failed")
+		return fmt.Errorf("jira synchronization failed")
 	}
 
 	slog.Info("Successfully synced node status to Jira", "nodeId", node.ID, "jiraKey", node.JiraKey)
@@ -968,7 +968,7 @@ func (s *NatsService) publishWorkflowEditToJira(ctx context.Context, tx *sql.Tx,
 		slog.Error("Jira edit synchronization failed",
 			"outerSuccess", syncResponse.Success,
 			"innerSuccess", syncResponse.Data.Success)
-		return natsModel.WorkflowEditResponse{}, fmt.Errorf("Jira edit synchronization failed")
+		return natsModel.WorkflowEditResponse{}, fmt.Errorf("jira edit synchronization failed")
 	}
 
 	// Update JiraKeys in database from response

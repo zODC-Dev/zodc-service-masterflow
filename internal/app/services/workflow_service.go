@@ -203,6 +203,13 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 			}
 
 			if nodeModel.Type == string(constants.NodeTypeStory) || nodeModel.Type == string(constants.NodeTypeSubWorkflow) {
+
+				currentTime := time.Now()
+				nodeModel.ActualStartTime = &currentTime
+				if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
+					return fmt.Errorf("update node status to in processing fail: %w", err)
+				}
+
 				s.RunWorkflow(ctx, tx, *nodeModel.SubRequestID)
 			}
 
