@@ -496,6 +496,7 @@ func (s *RequestService) GetRequestTasksByProjectHandler(ctx context.Context, re
 			RequestTitle:     node.Request.Title,
 			Assignee:         assignees[*node.AssigneeID],
 			IsCurrent:        node.IsCurrent,
+			RequestID:        node.RequestID,
 		}
 
 		if node.JiraKey != nil {
@@ -523,12 +524,6 @@ func (s *RequestService) GetRequestTasksByProjectHandler(ctx context.Context, re
 func (s *RequestService) GetRequestTaskCount(ctx context.Context, userId int32, queryParams queryparams.RequestTaskCount) (responses.RequestTaskCountResponse, error) {
 	taskCountResponse := responses.RequestTaskCountResponse{}
 
-	// totalCount, err := s.RequestRepo.CountRequestTaskByStatusAndUserIdAndQueryParams(ctx, s.DB, userId, "", queryParams)
-	// if err != nil {
-	// 	return taskCountResponse, err
-	// }
-	// taskCountResponse.TotalCount = int32(totalCount)
-
 	completedCount, err := s.RequestRepo.CountRequestTaskByStatusAndUserIdAndQueryParams(ctx, s.DB, userId, constants.NodeStatusCompleted, queryParams)
 	if err != nil {
 		return taskCountResponse, err
@@ -547,7 +542,12 @@ func (s *RequestService) GetRequestTaskCount(ctx context.Context, userId int32, 
 	}
 	taskCountResponse.TodoCount = int32(todoCount)
 
-	taskCountResponse.TotalCount = taskCountResponse.CompletedCount + taskCountResponse.OverdueCount + taskCountResponse.TodoCount
+	inProcessCount, err := s.RequestRepo.CountRequestTaskByStatusAndUserIdAndQueryParams(ctx, s.DB, userId, constants.NodeStatusInProgress, queryParams)
+	if err != nil {
+		return taskCountResponse, err
+	}
+
+	taskCountResponse.TotalCount = taskCountResponse.CompletedCount + taskCountResponse.OverdueCount + taskCountResponse.TodoCount + int32(inProcessCount)
 
 	return taskCountResponse, nil
 }

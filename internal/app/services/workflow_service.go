@@ -133,8 +133,11 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 		return fmt.Errorf("request not found")
 	}
 
+	currentTime := time.Now()
+
 	// Update request status to in processing
 	request.Status = string(constants.RequestStatusInProgress)
+	request.StartedAt = &currentTime
 
 	requestModel := model.Requests{}
 	if err := utils.Mapper(request, &requestModel); err != nil {

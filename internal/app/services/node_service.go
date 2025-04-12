@@ -350,14 +350,13 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 	totalCompletedNode := 0
 	totalNode := len(request.Nodes)
 	for _, requestNode := range request.Nodes {
-		if requestNode.Status == string(constants.NodeStatusCompleted) {
-			totalCompletedNode++
-		}
-
 		if requestNode.Type == string(constants.NodeTypeStart) || requestNode.Type == string(constants.NodeTypeEnd) {
 			totalNode--
+		} else if requestNode.Status == string(constants.NodeStatusCompleted) {
+			totalCompletedNode++
 		}
 	}
+
 	if totalNode == 0 {
 		request.Progress = 100
 	} else {
