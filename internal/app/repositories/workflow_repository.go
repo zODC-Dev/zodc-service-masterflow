@@ -130,12 +130,22 @@ func (r *WorkflowRepository) FindAllWorkflowTemplates(ctx context.Context, db *s
 	return result, err
 }
 
-func (r *WorkflowRepository) FindOneWorkflowByWorkflowId(ctx context.Context, db *sql.DB, workflowId int32) (model.Workflows, error) {
+func (r *WorkflowRepository) FindOneWorkflowByWorkflowId(ctx context.Context, db *sql.DB, workflowId int32) (results.Workflow, error) {
 	Workflows := table.Workflows
+	WorkflowVersions := table.WorkflowVersions
+	Requests := table.Requests
 
-	statement := Workflows.SELECT(Workflows.AllColumns).WHERE(Workflows.ID.EQ(postgres.Int32(workflowId)))
+	statement := Workflows.SELECT(
+		Workflows.AllColumns,
+		WorkflowVersions.AllColumns,
+		Requests.AllColumns,
+	).FROM(
+		Workflows.
+			LEFT_JOIN(WorkflowVersions, WorkflowVersions.WorkflowID.EQ(Workflows.ID)).
+			LEFT_JOIN(Requests, Requests.WorkflowVersionID.EQ(WorkflowVersions.ID)),
+	).WHERE(Workflows.ID.EQ(postgres.Int32(workflowId)))
 
-	workflow := model.Workflows{}
+	workflow := results.Workflow{}
 
 	err := statement.QueryContext(ctx, db, &workflow)
 

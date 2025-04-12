@@ -1350,8 +1350,67 @@ func (s *WorkflowService) ArchiveWorkflowHandler(ctx context.Context, workflowId
 
 	workflow.IsArchived = true
 
-	if err := s.WorkflowRepo.UpdateWorkflow(ctx, tx, workflow); err != nil {
+	workflowModel := model.Workflows{}
+	if err := utils.Mapper(workflow, &workflowModel); err != nil {
+		return fmt.Errorf("map workflow fail: %w", err)
+	}
+
+	if err := s.WorkflowRepo.UpdateWorkflow(ctx, tx, workflowModel); err != nil {
 		return fmt.Errorf("update workflow fail: %w", err)
+	}
+
+	for _, request := range workflow.Requests {
+		subWorkflowModel := model.Workflows{}
+
+		// Its Workflow when request parentID is nil, its story when request parentID is not nil
+		if request.ParentID == nil {
+			subRequests, err := s.RequestRepo.FindAllSubRequestByParentIdWithoutPagination(ctx, s.DB, request.ID)
+			if err != nil {
+				return fmt.Errorf("find sub request fail: %w", err)
+			}
+
+			for _, subRequest := range subRequests {
+				if err := utils.Mapper(subRequest.Workflows, &subWorkflowModel); err != nil {
+					return fmt.Errorf("map sub workflow fail: %w", err)
+				}
+
+				subWorkflowModel.IsArchived = true
+				if err := s.WorkflowRepo.UpdateWorkflow(ctx, tx, subWorkflowModel); err != nil {
+					return fmt.Errorf("update sub workflow fail: %w", err)
+				}
+			}
+		} else {
+			subMainRequest, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, *request.ParentID)
+			if err != nil {
+				return fmt.Errorf("find sub request fail: %w", err)
+			}
+
+			workflowModel := model.Workflows{}
+			if err := utils.Mapper(subMainRequest.Workflow, &workflowModel); err != nil {
+				return fmt.Errorf("map workflow fail: %w", err)
+			}
+
+			workflowModel.IsArchived = true
+			if err := s.WorkflowRepo.UpdateWorkflow(ctx, tx, workflowModel); err != nil {
+				return fmt.Errorf("update workflow fail: %w", err)
+			}
+
+			subRequests, err := s.RequestRepo.FindAllSubRequestByParentIdWithoutPagination(ctx, s.DB, subMainRequest.ID)
+			if err != nil {
+				return fmt.Errorf("find sub request fail: %w", err)
+			}
+
+			for _, subRequest := range subRequests {
+				if err := utils.Mapper(subRequest.Workflows, &subWorkflowModel); err != nil {
+					return fmt.Errorf("map sub workflow fail: %w", err)
+				}
+
+				subWorkflowModel.IsArchived = true
+				if err := s.WorkflowRepo.UpdateWorkflow(ctx, tx, subWorkflowModel); err != nil {
+					return fmt.Errorf("update sub workflow fail: %w", err)
+				}
+			}
+		}
 	}
 
 	if err := tx.Commit(); err != nil {

@@ -59,3 +59,8 @@ type RequestSubRequest struct {
 	Workflows        model.Workflows
 	WorkflowVersions model.WorkflowVersions
 }
+
+type Workflow struct {
+	model.Workflows
+	Requests []model.Requests
+}

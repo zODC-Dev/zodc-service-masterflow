@@ -591,6 +591,28 @@ func (r *RequestRepository) FindAllSubRequestByParentId(ctx context.Context, db 
 	return len(count), requests, err
 }
 
+func (r *RequestRepository) FindAllSubRequestByParentIdWithoutPagination(ctx context.Context, db *sql.DB, parentId int32) ([]results.RequestSubRequest, error) {
+	Requests := table.Requests
+	Workflows := table.Workflows
+	WorkflowVersions := table.WorkflowVersions
+
+	statement := Requests.SELECT(
+		Requests.AllColumns,
+		Workflows.AllColumns,
+	).FROM(
+		Requests.
+			LEFT_JOIN(WorkflowVersions, WorkflowVersions.ID.EQ(Requests.WorkflowVersionID)).
+			LEFT_JOIN(Workflows, WorkflowVersions.WorkflowID.EQ(Workflows.ID)),
+	).WHERE(
+		Requests.ParentID.EQ(postgres.Int32(parentId)),
+	)
+
+	requests := []results.RequestSubRequest{}
+	err := statement.QueryContext(ctx, db, &requests)
+
+	return requests, err
+}
+
 func (r *RequestRepository) RemoveNodesConnectionsStoriesByRequestId(ctx context.Context, tx *sql.Tx, requestId int32) error {
 	Nodes := table.Nodes
 	Connections := table.Connections
