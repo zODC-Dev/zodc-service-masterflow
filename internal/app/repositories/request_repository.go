@@ -29,10 +29,14 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 
 	rRequests := postgres.SELECT(
 		Requests.AllColumns,
+		Nodes.AllColumns,
 	).FROM(
-		Requests,
+		Requests.
+			LEFT_JOIN(Nodes, Requests.ID.EQ(Nodes.RequestID)),
 	).WHERE(
-		Requests.UserID.EQ(postgres.Int32(userId)).AND(Requests.IsTemplate.EQ(postgres.Bool(false))),
+		Requests.UserID.EQ(postgres.Int32(userId)).
+			OR(Nodes.AssigneeID.EQ(postgres.Int32(userId))).
+			AND(Requests.IsTemplate.EQ(postgres.Bool(false))),
 	).LIMIT(int64(requestQueryParam.PageSize)).OFFSET(int64(requestQueryParam.Page - 1)).AsTable("rRequests")
 
 	requestId := Requests.ID.From(rRequests)

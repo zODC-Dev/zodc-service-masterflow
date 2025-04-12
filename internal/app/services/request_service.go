@@ -582,13 +582,18 @@ func (s *RequestService) GetRequestOverviewHandler(ctx context.Context, requestI
 
 func (s *RequestService) FindAllSubRequestByRequestId(ctx context.Context, requestId int32, requestSubRequestQueryParam queryparams.RequestSubRequestQueryParam) (responses.Paginate[[]responses.RequestSubRequest], error) {
 	paginatedResponse := responses.Paginate[[]responses.RequestSubRequest]{}
+	subRequests := []responses.RequestSubRequest{}
+	paginatedResponse.Items = subRequests
 
 	total, request, err := s.RequestRepo.FindAllSubRequestByParentId(ctx, s.DB, requestId, requestSubRequestQueryParam)
 	if err != nil {
+		errStr := err.Error()
+		if errStr == "qrm: no rows in result set" {
+			return paginatedResponse, nil
+		}
 		return paginatedResponse, fmt.Errorf("find all children request by request id fail: %w", err)
 	}
 
-	subRequests := []responses.RequestSubRequest{}
 	for _, node := range request.Nodes {
 		assignee := types.Assignee{}
 		if node.AssigneeID != nil {
@@ -603,6 +608,7 @@ func (s *RequestService) FindAllSubRequestByRequestId(ctx context.Context, reque
 		}
 
 		subRequest := responses.RequestSubRequest{
+			Id:            request.ID,
 			WorkflowTitle: node.Title,
 			TaskTitle:     node.Title,
 			Assignee:      assignee,

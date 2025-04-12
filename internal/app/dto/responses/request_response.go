@@ -75,6 +75,7 @@ type RequestOverviewResponse struct {
 }
 
 type RequestSubRequest struct {
+	Id            int32          `json:"id"`
 	Key           string         `json:"key"`
 	WorkflowTitle string         `json:"workflowTitle"`
 	TaskTitle     string         `json:"taskTitle"`
