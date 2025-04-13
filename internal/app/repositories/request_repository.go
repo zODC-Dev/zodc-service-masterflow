@@ -96,7 +96,6 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 
 	result := []results.Request{}
 	err := statement.QueryContext(ctx, db, &result)
-	fmt.Println(statement.DebugSql())
 
 	if err != nil {
 		return results.Count{}, result, err
@@ -130,6 +129,14 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 		} else {
 			conditionsCount = append(conditionsCount, Requests.Status.EQ(postgres.String(requestQueryParam.Status)))
 		}
+	}
+
+	if requestQueryParam.SprintID != "" {
+		sprintIdInt, err := strconv.Atoi(requestQueryParam.SprintID)
+		if err != nil {
+			return results.Count{}, []results.Request{}, err
+		}
+		conditionsCount = append(conditionsCount, Requests.SprintID.EQ(postgres.Int64(int64(sprintIdInt))))
 	}
 
 	if len(conditionsCount) > 0 {
