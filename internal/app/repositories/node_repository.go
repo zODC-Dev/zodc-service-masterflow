@@ -54,6 +54,26 @@ func (r *NodeRepository) FindOneNodeByNodeId(ctx context.Context, db *sql.DB, no
 	return result, err
 }
 
+func (r *NodeRepository) FindOneNodeByNodeIdTx(ctx context.Context, tx *sql.Tx, nodeId string) (results.NodeResult, error) {
+	Nodes := table.Nodes
+	NodeForms := table.NodeForms
+
+	statement := postgres.SELECT(
+		Nodes.AllColumns,
+		NodeForms.AllColumns,
+	).FROM(
+		Nodes.
+			LEFT_JOIN(NodeForms, Nodes.ID.EQ(NodeForms.NodeID)),
+	).WHERE(
+		Nodes.ID.EQ(postgres.String(nodeId)),
+	)
+
+	result := results.NodeResult{}
+	err := statement.QueryContext(ctx, tx, &result)
+
+	return result, err
+}
+
 func (r *NodeRepository) FindAllNodeByRequestId(ctx context.Context, db *sql.DB, requestId int32) ([]model.Nodes, error) {
 	WorkflowNodes := table.Nodes
 
@@ -223,19 +243,6 @@ func (r *NodeRepository) FindAllNodeByRequestIdTx(ctx context.Context, tx *sql.T
 	err := statement.QueryContext(ctx, tx, &results)
 
 	return results, err
-}
-
-func (r *NodeRepository) FindOneNodeByNodeIdTx(ctx context.Context, tx *sql.Tx, nodeId string) (model.Nodes, error) {
-	Nodes := table.Nodes
-
-	statement := postgres.SELECT(Nodes.AllColumns).
-		FROM(Nodes).
-		WHERE(Nodes.ID.EQ(postgres.String(nodeId)))
-
-	result := model.Nodes{}
-	err := statement.QueryContext(ctx, tx, &result)
-
-	return result, err
 }
 
 func (r *NodeRepository) FindAllNodeFormByNodeIdAndPermission(ctx context.Context, db *sql.DB, nodeId string, permission string) ([]results.NodeFormResult, error) {

@@ -302,7 +302,7 @@ func (s *RequestService) GetRequestTasksHandler(ctx context.Context, requestId i
 	for _, node := range request.Nodes {
 
 		// Skip Start and End Node
-		if node.Type == string(constants.NodeTypeStart) || node.Type == string(constants.NodeTypeEnd) {
+		if node.Type == string(constants.NodeTypeStart) || node.Type == string(constants.NodeTypeEnd) || node.Type == string(constants.NodeTypeCondition) {
 			continue
 		}
 

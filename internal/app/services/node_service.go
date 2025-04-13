@@ -635,7 +635,7 @@ func (s *NodeService) SubmitNodeForm(ctx context.Context, userId int32, nodeId s
 		return fmt.Errorf("update node form is submitted fail: %w", err)
 	}
 
-	node, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
+	node, err := s.NodeRepo.FindOneNodeByNodeIdTx(ctx, tx, nodeId)
 	if err != nil {
 		return fmt.Errorf("find node by node id fail: %w", err)
 	}
