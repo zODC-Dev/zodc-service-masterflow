@@ -583,12 +583,12 @@ func (s *RequestService) GetRequestOverviewHandler(ctx context.Context, requestI
 	return requestOverviewResponse, nil
 }
 
-func (s *RequestService) FindAllSubRequestByRequestId(ctx context.Context, requestId int32, requestSubRequestQueryParam queryparams.RequestSubRequestQueryParam) (responses.Paginate[[]responses.RequestSubRequest], error) {
-	paginatedResponse := responses.Paginate[[]responses.RequestSubRequest]{}
-	subRequests := []responses.RequestSubRequest{}
-	paginatedResponse.Items = subRequests
+func (s *RequestService) FindAllSubRequestByRequestId(ctx context.Context, requestId int32, requestSubRequestQueryParam queryparams.RequestSubRequestQueryParam) (responses.Paginate[[]responses.RequestResponse], error) {
+	paginatedResponse := responses.Paginate[[]responses.RequestResponse]{}
+	requestsResponse := []responses.RequestResponse{}
+	paginatedResponse.Items = requestsResponse
 
-	total, request, err := s.RequestRepo.FindAllSubRequestByParentId(ctx, s.DB, requestId, requestSubRequestQueryParam)
+	total, requests, err := s.RequestRepo.FindAllSubRequestByParentId(ctx, s.DB, requestId, requestSubRequestQueryParam)
 	if err != nil {
 		errStr := err.Error()
 		if errStr == "qrm: no rows in result set" {
@@ -597,44 +597,88 @@ func (s *RequestService) FindAllSubRequestByRequestId(ctx context.Context, reque
 		return paginatedResponse, fmt.Errorf("find all children request by request id fail: %w", err)
 	}
 
-	for _, node := range request.Nodes {
-		assignee := types.Assignee{}
-		if node.AssigneeID != nil {
-			users, err := s.UserAPI.FindUsersByUserIds([]int32{*node.AssigneeID})
+	for _, request := range requests {
+		requestResponse := responses.RequestResponse{}
+		if err := utils.Mapper(request, &requestResponse); err != nil {
+			return paginatedResponse, err
+		}
+
+		// Parent Key
+		if request.ParentID != nil {
+			parentRequest, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, *request.ParentID)
 			if err != nil {
-				return paginatedResponse, fmt.Errorf("find users by user ids fail: %w", err)
+				return paginatedResponse, err
+			}
+			requestResponse.ParentKey = parentRequest.Key
+		}
+
+		// Tasks and Process - Current Tasks
+		requestResponse.CurrentTasks = []responses.CurrentTaskResponse{}
+		for _, node := range request.Nodes {
+			if node.Type == string(constants.NodeTypeEnd) || node.Type == string(constants.NodeTypeStart) {
+				continue
 			}
 
-			if err := utils.Mapper(users.Data[0], &assignee); err != nil {
-				return paginatedResponse, fmt.Errorf("mapper assignee fail: %w", err)
+			userIdsTask := []int32{}
+			// Participants
+			if node.Type == string(constants.NodeTypeStory) || node.Type == string(constants.NodeTypeSubWorkflow) {
+				subRequest, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, *node.SubRequestID)
+				if err != nil {
+					return paginatedResponse, err
+				}
+
+				for _, subNode := range subRequest.Nodes {
+					userIdsTask = append(userIdsTask, *subNode.AssigneeID)
+				}
+
+			} else {
+				userIdsTask = append(userIdsTask, *node.AssigneeID)
 			}
+
+			taskUsers, err := s.UserAPI.FindUsersByUserIds(userIdsTask)
+			if err != nil {
+				return paginatedResponse, err
+			}
+
+			participants := []types.Assignee{}
+			existingUserIds := make(map[int32]bool)
+
+			for _, user := range taskUsers.Data {
+				if _, exists := existingUserIds[user.ID]; exists {
+					continue
+				}
+
+				participant := types.Assignee{}
+				if err := utils.Mapper(user, &participant); err != nil {
+					return paginatedResponse, err
+				}
+
+				participants = append(participants, participant)
+				existingUserIds[user.ID] = true
+			}
+
+			currentTask := responses.CurrentTaskResponse{
+				Title:        node.Title,
+				UpdatedAt:    node.UpdatedAt,
+				Participants: participants,
+			}
+
+			requestResponse.CurrentTasks = append(requestResponse.CurrentTasks, currentTask)
+
 		}
 
-		subRequest := responses.RequestSubRequest{
-			Id:            request.ID,
-			WorkflowTitle: node.Title,
-			TaskTitle:     node.Title,
-			Assignee:      assignee,
-			Status:        request.Status,
-			StartedAt:     request.StartedAt,
-			CompletedAt:   request.CompletedAt,
-			CanceledAt:    request.CanceledAt,
-			TerminatedAt:  request.TerminatedAt,
+		// Set CompletedAt
+		if request.Status == string(constants.RequestStatusCompleted) {
+			requestResponse.CompletedAt = &request.UpdatedAt
 		}
 
-		if node.JiraKey != nil {
-			subRequest.Key = *node.JiraKey
-		} else {
-			subRequest.Key = strconv.Itoa(int(node.Key))
-		}
-
-		subRequests = append(subRequests, subRequest)
+		requestsResponse = append(requestsResponse, requestResponse)
 	}
 
 	totalPages := (int(total) + requestSubRequestQueryParam.PageSize - 1) / requestSubRequestQueryParam.PageSize
 
-	paginatedResponse = responses.Paginate[[]responses.RequestSubRequest]{
-		Items:      subRequests,
+	paginatedResponse = responses.Paginate[[]responses.RequestResponse]{
+		Items:      requestsResponse,
 		Total:      int(total),
 		Page:       requestSubRequestQueryParam.Page,
 		PageSize:   requestSubRequestQueryParam.PageSize,

@@ -73,16 +73,3 @@ type RequestOverviewResponse struct {
 	Progress float32         `json:"progress"`
 	Category CategoryFindAll `json:"category"`
 }
-
-type RequestSubRequest struct {
-	Id            int32          `json:"id"`
-	Key           string         `json:"key"`
-	WorkflowTitle string         `json:"workflowTitle"`
-	TaskTitle     string         `json:"taskTitle"`
-	Assignee      types.Assignee `json:"assignee"`
-	Status        string         `json:"status"`
-	StartedAt     *time.Time     `json:"startedAt"`
-	CompletedAt   *time.Time     `json:"completedAt"`
-	CanceledAt    *time.Time     `json:"canceledAt"`
-	TerminatedAt  *time.Time     `json:"terminatedAt"`
-}
