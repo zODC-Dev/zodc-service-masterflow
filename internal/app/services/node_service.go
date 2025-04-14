@@ -875,6 +875,11 @@ func (s *NodeService) GetNodeStoryByAssignee(ctx context.Context, userId int32) 
 		if err := utils.Mapper(story.Workflows, &workflowResponse); err != nil {
 			return nil, err
 		}
+		categoryResponse := responses.CategoryResponse{}
+		if err := utils.Mapper(story.Category, &categoryResponse); err != nil {
+			return nil, err
+		}
+		workflowResponse.Category = categoryResponse
 		workflows = append(workflows, workflowResponse)
 	}
 

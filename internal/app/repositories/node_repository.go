@@ -403,18 +403,22 @@ func (r *NodeRepository) FindAllNodeStoryByAssigneeId(ctx context.Context, db *s
 	Requests := table.Requests
 	WorkflowVersions := table.WorkflowVersions
 	Workflows := table.Workflows
+	Categories := table.Categories
 
 	statement := postgres.SELECT(
 		Nodes.AllColumns,
 		Workflows.AllColumns,
+		Categories.AllColumns,
 	).FROM(
 		Nodes.
 			LEFT_JOIN(Requests, Nodes.RequestID.EQ(Requests.ID)).
 			LEFT_JOIN(WorkflowVersions, Requests.WorkflowVersionID.EQ(WorkflowVersions.ID)).
-			LEFT_JOIN(Workflows, WorkflowVersions.WorkflowID.EQ(Workflows.ID)),
+			LEFT_JOIN(Workflows, WorkflowVersions.WorkflowID.EQ(Workflows.ID)).
+			LEFT_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)),
 	).WHERE(
 		Nodes.AssigneeID.EQ(postgres.Int32(userId)).
-			AND(Nodes.Type.EQ(postgres.String(string(constants.NodeTypeStory)))),
+			AND(Nodes.Type.EQ(postgres.String(string(constants.NodeTypeStory)))).
+			AND(Workflows.IsArchived.EQ(postgres.Bool(false))),
 	)
 
 	results := []results.NodeResult{}
