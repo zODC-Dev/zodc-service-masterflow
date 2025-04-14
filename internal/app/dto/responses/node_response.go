@@ -39,4 +39,6 @@ type TaskDetail struct {
 	EstimatePoint *int `json:"estimatePoint"`
 	Parent        *TaskRelated
 	Related       []TaskRelated
+
+	JiraLinkURL *string `json:"jiraLinkUrl"`
 }

@@ -34,4 +34,13 @@ const (
 	RequestStatusCompleted  RequestStatus = "COMPLETED"
 	RequestStatusTodo       RequestStatus = "TO_DO"
 	RequestStatusInProgress RequestStatus = "IN_PROGRESS"
+	RequestStatusCanceled   RequestStatus = "CANCELED"
+	RequestStatusTerminated RequestStatus = "TERMINATED"
+)
+
+type NodeEndType string
+
+const (
+	NodeEndTypeComplete  NodeEndType = "COMPLETE"
+	NodeEndTypeTerminate NodeEndType = "TERMINATE"
 )

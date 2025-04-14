@@ -49,6 +49,8 @@ type NodeData struct {
 	JiraKey       string
 	EstimatePoint *float32
 
+	JiraLinkURL *string
+
 	Condition NodeDataCondition
 
 	FormAttached []NodeDataFormAttached

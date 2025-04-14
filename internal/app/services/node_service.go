@@ -139,6 +139,23 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 					return err
 				}
 
+				// Update Connection Condition Destination Node To Completed
+				connectionConditionDestination, err := s.ConnectionRepo.FindConnectionsByToNodeIdTx(ctx, tx, nodeConditionDestination.DestinationNodeID)
+				if err != nil {
+					return err
+				}
+				for _, connection := range connectionConditionDestination {
+					connection.IsCompleted = true
+					connectionModel := model.Connections{}
+					if err := utils.Mapper(connection, &connectionModel); err != nil {
+						return err
+					}
+					if err := s.ConnectionRepo.UpdateConnection(ctx, tx, connectionModel); err != nil {
+						return err
+					}
+
+				}
+
 				if node.Type == string(constants.NodeTypeEnd) {
 					nodeModel := model.Nodes{}
 					utils.Mapper(node, &nodeModel)
@@ -159,9 +176,16 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 					requestModel := model.Requests{}
 					utils.Mapper(request, &requestModel)
 
-					requestModel.Status = string(constants.RequestStatusCompleted)
-					requestModel.CompletedAt = &now
+					if *node.EndType == string(constants.NodeEndTypeComplete) {
+						requestModel.Status = string(constants.RequestStatusCompleted)
+						requestModel.CompletedAt = &now
+					} else {
+						requestModel.Status = string(constants.RequestStatusTerminated)
+						requestModel.TerminatedAt = &now
+					}
+
 					requestModel.Progress = 100
+
 					if err := s.RequestRepo.UpdateRequest(ctx, tx, requestModel); err != nil {
 						return err
 					}
@@ -176,22 +200,6 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 					return err
 				}
 
-				// Update Connection Condition Destination Node To Completed
-				connectionConditionDestination, err := s.ConnectionRepo.FindConnectionsByToNodeIdTx(ctx, tx, nodeConditionDestination.DestinationNodeID)
-				if err != nil {
-					return err
-				}
-				for _, connection := range connectionConditionDestination {
-					connection.IsCompleted = true
-					connectionModel := model.Connections{}
-					if err := utils.Mapper(connection, &connectionModel); err != nil {
-						return err
-					}
-					if err := s.ConnectionRepo.UpdateConnection(ctx, tx, connectionModel); err != nil {
-						return err
-					}
-
-				}
 			}
 		}
 	}
@@ -313,8 +321,15 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 					return err
 				}
 
-				request.Status = string(constants.RequestStatusCompleted)
-				request.CompletedAt = &now
+				if *node.EndType == string(constants.NodeEndTypeComplete) {
+					request.Status = string(constants.RequestStatusCompleted)
+					request.CompletedAt = &now
+				} else {
+					request.Status = string(constants.RequestStatusTerminated)
+					request.TerminatedAt = &now
+				}
+
+				request.Progress = 100
 
 				if err := s.RequestRepo.UpdateRequest(ctx, tx, request); err != nil {
 					return err
@@ -827,6 +842,7 @@ func (s *NodeService) GetNodeTaskDetail(ctx context.Context, nodeId string) (res
 		RequestRequestBy: mapUser(&request.UserID),
 		IsApproval:       node.IsApproved,
 		UpdatedAt:        node.UpdatedAt,
+		JiraLinkURL:      node.JiraLinkURL,
 	}
 
 	if parentNode != nil {

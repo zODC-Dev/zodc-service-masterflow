@@ -31,6 +31,8 @@ type NodeDataResponse struct {
 
 	Condition NodeDataConditionResponse `json:"condition"`
 
+	JiraLinkURL *string `json:"jiraLinkUrl"`
+
 	FormAttached []NodeFormResponse `json:"formAttached"`
 }
 

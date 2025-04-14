@@ -95,6 +95,8 @@ CREATE TABLE nodes (
 
     is_current BOOLEAN NOT NULL DEFAULT false,
 
+    jira_link_url TEXT,
+
     -- estimate
     estimate_point REAL,
     planned_start_time TIMESTAMP,
