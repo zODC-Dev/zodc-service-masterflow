@@ -549,6 +549,10 @@ func (s *NodeService) ApproveNode(ctx context.Context, userId int32, nodeId stri
 
 	node.IsApproved = true
 	node.Status = string(constants.NodeStatusCompleted)
+
+	now := time.Now()
+	node.ActualEndTime = &now
+
 	if err := s.NodeRepo.UpdateNode(ctx, tx, node); err != nil {
 		return err
 	}

@@ -829,19 +829,15 @@ func (s *WorkflowService) CreateWorkflowHandler(ctx context.Context, req *reques
 func (s *WorkflowService) FindAllWorkflowHandler(ctx context.Context, workflowTemplateQueryParams queryparams.WorkflowQueryParam, userId int32) ([]responses.WorkflowResponse, error) {
 	workflowResponses := []responses.WorkflowResponse{}
 
-	userIds := []int32{int32(userId)}
+	users, err := s.UserAPI.FindUsersByUserIds([]int32{userId})
+	if err != nil {
+		return workflowResponses, err
+	}
 
+	// Get User Project
 	projects := []string{}
-	if workflowTemplateQueryParams.Type != string(constants.WorkflowTypeGeneral) {
-		users, err := s.UserAPI.FindUsersByUserIds(userIds)
-		if err != nil {
-			return workflowResponses, err
-		}
-
-		// Get User Project
-		for _, projectRole := range users.Data[0].ProjectRoles {
-			projects = append(projects, projectRole.ProjectKey)
-		}
+	for _, projectRole := range users.Data[0].ProjectRoles {
+		projects = append(projects, projectRole.ProjectKey)
 	}
 
 	workflows, err := s.WorkflowRepo.FindAllWorkflowTemplates(ctx, s.DB, workflowTemplateQueryParams, projects)
