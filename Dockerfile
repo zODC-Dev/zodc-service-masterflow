@@ -22,6 +22,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o zodc-service-masterflow ./cmd/main.go
 # Final stage
 FROM alpine:3.19
 
+# Set TimeZone
+ENV TZ=Asia/Ho_Chi_Minh
+
 # Add non root user
 RUN adduser -D appuser
 
