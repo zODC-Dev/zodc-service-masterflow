@@ -646,7 +646,7 @@ func (s *NodeService) SubmitNodeForm(ctx context.Context, userId int32, nodeId s
 
 	isCompletedNode := true
 	for _, nodeForm := range node.NodeForms {
-		if !nodeForm.IsSubmitted {
+		if !nodeForm.IsSubmitted && nodeForm.Permission == string(constants.NodeFormPermissionInput) {
 			isCompletedNode = false
 			break
 		}
