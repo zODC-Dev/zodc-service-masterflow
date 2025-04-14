@@ -75,5 +75,7 @@ func NodeRoute(group *echo.Group, db *sql.DB) {
 		nodeRoute.GET("/:id/jira-form", nodeController.GetNodeJiraForm)
 
 		nodeRoute.GET("/:id/task", nodeController.GetNodeTaskDetail)
+
+		nodeRoute.GET("/stories", nodeController.GetNodeStoryByAssignee)
 	}
 }

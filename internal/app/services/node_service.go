@@ -13,6 +13,7 @@ import (
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/constants"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/requests"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/responses"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/results"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/externals"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
@@ -718,7 +719,6 @@ func (s *NodeService) RejectNodeForm(ctx context.Context, nodeId string, formId 
 }
 
 func (s *NodeService) GetNodeTaskDetail(ctx context.Context, nodeId string) (responses.TaskDetail, error) {
-
 	node, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
 	if err != nil {
 		return responses.TaskDetail{}, err
@@ -729,30 +729,68 @@ func (s *NodeService) GetNodeTaskDetail(ctx context.Context, nodeId string) (res
 		return responses.TaskDetail{}, err
 	}
 
-	assignee, err := s.UserAPI.FindUsersByUserIds([]int32{*node.AssigneeID})
-	if err != nil {
+	nodeTaskRelateds := []model.Nodes{}
+	if err := utils.Mapper(request.Nodes, &nodeTaskRelateds); err != nil {
 		return responses.TaskDetail{}, err
 	}
 
-	assigneeResponse := types.Assignee{
-		Id:           assignee.Data[0].ID,
-		Name:         assignee.Data[0].Name,
-		Email:        assignee.Data[0].Email,
-		AvatarUrl:    assignee.Data[0].AvatarUrl,
-		IsSystemUser: assignee.Data[0].IsSystemUser,
+	userIds := []int32{}
+	existingUserIds := map[int32]bool{}
+
+	if !existingUserIds[request.UserID] {
+		userIds = append(userIds, request.UserID)
+		existingUserIds[request.UserID] = true
 	}
 
-	requestBy, err := s.UserAPI.FindUsersByUserIds([]int32{request.UserID})
-	if err != nil {
-		return responses.TaskDetail{}, err
+	if node.AssigneeID != nil && !existingUserIds[*node.AssigneeID] {
+		userIds = append(userIds, *node.AssigneeID)
+		existingUserIds[*node.AssigneeID] = true
 	}
 
-	requestByResponse := types.Assignee{
-		Id:           requestBy.Data[0].ID,
-		Name:         requestBy.Data[0].Name,
-		Email:        requestBy.Data[0].Email,
-		AvatarUrl:    requestBy.Data[0].AvatarUrl,
-		IsSystemUser: requestBy.Data[0].IsSystemUser,
+	var parentNode *model.Nodes
+	if node.ParentID != nil {
+		nodeResult, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, *node.ParentID)
+		if err != nil {
+			return responses.TaskDetail{}, err
+		}
+		parentNode = &nodeResult.Nodes
+
+		if parentNode.AssigneeID != nil && !existingUserIds[*parentNode.AssigneeID] {
+			userIds = append(userIds, *parentNode.AssigneeID)
+			existingUserIds[*parentNode.AssigneeID] = true
+		}
+	}
+
+	for _, related := range nodeTaskRelateds {
+		if related.AssigneeID != nil && !existingUserIds[*related.AssigneeID] {
+			userIds = append(userIds, *related.AssigneeID)
+			existingUserIds[*related.AssigneeID] = true
+		}
+	}
+
+	userApiMap := map[int32]results.UserApiDataResult{}
+	if len(userIds) > 0 {
+		assigneeResult, err := s.UserAPI.FindUsersByUserIds(userIds)
+		if err != nil {
+			return responses.TaskDetail{}, err
+		}
+		for _, userApi := range assigneeResult.Data {
+			userApiMap[userApi.ID] = userApi
+		}
+	}
+
+	mapUser := func(id *int32) types.Assignee {
+		assignee := types.Assignee{}
+		if id != nil {
+			if user, ok := userApiMap[*id]; ok {
+				assignee.Id = user.ID
+				assignee.Name = user.Name
+				assignee.Email = user.Email
+				assignee.AvatarUrl = user.AvatarUrl
+				assignee.IsSystemUser = user.IsSystemUser
+			}
+		}
+		return assignee
 	}
 
 	taskDetail := responses.TaskDetail{
@@ -763,7 +801,7 @@ func (s *NodeService) GetNodeTaskDetail(ctx context.Context, nodeId string) (res
 			RequestID:        node.RequestID,
 			RequestTitle:     request.Title,
 			RequestProgress:  request.Progress,
-			Assignee:         assigneeResponse,
+			Assignee:         mapUser(node.AssigneeID),
 			PlannedStartTime: node.PlannedStartTime,
 			PlannedEndTime:   node.PlannedEndTime,
 			ActualStartTime:  node.ActualStartTime,
@@ -772,10 +810,44 @@ func (s *NodeService) GetNodeTaskDetail(ctx context.Context, nodeId string) (res
 			Status:           node.Status,
 			IsCurrent:        node.IsCurrent,
 		},
-		RequestRequestBy: requestByResponse,
+		RequestRequestBy: mapUser(&request.UserID),
 		IsApproval:       node.IsApproved,
 		UpdatedAt:        node.UpdatedAt,
 	}
+
+	if parentNode != nil {
+		taskDetail.Parent = &responses.TaskRelated{
+			Title:    parentNode.Title,
+			Type:     parentNode.Type,
+			Status:   parentNode.Status,
+			Assignee: mapUser(parentNode.AssigneeID),
+		}
+		if parentNode.JiraKey != nil {
+			taskDetail.Parent.Key = *parentNode.JiraKey
+		} else {
+			taskDetail.Parent.Key = strconv.Itoa(int(parentNode.Key))
+		}
+	}
+
+	nodeTaskRelatedsResponse := []responses.TaskRelated{}
+	for _, nodeTaskRelated := range nodeTaskRelateds {
+		assigneeResponse := mapUser(nodeTaskRelated.AssigneeID)
+
+		nodeTaskRelatedResponse := responses.TaskRelated{
+			Title:    nodeTaskRelated.Title,
+			Type:     nodeTaskRelated.Type,
+			Status:   nodeTaskRelated.Status,
+			Assignee: assigneeResponse,
+		}
+
+		if nodeTaskRelated.JiraKey != nil {
+			nodeTaskRelatedResponse.Key = *nodeTaskRelated.JiraKey
+		} else {
+			nodeTaskRelatedResponse.Key = strconv.Itoa(int(nodeTaskRelated.Key))
+		}
+		nodeTaskRelatedsResponse = append(nodeTaskRelatedsResponse, nodeTaskRelatedResponse)
+	}
+	taskDetail.Related = nodeTaskRelatedsResponse
 
 	if node.JiraKey != nil {
 		taskDetail.Key = *node.JiraKey
@@ -786,6 +858,27 @@ func (s *NodeService) GetNodeTaskDetail(ctx context.Context, nodeId string) (res
 	return taskDetail, nil
 }
 
+func (s *NodeService) GetNodeStoryByAssignee(ctx context.Context, userId int32) ([]responses.WorkflowResponse, error) {
+
+	workflows := []responses.WorkflowResponse{}
+
+	stories, err := s.NodeRepo.FindAllNodeStoryByAssigneeId(ctx, s.DB, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, story := range stories {
+		workflowResponse := responses.WorkflowResponse{}
+		if err := utils.Mapper(story.Workflows, &workflowResponse); err != nil {
+			return nil, err
+		}
+		workflows = append(workflows, workflowResponse)
+	}
+
+	return workflows, nil
+}
+
+// JIRA ==========================
 func (s *NodeService) SyncJiraWhenCompleteNode(ctx context.Context, tx *sql.Tx, node model.Nodes) error {
 	// Update node status to completed
 	node.Status = string(constants.NodeStatusCompleted)

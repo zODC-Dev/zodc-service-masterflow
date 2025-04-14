@@ -10,6 +10,7 @@ import (
 	"github.com/go-jet/jet/v2/postgres"
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/table"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/constants"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/results"
 )
@@ -395,4 +396,29 @@ func (r *NodeRepository) FindAllNodeConditionDestinationByNodeId(ctx context.Con
 	err := statement.QueryContext(ctx, db, &result)
 
 	return result, err
+}
+
+func (r *NodeRepository) FindAllNodeStoryByAssigneeId(ctx context.Context, db *sql.DB, userId int32) ([]results.NodeResult, error) {
+	Nodes := table.Nodes
+	Requests := table.Requests
+	WorkflowVersions := table.WorkflowVersions
+	Workflows := table.Workflows
+
+	statement := postgres.SELECT(
+		Nodes.AllColumns,
+		Workflows.AllColumns,
+	).FROM(
+		Nodes.
+			LEFT_JOIN(Requests, Nodes.RequestID.EQ(Requests.ID)).
+			LEFT_JOIN(WorkflowVersions, Requests.WorkflowVersionID.EQ(WorkflowVersions.ID)).
+			LEFT_JOIN(Workflows, WorkflowVersions.WorkflowID.EQ(Workflows.ID)),
+	).WHERE(
+		Nodes.AssigneeID.EQ(postgres.Int32(userId)).
+			AND(Nodes.Type.EQ(postgres.String(string(constants.NodeTypeStory)))),
+	)
+
+	results := []results.NodeResult{}
+	err := statement.QueryContext(ctx, db, &results)
+
+	return results, err
 }

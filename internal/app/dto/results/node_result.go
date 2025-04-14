@@ -8,6 +8,7 @@ type NodeResult struct {
 	model.Nodes
 	Request   model.Requests
 	NodeForms []model.NodeForms
+	Workflows model.Workflows
 }
 
 type NodeFormResult struct {
