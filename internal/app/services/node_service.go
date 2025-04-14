@@ -338,6 +338,9 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 				connectionsToNode[i].Node.IsCurrent = true
 				if isChangeToInProgress {
 					connectionsToNode[i].Node.Status = string(constants.NodeStatusInProgress)
+
+					now := time.Now()
+					connectionsToNode[i].Node.ActualStartTime = &now
 				}
 				err := s.NodeRepo.UpdateNode(ctx, tx, connectionsToNode[i].Node)
 				if err != nil {
