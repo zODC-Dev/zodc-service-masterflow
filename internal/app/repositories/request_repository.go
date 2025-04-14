@@ -27,24 +27,56 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 	WorkflowVerions := table.WorkflowVersions
 	Workflows := table.Workflows
 
-	rRequests := postgres.SELECT(
+	rRequestStatement := postgres.SELECT(
 		Requests.AllColumns,
-		Nodes.AllColumns,
 	).FROM(
 		Requests.
-			LEFT_JOIN(Nodes, Requests.ID.EQ(Nodes.RequestID)),
-	).WHERE(
-		Requests.UserID.EQ(postgres.Int32(userId)).
-			OR(Nodes.AssigneeID.EQ(postgres.Int32(userId))).
-			AND(Requests.IsTemplate.EQ(postgres.Bool(false))),
-	).LIMIT(int64(requestQueryParam.PageSize)).OFFSET(int64(requestQueryParam.Page - 1)).AsTable("rRequests")
+			LEFT_JOIN(WorkflowVerions, Requests.WorkflowVersionID.EQ(WorkflowVerions.ID)).
+			LEFT_JOIN(Workflows, WorkflowVerions.WorkflowID.EQ(Workflows.ID)),
+	).LIMIT(int64(requestQueryParam.PageSize)).OFFSET(int64(requestQueryParam.Page - 1))
+
+	rRequestsConditions := []postgres.BoolExpression{
+		Requests.UserID.EQ(postgres.Int32(userId)),
+		Requests.IsTemplate.EQ(postgres.Bool(false)),
+	}
+
+	if requestQueryParam.WorkflowType != "" {
+		rRequestsConditions = append(rRequestsConditions, Workflows.Type.EQ(postgres.String(requestQueryParam.WorkflowType)))
+	}
+
+	if requestQueryParam.Search != "" {
+		rRequestsConditions = append(rRequestsConditions, postgres.LOWER(Requests.Title).LIKE(postgres.LOWER(postgres.String("%"+requestQueryParam.Search+"%"))))
+	}
+
+	if requestQueryParam.ProjectKey != "" {
+		rRequestsConditions = append(rRequestsConditions, Workflows.ProjectKey.EQ(postgres.String(requestQueryParam.ProjectKey)))
+	}
+
+	if requestQueryParam.Status != "" {
+		if requestQueryParam.Status == "ALL" {
+			rRequestsConditions = append(rRequestsConditions, Requests.UserID.EQ(postgres.Int32(userId)))
+		} else {
+			rRequestsConditions = append(rRequestsConditions, Requests.Status.EQ(postgres.String(requestQueryParam.Status)))
+		}
+	}
+
+	if requestQueryParam.SprintID != "" {
+		sprintIdInt, err := strconv.Atoi(requestQueryParam.SprintID)
+		if err != nil {
+			return results.Count{}, []results.Request{}, err
+		}
+		rRequestsConditions = append(rRequestsConditions, Requests.SprintID.EQ(postgres.Int64(int64(sprintIdInt))))
+	}
+
+	var rRequests postgres.SelectTable
+	if len(rRequestsConditions) > 0 {
+		rRequests = rRequestStatement.WHERE(postgres.AND(rRequestsConditions...)).AsTable("rRequests")
+	} else {
+		rRequests = rRequestStatement.AsTable("rRequests")
+	}
 
 	requestId := Requests.ID.From(rRequests)
 	requestWorkflowVersionId := Requests.WorkflowVersionID.From(rRequests)
-	requestTitle := Requests.Title.From(rRequests)
-	requestStatus := Requests.Status.From(rRequests)
-	requestSprintId := Requests.SprintID.From(rRequests)
-	requestUserId := Requests.UserID.From(rRequests)
 
 	statement := postgres.SELECT(
 		rRequests.AllColumns(),
@@ -56,43 +88,9 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 			LEFT_JOIN(Nodes, requestId.EQ(Nodes.RequestID)).
 			LEFT_JOIN(WorkflowVerions, requestWorkflowVersionId.EQ(WorkflowVerions.ID)).
 			LEFT_JOIN(Workflows, Workflows.ID.EQ(WorkflowVerions.WorkflowID)),
-	)
-
-	conditions := []postgres.BoolExpression{
+	).WHERE(
 		Nodes.IsCurrent.EQ(postgres.Bool(true)),
-	}
-
-	if requestQueryParam.Search != "" {
-		conditions = append(conditions, postgres.LOWER(requestTitle).LIKE(postgres.LOWER(postgres.String("%"+requestQueryParam.Search+"%"))))
-	}
-
-	if requestQueryParam.ProjectKey != "" {
-		conditions = append(conditions, Workflows.ProjectKey.EQ(postgres.String(requestQueryParam.ProjectKey)))
-	}
-
-	if requestQueryParam.Status != "" {
-		if requestQueryParam.Status == "ALL" {
-			conditions = append(conditions, requestUserId.EQ(postgres.Int32(userId)))
-		} else {
-			conditions = append(conditions, requestStatus.EQ(postgres.String(requestQueryParam.Status)))
-		}
-	}
-
-	if requestQueryParam.SprintID != "" {
-		sprintIdInt, err := strconv.Atoi(requestQueryParam.SprintID)
-		if err != nil {
-			return results.Count{}, []results.Request{}, err
-		}
-		conditions = append(conditions, requestSprintId.EQ(postgres.Int64(int64(sprintIdInt))))
-	}
-
-	if requestQueryParam.WorkflowType != "" {
-		conditions = append(conditions, Workflows.Type.EQ(postgres.String(requestQueryParam.WorkflowType)))
-	}
-
-	if len(conditions) > 0 {
-		statement = statement.WHERE(postgres.AND(conditions...))
-	}
+	)
 
 	result := []results.Request{}
 	err := statement.QueryContext(ctx, db, &result)
