@@ -661,6 +661,10 @@ func (s *NodeService) SubmitNodeForm(ctx context.Context, userId int32, nodeId s
 		nodeModel := model.Nodes{}
 		utils.Mapper(node, &nodeModel)
 		nodeModel.Status = string(constants.NodeStatusCompleted)
+
+		actualEndTime := time.Now()
+		nodeModel.ActualEndTime = &actualEndTime
+
 		if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
 			return fmt.Errorf("update node status to completed fail: %w", err)
 		}
