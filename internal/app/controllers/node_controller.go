@@ -40,7 +40,7 @@ func (c *NodeController) CompleteNode(e echo.Context) error {
 		return e.JSON(http.StatusBadRequest, map[string]string{"error": "nodeId is required"})
 	}
 
-	if err := c.nodeService.CompleteNodeHandler(ctx, nodeId, int32(userId)); err != nil {
+	if err := c.nodeService.CompleteNodeHandler(ctx, nodeId, int32(userId), false); err != nil {
 		return e.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 	}
 

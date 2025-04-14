@@ -208,6 +208,9 @@ func (s *RequestService) GetRequestDetailHandler(ctx context.Context, userId int
 	// Participants
 	userIds := []int32{}
 	for _, node := range request.Nodes {
+		if node.Type == string(constants.NodeTypeStart) || node.Type == string(constants.NodeTypeEnd) || node.Type == string(constants.NodeTypeCondition) {
+			continue
+		}
 		userIds = append(userIds, *node.AssigneeID)
 	}
 

@@ -239,7 +239,7 @@ func (s *NodeService) StartNodeHandler(ctx context.Context, nodeId string) error
 	return nil
 }
 
-func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, userId int32) error {
+func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, userId int32, isChangeToInProgress bool) error {
 
 	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
@@ -328,7 +328,7 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 						return err
 					}
 				} else {
-					err = s.CompleteNodeHandler(ctx, nodeSubRequest.ID, userId)
+					err = s.CompleteNodeHandler(ctx, nodeSubRequest.ID, userId, isChangeToInProgress)
 					if err != nil {
 						return err
 					}
@@ -336,6 +336,9 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 
 			} else {
 				connectionsToNode[i].Node.IsCurrent = true
+				if isChangeToInProgress {
+					connectionsToNode[i].Node.Status = string(constants.NodeStatusInProgress)
+				}
 				err := s.NodeRepo.UpdateNode(ctx, tx, connectionsToNode[i].Node)
 				if err != nil {
 					return err
@@ -651,7 +654,7 @@ func (s *NodeService) SubmitNodeForm(ctx context.Context, userId int32, nodeId s
 
 	// Update Node To Completed
 	if isCompletedNode {
-		if err := s.CompleteNodeHandler(ctx, nodeId, userId); err != nil {
+		if err := s.CompleteNodeHandler(ctx, nodeId, userId, true); err != nil {
 			return fmt.Errorf("complete node handler fail: %w", err)
 		}
 
