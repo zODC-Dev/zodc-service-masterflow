@@ -1030,6 +1030,33 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 			})
 		}
 
+		if node.Type == string(constants.NodeTypeCondition) {
+
+			falseNodeDestinationIds := []string{}
+			trueNodeDestinationIds := []string{}
+
+			falseNodeDestinations, err := s.NodeRepo.FindAllNodeConditionDestinationByNodeId(ctx, s.DB, node.ID, false)
+			if err != nil {
+				return workflowResponse, fmt.Errorf("find node condition destination fail: %w", err)
+			}
+			for _, destination := range falseNodeDestinations {
+				falseNodeDestinationIds = append(falseNodeDestinationIds, destination.DestinationNodeID)
+			}
+
+			trueNodeDestinations, err := s.NodeRepo.FindAllNodeConditionDestinationByNodeId(ctx, s.DB, node.ID, true)
+			if err != nil {
+				return workflowResponse, fmt.Errorf("find node condition destination fail: %w", err)
+			}
+			for _, destination := range trueNodeDestinations {
+				trueNodeDestinationIds = append(trueNodeDestinationIds, destination.DestinationNodeID)
+			}
+
+			nodeResponse.Data.Condition = responses.NodeDataConditionResponse{
+				TrueDestinations:  trueNodeDestinationIds,
+				FalseDestinations: falseNodeDestinationIds,
+			}
+		}
+
 		workflowResponse.Nodes = append(workflowResponse.Nodes, nodeResponse)
 	}
 

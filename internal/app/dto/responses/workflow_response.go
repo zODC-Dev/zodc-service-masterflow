@@ -13,6 +13,11 @@ type CategoryResponse struct {
 	Key  string `json:"key"`
 }
 
+type NodeDataConditionResponse struct {
+	TrueDestinations  []string `json:"trueDestinations"`
+	FalseDestinations []string `json:"falseDestinations"`
+}
+
 type NodeDataResponse struct {
 	Type  string `json:"type"`
 	Title string `json:"title"`
@@ -23,6 +28,8 @@ type NodeDataResponse struct {
 	SubRequestID *int32 `json:"subRequestId"`
 
 	EstimatePoint int32 `json:"estimatePoint"`
+
+	Condition NodeDataConditionResponse `json:"condition"`
 
 	FormAttached []NodeFormResponse `json:"formAttached"`
 }
