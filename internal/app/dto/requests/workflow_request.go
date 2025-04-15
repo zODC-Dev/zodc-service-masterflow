@@ -22,7 +22,7 @@ type NodeDataFormAttached struct {
 	Key                           string
 	FormTemplateId                int32
 	DataId                        string
-	OptionId                      *string
+	OptionKey                     *string
 	FromUserId                    *int32
 	FromFormAttachedPosition      *int32
 	Permission                    string

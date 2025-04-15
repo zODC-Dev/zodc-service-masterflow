@@ -31,6 +31,7 @@ type NodeService struct {
 	NatsClient      *nats.NATSClient
 	FormRepo        *repositories.FormRepository
 	UserAPI         *externals.UserAPI
+	RequestService  *RequestService
 }
 
 func NewNodeService(cfg NodeService) *NodeService {
@@ -44,6 +45,7 @@ func NewNodeService(cfg NodeService) *NodeService {
 		NatsClient:      cfg.NatsClient,
 		FormRepo:        cfg.FormRepo,
 		UserAPI:         cfg.UserAPI,
+		RequestService:  cfg.RequestService,
 	}
 	return &nodeService
 }
@@ -176,12 +178,12 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 					requestModel := model.Requests{}
 					utils.Mapper(request, &requestModel)
 
-					if *node.EndType == string(constants.NodeEndTypeComplete) {
-						requestModel.Status = string(constants.RequestStatusCompleted)
-						requestModel.CompletedAt = &now
-					} else {
+					if *node.EndType == string(constants.NodeEndTypeTerminate) {
 						requestModel.Status = string(constants.RequestStatusTerminated)
 						requestModel.TerminatedAt = &now
+					} else {
+						requestModel.Status = string(constants.RequestStatusCompleted)
+						requestModel.CompletedAt = &now
 					}
 
 					requestModel.Progress = 100
@@ -379,29 +381,8 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 	s.NatsClient.Publish("notifications", notificationBytes)
 
 	// Calculate Request Process
-	request, _ := s.RequestRepo.FindOneRequestByRequestIdTx(ctx, tx, node.RequestID)
-	totalCompletedNode := 0
-	totalNode := len(request.Nodes)
-	for _, requestNode := range request.Nodes {
-		if requestNode.Type == string(constants.NodeTypeStart) || requestNode.Type == string(constants.NodeTypeEnd) {
-			totalNode--
-		} else if requestNode.Status == string(constants.NodeStatusCompleted) {
-			totalCompletedNode++
-		}
-	}
-
-	if totalNode == 0 {
-		request.Progress = 100
-	} else {
-		request.Progress = float32(float64(totalCompletedNode) / float64(totalNode) * 100)
-	}
-	requestModel := model.Requests{}
-	if err := utils.Mapper(request, &requestModel); err != nil {
-		return err
-	}
-
-	if err := s.RequestRepo.UpdateRequest(ctx, tx, requestModel); err != nil {
-		return err
+	if err := s.RequestService.UpdateCalculateRequestProgress(ctx, tx, node.RequestID); err != nil {
+		return fmt.Errorf("update calculate request progress fail: %w", err)
 	}
 
 	// Sync with Jira
@@ -656,6 +637,10 @@ func (s *NodeService) SubmitNodeForm(ctx context.Context, userId int32, nodeId s
 	}
 
 	// Update Node Form Is Submitted
+	nodeForm.SubmittedByUserID = &userId
+	now := time.Now()
+	nodeForm.SubmittedAt = &now
+	nodeForm.LastUpdateUserID = &userId
 	nodeForm.IsSubmitted = true
 	if err := s.NodeRepo.UpdateNodeForm(ctx, tx, nodeForm); err != nil {
 		return fmt.Errorf("update node form is submitted fail: %w", err)
@@ -689,6 +674,11 @@ func (s *NodeService) SubmitNodeForm(ctx context.Context, userId int32, nodeId s
 
 		if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
 			return fmt.Errorf("update node status to completed fail: %w", err)
+		}
+
+		// calculate request progress
+		if err := s.RequestService.UpdateCalculateRequestProgress(ctx, tx, node.RequestID); err != nil {
+			return fmt.Errorf("update calculate request progress fail: %w", err)
 		}
 	}
 

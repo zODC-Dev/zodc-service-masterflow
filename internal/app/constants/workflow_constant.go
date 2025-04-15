@@ -18,6 +18,7 @@ const (
 	NodeTypeTask        NodeType = "TASK"
 	NodeTypeBug         NodeType = "BUG"
 	NodeTypeInput       NodeType = "INPUT"
+	NodeTypeApproval    NodeType = "APPROVAL"
 )
 
 type NodeStatus string

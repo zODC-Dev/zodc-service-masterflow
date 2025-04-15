@@ -645,45 +645,95 @@ func (r *RequestRepository) RemoveNodesConnectionsStoriesByRequestId(ctx context
 	return nil
 }
 
-func (r *RequestRepository) FindAllRequestCompletedFormByRequestId(ctx context.Context, db *sql.DB, requestId int32, page int, pageSize int) (int, results.Request, error) {
-	Requests := table.Requests
-	Nodes := table.Nodes
+func (r *RequestRepository) FindAllRequestCompletedFormByRequestId(ctx context.Context, db *sql.DB, requestId int32, page int, pageSize int) (int, []results.NodeFormCompletedResult, error) {
 	NodeForms := table.NodeForms
+	Nodes := table.Nodes
+	NodeFormApproveOrRejectUsers := table.NodeFormApproveOrRejectUsers
+	FormData := table.FormData
+	FormFieldData := table.FormFieldData
 
-	statement := Requests.SELECT(
-		Requests.AllColumns,
-		Nodes.AllColumns,
+	statement := NodeForms.SELECT(
 		NodeForms.AllColumns,
+		Nodes.AllColumns,
+		NodeFormApproveOrRejectUsers.AllColumns,
+		FormData.AllColumns,
+		FormFieldData.AllColumns,
 	).FROM(
-		Requests.
-			LEFT_JOIN(Nodes, Requests.ID.EQ(Nodes.RequestID)).
-			LEFT_JOIN(NodeForms, Nodes.ID.EQ(NodeForms.NodeID)),
+		NodeForms.
+			LEFT_JOIN(Nodes, NodeForms.NodeID.EQ(Nodes.ID)).
+			LEFT_JOIN(
+				NodeFormApproveOrRejectUsers, NodeForms.ID.EQ(NodeFormApproveOrRejectUsers.NodeFormID),
+			).
+			LEFT_JOIN(FormData, NodeForms.DataID.EQ(FormData.ID)).
+			LEFT_JOIN(FormFieldData, FormData.ID.EQ(FormFieldData.FormDataID)),
 	).WHERE(
-		Requests.ID.EQ(postgres.Int32(requestId)).
-			AND(Nodes.Type.EQ(postgres.String(string(constants.NodeTypeInput)))).
+		Nodes.RequestID.EQ(postgres.Int32(requestId)).
 			AND(NodeForms.IsSubmitted.EQ(postgres.Bool(true))),
 	).LIMIT(int64(pageSize)).OFFSET(int64(page - 1))
 
-	result := results.Request{}
+	result := []results.NodeFormCompletedResult{}
 	err := statement.QueryContext(ctx, db, &result)
 	if err != nil {
 		return 0, result, err
 	}
 
-	totalStatment := Requests.SELECT(
+	statementCount := NodeForms.SELECT(
 		NodeForms.AllColumns,
+		Nodes.AllColumns,
+		NodeFormApproveOrRejectUsers.AllColumns,
+		FormData.AllColumns,
+		FormFieldData.AllColumns,
 	).FROM(
-		Requests.
-			LEFT_JOIN(Nodes, Requests.ID.EQ(Nodes.RequestID)).
-			LEFT_JOIN(NodeForms, Nodes.ID.EQ(NodeForms.NodeID)),
+		NodeForms.
+			LEFT_JOIN(Nodes, NodeForms.NodeID.EQ(Nodes.ID)).
+			LEFT_JOIN(
+				NodeFormApproveOrRejectUsers, NodeForms.ID.EQ(NodeFormApproveOrRejectUsers.NodeFormID),
+			).
+			LEFT_JOIN(FormData, NodeForms.DataID.EQ(FormData.ID)).
+			LEFT_JOIN(FormFieldData, FormData.ID.EQ(FormFieldData.FormDataID)),
 	).WHERE(
-		Requests.ID.EQ(postgres.Int32(requestId)).
-			AND(Nodes.Type.EQ(postgres.String(string(constants.NodeTypeInput)))).
+		Nodes.RequestID.EQ(postgres.Int32(requestId)).
 			AND(NodeForms.IsSubmitted.EQ(postgres.Bool(true))),
 	)
 
-	totalResult := []model.NodeForms{}
-	err = totalStatment.QueryContext(ctx, db, &totalResult)
+	count := []model.NodeForms{}
+	err = statementCount.QueryContext(ctx, db, &count)
 
-	return len(totalResult), result, err
+	return len(count), result, err
+}
+
+func (r *RequestRepository) FindAllRequestFileManagerByRequestId(ctx context.Context, db *sql.DB, requestId int32, page int, pageSize int) (int, []results.NodeFormResult, error) {
+	Requests := table.Requests
+	Nodes := table.Nodes
+	NodeForms := table.NodeForms
+
+	FormData := table.FormData
+	FormFieldData := table.FormFieldData
+
+	FormTemplateFields := table.FormTemplateFields
+
+	statement := Requests.SELECT(
+		NodeForms.AllColumns,
+		FormFieldData.AllColumns,
+	).FROM(
+		Requests.
+			LEFT_JOIN(Nodes, Requests.ID.EQ(Nodes.RequestID)).
+			LEFT_JOIN(NodeForms, Nodes.ID.EQ(NodeForms.NodeID)).
+
+			//
+			LEFT_JOIN(FormData, FormData.ID.EQ(NodeForms.DataID)).
+			LEFT_JOIN(FormFieldData, FormFieldData.FormDataID.EQ(FormData.ID)).
+			LEFT_JOIN(FormTemplateFields, FormTemplateFields.ID.EQ(FormFieldData.FormTemplateFieldID)),
+	).WHERE(
+		Requests.ID.EQ(postgres.Int32(requestId)).
+			AND(Nodes.Type.EQ(postgres.String(string(constants.NodeTypeInput)))).
+			AND(NodeForms.IsSubmitted.EQ(postgres.Bool(true))).
+			AND(FormTemplateFields.FieldType.EQ(postgres.String(string(constants.FormTemplateFieldTypeAttachment)))),
+	).LIMIT(int64(pageSize)).OFFSET(int64(page - 1))
+
+	result := []results.NodeFormResult{}
+	err := statement.QueryContext(ctx, db, &result)
+
+	return len(result), result, err
+
 }

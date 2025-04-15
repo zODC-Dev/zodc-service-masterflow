@@ -567,6 +567,11 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			workflowNode.ParentID = &parentId
 		}
 
+		if workflowNodeReq.Type == string(constants.NodeTypeTask) {
+			formTemplateId := int32(1)
+			workflowNode.FormTemplateID = &formTemplateId
+		}
+
 		for _, formSystem := range formSystems {
 			if formSystem.Tag == workflowNodeReq.Type {
 				// Create Form Data
@@ -636,7 +641,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			formAttachedModel := model.NodeForms{
 				Key:                      formAttached.Key,
 				FromUserID:               formAttached.FromUserId,
-				OptionKey:                formAttached.OptionId,
+				OptionKey:                formAttached.OptionKey,
 				FromFormAttachedPosition: formAttached.FromFormAttachedPosition,
 				Permission:               formAttached.Permission,
 				IsOriginal:               formAttached.IsOriginal,

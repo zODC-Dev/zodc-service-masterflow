@@ -47,6 +47,8 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 		NatsService:    natsService,
 	})
 
+	formService := services.NewFormService(db, formRepo, natsClient)
+
 	requestService := services.NewRequestService(services.RequestService{
 		DB:              db,
 		RequestRepo:     requestRepo,
@@ -56,6 +58,7 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 		NodeRepo:        nodeRepo,
 		NatsService:     natsService,
 		NodeService:     nodeService,
+		FormService:     formService,
 	})
 
 	requestController := controllers.NewRequestController(requestService)
@@ -78,6 +81,9 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 		requestRoute.GET("/tasks/count", requestController.GetRequestTasksCount)
 
 		requestRoute.GET("/:id/completed-form", requestController.GetRequestCompletedForm)
+		requestRoute.GET("/:id/completed-form/approval", requestController.GetRequestCompletedFormApproval)
+
+		requestRoute.GET("/:id/file-manager", requestController.GetRequestFileManager)
 
 	}
 

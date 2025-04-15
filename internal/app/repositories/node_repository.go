@@ -253,6 +253,7 @@ func (r *NodeRepository) FindAllNodeFormByNodeIdAndPermission(ctx context.Contex
 	FormTemplateFields := table.FormTemplateFields
 	FormTemplateVersions := table.FormTemplateVersions
 	FormTemplates := table.FormTemplates
+	NodeFormApproveOrRejectUsers := table.NodeFormApproveOrRejectUsers
 
 	statement := postgres.
 		SELECT(
@@ -263,6 +264,7 @@ func (r *NodeRepository) FindAllNodeFormByNodeIdAndPermission(ctx context.Contex
 		).
 		FROM(
 			NodeForms.
+				LEFT_JOIN(NodeFormApproveOrRejectUsers, NodeForms.ID.EQ(NodeFormApproveOrRejectUsers.NodeFormID)).
 				LEFT_JOIN(FormData, NodeForms.DataID.EQ(FormData.ID)).
 				LEFT_JOIN(FormFieldData, FormData.ID.EQ(FormFieldData.FormDataID)).
 				LEFT_JOIN(FormTemplates, NodeForms.TemplateID.EQ(FormTemplates.ID)).
@@ -425,4 +427,32 @@ func (r *NodeRepository) FindAllNodeStoryByAssigneeId(ctx context.Context, db *s
 	err := statement.QueryContext(ctx, db, &results)
 
 	return results, err
+}
+
+func (r *NodeRepository) FindOneFormDataByNodeId(ctx context.Context, db *sql.DB, nodeId string) ([]results.FormDataResult, error) {
+	FormData := table.FormData
+	FormFieldData := table.FormFieldData
+	Nodes := table.Nodes
+
+	FormTemplates := table.FormTemplates
+	FormTemplateVersions := table.FormTemplateVersions
+
+	statement := postgres.SELECT(
+		FormData.AllColumns,
+		FormTemplates.AllColumns,
+		FormFieldData.AllColumns,
+	).FROM(
+		FormData.
+			LEFT_JOIN(Nodes, FormData.ID.EQ(Nodes.FormDataID)).
+			LEFT_JOIN(FormFieldData, FormData.ID.EQ(FormFieldData.FormDataID)).
+			LEFT_JOIN(FormTemplateVersions, FormData.FormTemplateVersionID.EQ(FormTemplateVersions.ID)).
+			LEFT_JOIN(FormTemplates, FormTemplateVersions.FormTemplateID.EQ(FormTemplates.ID)),
+	).WHERE(
+		Nodes.ID.EQ(postgres.String(nodeId)),
+	)
+
+	result := []results.FormDataResult{}
+	err := statement.QueryContext(ctx, db, &result)
+
+	return result, err
 }

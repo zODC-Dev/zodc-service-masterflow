@@ -171,6 +171,8 @@ CREATE TABLE node_forms (
 
     submitted_at TIMESTAMP,
     submitted_by_user_id INT,
+
+    last_update_user_id INT,
     
 
     -- Form

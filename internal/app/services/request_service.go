@@ -28,6 +28,7 @@ type RequestService struct {
 	WorkflowService *WorkflowService
 	NatsService     *NatsService
 	NodeService     *NodeService
+	FormService     *FormService
 }
 
 func NewRequestService(cfg RequestService) *RequestService {
@@ -40,8 +41,44 @@ func NewRequestService(cfg RequestService) *RequestService {
 		WorkflowService: cfg.WorkflowService,
 		NatsService:     cfg.NatsService,
 		NodeService:     cfg.NodeService,
+		FormService:     cfg.FormService,
 	}
 }
+
+func (s *RequestService) UpdateCalculateRequestProgress(ctx context.Context, tx *sql.Tx, requestId int32) error {
+	request, err := s.RequestRepo.FindOneRequestByRequestIdTx(ctx, tx, requestId)
+	if err != nil {
+		return fmt.Errorf("find request by request id fail: %w", err)
+	}
+
+	totalCompletedNode := 0
+	totalNode := len(request.Nodes)
+	for _, requestNode := range request.Nodes {
+		if requestNode.Type == string(constants.NodeTypeStart) || requestNode.Type == string(constants.NodeTypeEnd) {
+			totalNode--
+		} else if requestNode.Status == string(constants.NodeStatusCompleted) {
+			totalCompletedNode++
+		}
+	}
+
+	if totalNode == 0 {
+		request.Progress = 100
+	} else {
+		request.Progress = float32(float64(totalCompletedNode) / float64(totalNode) * 100)
+	}
+	requestModel := model.Requests{}
+	if err := utils.Mapper(request, &requestModel); err != nil {
+		return err
+	}
+
+	if err := s.RequestRepo.UpdateRequest(ctx, tx, requestModel); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//
 
 func (s *RequestService) FindAllRequestHandler(ctx context.Context, requestQueryParam queryparams.RequestQueryParam, userId int32) (responses.Paginate[[]responses.RequestResponse], error) {
 	paginatedResponse := responses.Paginate[[]responses.RequestResponse]{}
@@ -851,23 +888,189 @@ func (s *RequestService) UpdateRequestHandler(ctx context.Context, requestId int
 	return nil
 }
 
-func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, requestId int32, queryParams queryparams.RequestTaskQueryParam) (responses.Paginate[[]responses.RequestCompletedFormResponse], error) {
-	paginatedResponse := responses.Paginate[[]responses.RequestCompletedFormResponse]{}
-	requestCompletedFormResponse := []responses.RequestCompletedFormResponse{}
+func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, requestId int32, queryParams queryparams.RequestTaskQueryParam) (responses.Paginate[[]responses.RequestCompletedFormInputResponse], error) {
+	paginatedResponse := responses.Paginate[[]responses.RequestCompletedFormInputResponse]{}
+	requestCompletedFormResponse := []responses.RequestCompletedFormInputResponse{}
 	paginatedResponse.Items = requestCompletedFormResponse
 
-	total, request, err := s.RequestRepo.FindAllRequestCompletedFormByRequestId(ctx, s.DB, requestId, queryParams.Page, queryParams.PageSize)
+	request, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, requestId)
+	if err != nil {
+		return paginatedResponse, err
+	}
+
+	total := 0
+
+	if request.Workflow.Type == string(constants.WorkflowTypeProject) {
+		for _, node := range request.Nodes {
+			if node.Type == string(constants.NodeTypeTask) {
+				formData, err := s.NodeRepo.FindOneFormDataByNodeId(ctx, s.DB, node.ID)
+				if err != nil {
+					return paginatedResponse, err
+				}
+
+				total = len(formData)
+
+				users, err := s.UserAPI.FindUsersByUserIds([]int32{*node.AssigneeID})
+				if err != nil {
+					return paginatedResponse, err
+				}
+
+				assignee := types.Assignee{}
+				if err := utils.Mapper(users.Data[0], &assignee); err != nil {
+					return paginatedResponse, err
+				}
+
+				formDataResponse := []responses.RequestCompletedFormDataResponse{}
+				for _, form := range formData {
+					for _, formFieldData := range form.FormFieldData {
+						formDataResponse = append(formDataResponse, responses.RequestCompletedFormDataResponse{
+							FieldID: formFieldData.FormTemplateFieldID,
+							Value:   formFieldData.Value,
+						})
+					}
+				}
+
+				formTemplate, err := s.FormService.FindOneFormTemplateDetailByFormTemplateId(ctx, *node.FormTemplateID)
+				if err != nil {
+					return paginatedResponse, err
+				}
+
+				requestCompletedFormRes := responses.RequestCompletedFormInputResponse{
+					SubmittedAt: node.UpdatedAt,
+					Type:        node.Type,
+					FormData:    formDataResponse,
+					Approval:    []responses.RequestCompletedFormApprovalResponse{},
+					Template:    formTemplate,
+					Submitter:   assignee,
+					LastUpdate:  assignee,
+				}
+
+				requestCompletedFormResponse = append(requestCompletedFormResponse, requestCompletedFormRes)
+			}
+		}
+	} else {
+		count, nodeForms, err := s.RequestRepo.FindAllRequestCompletedFormByRequestId(ctx, s.DB, requestId, queryParams.Page, queryParams.PageSize)
+		total = int(count)
+		if err != nil {
+			return paginatedResponse, err
+		}
+
+		userIds := []int32{}
+		existUserIds := make(map[int32]bool)
+
+		for _, nodeForm := range nodeForms {
+			if nodeForm.SubmittedByUserID != nil && !existUserIds[*nodeForm.SubmittedByUserID] {
+				userIds = append(userIds, *nodeForm.SubmittedByUserID)
+				existUserIds[*nodeForm.SubmittedByUserID] = true
+			}
+			if nodeForm.LastUpdateUserID != nil && !existUserIds[*nodeForm.LastUpdateUserID] {
+				userIds = append(userIds, *nodeForm.LastUpdateUserID)
+				existUserIds[*nodeForm.LastUpdateUserID] = true
+			}
+			for _, approveOrRejectUser := range nodeForm.ApproveOrRejectUsers {
+				if approveOrRejectUser.UserID != 0 && !existUserIds[approveOrRejectUser.UserID] {
+					userIds = append(userIds, approveOrRejectUser.UserID)
+					existUserIds[approveOrRejectUser.UserID] = true
+				}
+			}
+		}
+
+		userApiMap := map[int32]results.UserApiDataResult{}
+		if len(userIds) > 0 {
+			assigneeResult, err := s.UserAPI.FindUsersByUserIds(userIds)
+			if err != nil {
+				return paginatedResponse, err
+			}
+			for _, userApi := range assigneeResult.Data {
+				userApiMap[userApi.ID] = userApi
+			}
+		}
+
+		mapUser := func(id *int32) types.Assignee {
+			assignee := types.Assignee{}
+			if id != nil {
+				if user, ok := userApiMap[*id]; ok {
+					assignee.Id = user.ID
+					assignee.Name = user.Name
+					assignee.Email = user.Email
+					assignee.AvatarUrl = user.AvatarUrl
+					assignee.IsSystemUser = user.IsSystemUser
+				}
+			}
+			return assignee
+		}
+
+		//
+		for _, nodeForm := range nodeForms {
+			requestCompletedFormRes := responses.RequestCompletedFormInputResponse{}
+			if nodeForm.SubmittedAt != nil {
+				requestCompletedFormRes.Submitter = mapUser(nodeForm.SubmittedByUserID)
+			}
+			if nodeForm.LastUpdateUserID != nil {
+				requestCompletedFormRes.LastUpdate = mapUser(nodeForm.LastUpdateUserID)
+			}
+
+			//
+			approval := []responses.RequestCompletedFormApprovalResponse{}
+			for _, approveOrRejectUser := range nodeForm.ApproveOrRejectUsers {
+				approval = append(approval, responses.RequestCompletedFormApprovalResponse{
+					Assignee:   mapUser(&approveOrRejectUser.UserID),
+					IsApproved: approveOrRejectUser.IsApproved,
+				})
+			}
+			requestCompletedFormRes.Approval = approval
+
+			//
+			formData := []responses.RequestCompletedFormDataResponse{}
+			for _, formFieldData := range nodeForm.FormData.FormFieldData {
+				formData = append(formData, responses.RequestCompletedFormDataResponse{
+					FieldID: formFieldData.FormTemplateFieldID,
+					Value:   formFieldData.Value,
+				})
+			}
+			requestCompletedFormRes.FormData = formData
+
+			//
+			formTemplate, err := s.FormService.FindOneFormTemplateDetailByFormTemplateId(ctx, nodeForm.TemplateID)
+			if err != nil {
+				return paginatedResponse, err
+			}
+			requestCompletedFormRes.Template = formTemplate
+
+			requestCompletedFormResponse = append(requestCompletedFormResponse, requestCompletedFormRes)
+		}
+
+	}
+
+	totalPages := (int(total) + queryParams.PageSize - 1) / queryParams.PageSize
+
+	paginatedResponse = responses.Paginate[[]responses.RequestCompletedFormInputResponse]{
+		Items:      requestCompletedFormResponse,
+		Total:      int(total),
+		Page:       queryParams.Page,
+		PageSize:   queryParams.PageSize,
+		TotalPages: totalPages,
+	}
+	return paginatedResponse, nil
+}
+
+func (s *RequestService) GetRequestFileManagerHandler(ctx context.Context, requestId int32, queryParams queryparams.RequestTaskQueryParam) (responses.Paginate[[]responses.RequestFileManagerResponse], error) {
+	paginatedResponse := responses.Paginate[[]responses.RequestFileManagerResponse]{}
+	requestFileManagerResponse := []responses.RequestFileManagerResponse{}
+	paginatedResponse.Items = requestFileManagerResponse
+
+	total, nodeForms, err := s.RequestRepo.FindAllRequestFileManagerByRequestId(ctx, s.DB, requestId, queryParams.Page, queryParams.PageSize)
 	if err != nil {
 		return paginatedResponse, err
 	}
 
 	userIds := []int32{}
-	existingUserIds := make(map[int32]bool)
+	existUserIds := make(map[int32]bool)
 
-	for _, node := range request.Nodes {
-		if node.AssigneeID != nil && !existingUserIds[*node.AssigneeID] {
-			userIds = append(userIds, *node.AssigneeID)
-			existingUserIds[*node.AssigneeID] = true
+	for _, nodeForm := range nodeForms {
+		if nodeForm.SubmittedByUserID != nil && !existUserIds[*nodeForm.SubmittedByUserID] {
+			userIds = append(userIds, *nodeForm.SubmittedByUserID)
+			existUserIds[*nodeForm.SubmittedByUserID] = true
 		}
 	}
 
@@ -896,41 +1099,23 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 		return assignee
 	}
 
-	requestCompletedFormRes := responses.RequestCompletedFormResponse{}
-	for _, node := range request.Nodes {
-		if node.Type == string(constants.NodeTypeInput) {
-			requestCompletedFormRes.RequestTaskResponse = responses.RequestTaskResponse{
-				Id:               node.ID,
-				Title:            node.Title,
-				Type:             node.Type,
-				RequestID:        node.RequestID,
-				RequestTitle:     request.Title,
-				RequestProgress:  request.Progress,
-				Assignee:         mapUser(node.AssigneeID),
-				PlannedStartTime: node.PlannedStartTime,
-				PlannedEndTime:   node.PlannedEndTime,
-				ActualStartTime:  node.ActualStartTime,
-				ActualEndTime:    node.ActualEndTime,
-				EstimatePoint:    node.EstimatePoint,
-				Status:           node.Status,
-				IsCurrent:        node.IsCurrent,
-			}
-
-			requestCompletedFormResData, err := s.NodeService.GetNodeFormWithPermission(ctx, node.ID, string(constants.NodeFormPermissionInput))
-			if err != nil {
-				return paginatedResponse, err
-			}
-
-			requestCompletedFormRes.Data = requestCompletedFormResData
+	for _, nodeForm := range nodeForms {
+		requestFileManageRes := responses.RequestFileManagerResponse{
+			SubmittedAt: *nodeForm.SubmittedAt,
+			Assignee:    mapUser(nodeForm.SubmittedByUserID),
 		}
 
-		requestCompletedFormResponse = append(requestCompletedFormResponse, requestCompletedFormRes)
+		for _, formFieldData := range nodeForm.FormFieldData {
+			requestFileManageRes.Data = append(requestFileManageRes.Data, formFieldData.Value)
+		}
+
+		requestFileManagerResponse = append(requestFileManagerResponse, requestFileManageRes)
 	}
 
 	totalPages := (int(total) + queryParams.PageSize - 1) / queryParams.PageSize
 
-	paginatedResponse = responses.Paginate[[]responses.RequestCompletedFormResponse]{
-		Items:      requestCompletedFormResponse,
+	paginatedResponse = responses.Paginate[[]responses.RequestFileManagerResponse]{
+		Items:      requestFileManagerResponse,
 		Total:      int(total),
 		Page:       queryParams.Page,
 		PageSize:   queryParams.PageSize,
@@ -938,4 +1123,63 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 	}
 
 	return paginatedResponse, nil
+}
+
+func (s *RequestService) GetRequestCompletedFormApprovalHandler(ctx context.Context, requestId int32) ([]responses.RequestCompletedFormApprovalOverviewResponse, error) {
+	requestCompletedFormApprovalResponse := []responses.RequestCompletedFormApprovalOverviewResponse{}
+
+	request, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, requestId)
+	if err != nil {
+		return requestCompletedFormApprovalResponse, err
+	}
+
+	userIds := []int32{}
+	existUserIds := make(map[int32]bool)
+
+	for _, node := range request.Nodes {
+		if node.Type == string(constants.NodeTypeApproval) {
+			userIds = append(userIds, *node.AssigneeID)
+			existUserIds[*node.AssigneeID] = true
+		}
+	}
+
+	userApiMap := map[int32]results.UserApiDataResult{}
+	if len(userIds) > 0 {
+		assigneeResult, err := s.UserAPI.FindUsersByUserIds(userIds)
+		if err != nil {
+			return requestCompletedFormApprovalResponse, err
+		}
+		for _, userApi := range assigneeResult.Data {
+			userApiMap[userApi.ID] = userApi
+		}
+	}
+
+	mapUser := func(id *int32) types.Assignee {
+		assignee := types.Assignee{}
+		if id != nil {
+			if user, ok := userApiMap[*id]; ok {
+				assignee.Id = user.ID
+				assignee.Name = user.Name
+				assignee.Email = user.Email
+				assignee.AvatarUrl = user.AvatarUrl
+				assignee.IsSystemUser = user.IsSystemUser
+			}
+		}
+		return assignee
+	}
+
+	requestCompletedFormApprovalRes := responses.RequestCompletedFormApprovalOverviewResponse{}
+	for _, node := range request.Nodes {
+		if node.Type == string(constants.NodeTypeApproval) {
+			requestCompletedFormApprovalRes.Key = node.Key
+			requestCompletedFormApprovalRes.TaskTitle = node.Title
+			requestCompletedFormApprovalRes.IsApproved = node.IsApproved
+			requestCompletedFormApprovalRes.IsRejected = node.IsRejected
+			requestCompletedFormApprovalRes.Assignee = mapUser(node.AssigneeID)
+
+			requestCompletedFormApprovalResponse = append(requestCompletedFormApprovalResponse, requestCompletedFormApprovalRes)
+		}
+	}
+
+	return requestCompletedFormApprovalResponse, nil
 }

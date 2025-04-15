@@ -9,3 +9,9 @@ type NodeFormPermission string
 const (
 	NodeFormPermissionInput NodeFormPermission = "INPUT"
 )
+
+type FormTemplateFieldType string
+
+const (
+	FormTemplateFieldTypeAttachment FormTemplateFieldType = "ATTACHMENT"
+)
