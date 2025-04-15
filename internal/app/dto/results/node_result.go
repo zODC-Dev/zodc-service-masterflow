@@ -8,6 +8,8 @@ type NodeResult struct {
 	model.Nodes
 	Request   model.Requests
 	NodeForms []model.NodeForms
+	Workflows model.Workflows
+	Category  model.Categories
 }
 
 type NodeFormResult struct {
@@ -17,6 +19,7 @@ type NodeFormResult struct {
 	FormTemplateFields   []model.FormTemplateFields
 	FormTemplateVersions model.FormTemplateVersions
 	FormTemplates        model.FormTemplates
+	ApproveOrRejectUsers []model.NodeFormApproveOrRejectUsers
 }
 
 type FormDataResult struct {
@@ -25,4 +28,23 @@ type FormDataResult struct {
 	FormTemplateFields   []model.FormTemplateFields
 	FormTemplateVersions model.FormTemplateVersions
 	FormTemplates        model.FormTemplates
+}
+
+type NodeFormCompletedFormFieldDataResult struct {
+	model.FormFieldData
+	FormTemplateFields model.FormTemplateFields
+}
+
+type NodeFormCompletedFormDataResult struct {
+	model.FormData
+	FormFieldData []NodeFormCompletedFormFieldDataResult
+	FormTemplate  model.FormTemplates
+}
+
+type NodeFormCompletedResult struct {
+	model.NodeForms
+	Node                 model.Nodes
+	Request              model.Requests
+	ApproveOrRejectUsers []model.NodeFormApproveOrRejectUsers
+	FormData             NodeFormCompletedFormDataResult
 }

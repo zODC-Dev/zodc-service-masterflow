@@ -74,15 +74,36 @@ type RequestOverviewResponse struct {
 	Category CategoryFindAll `json:"category"`
 }
 
-type RequestSubRequest struct {
-	Id            int32          `json:"id"`
-	Key           string         `json:"key"`
-	WorkflowTitle string         `json:"workflowTitle"`
-	TaskTitle     string         `json:"taskTitle"`
-	Assignee      types.Assignee `json:"assignee"`
-	Status        string         `json:"status"`
-	StartedAt     *time.Time     `json:"startedAt"`
-	CompletedAt   *time.Time     `json:"completedAt"`
-	CanceledAt    *time.Time     `json:"canceledAt"`
-	TerminatedAt  *time.Time     `json:"terminatedAt"`
+type RequestFileManagerResponse struct {
+	SubmittedAt time.Time      `json:"submittedAt"`
+	Assignee    types.Assignee `json:"assignee"`
+	Data        []string       `json:"data"`
+}
+
+type RequestCompletedFormApprovalResponse struct {
+	Assignee   types.Assignee `json:"assignee"`
+	IsApproved bool           `json:"isApproved"`
+}
+
+type RequestCompletedFormDataResponse struct {
+	FieldID int32  `json:"fieldId"`
+	Value   string `json:"value"`
+}
+
+type RequestCompletedFormInputResponse struct {
+	Type        string                                 `json:"type"`
+	SubmittedAt time.Time                              `json:"submittedAt"`
+	Submitter   types.Assignee                         `json:"submitter"`
+	LastUpdate  types.Assignee                         `json:"lastUpdate"`
+	Approval    []RequestCompletedFormApprovalResponse `json:"approval"`
+	FormData    []RequestCompletedFormDataResponse     `json:"formData"`
+	Template    FormTemplateDetails                    `json:"template"`
+}
+
+type RequestCompletedFormApprovalOverviewResponse struct {
+	Key        int32          `json:"key"`
+	TaskTitle  string         `json:"taskTitle"`
+	IsApproved bool           `json:"isApproved"`
+	IsRejected bool           `json:"isRejected"`
+	Assignee   types.Assignee `json:"assignee"`
 }

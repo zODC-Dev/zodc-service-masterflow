@@ -22,9 +22,12 @@ type NodeForms struct {
 	FromUserID               *int32
 	FromFormAttachedPosition *int32
 	IsOriginal               bool
-	IsSubmitted              bool
 	IsApproved               bool
 	IsRejected               bool
+	IsSubmitted              bool
+	SubmittedAt              *time.Time
+	SubmittedByUserID        *int32
+	LastUpdateUserID         *int32
 	DataID                   *string
 	TemplateID               int32
 	NodeID                   string

@@ -13,6 +13,7 @@ import (
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/constants"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/requests"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/responses"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/results"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/externals"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
@@ -30,6 +31,7 @@ type NodeService struct {
 	NatsClient      *nats.NATSClient
 	FormRepo        *repositories.FormRepository
 	UserAPI         *externals.UserAPI
+	RequestService  *RequestService
 }
 
 func NewNodeService(cfg NodeService) *NodeService {
@@ -43,6 +45,7 @@ func NewNodeService(cfg NodeService) *NodeService {
 		NatsClient:      cfg.NatsClient,
 		FormRepo:        cfg.FormRepo,
 		UserAPI:         cfg.UserAPI,
+		RequestService:  cfg.RequestService,
 	}
 	return &nodeService
 }
@@ -138,6 +141,23 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 					return err
 				}
 
+				// Update Connection Condition Destination Node To Completed
+				connectionConditionDestination, err := s.ConnectionRepo.FindConnectionsByToNodeIdTx(ctx, tx, nodeConditionDestination.DestinationNodeID)
+				if err != nil {
+					return err
+				}
+				for _, connection := range connectionConditionDestination {
+					connection.IsCompleted = true
+					connectionModel := model.Connections{}
+					if err := utils.Mapper(connection, &connectionModel); err != nil {
+						return err
+					}
+					if err := s.ConnectionRepo.UpdateConnection(ctx, tx, connectionModel); err != nil {
+						return err
+					}
+
+				}
+
 				if node.Type == string(constants.NodeTypeEnd) {
 					nodeModel := model.Nodes{}
 					utils.Mapper(node, &nodeModel)
@@ -158,9 +178,16 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 					requestModel := model.Requests{}
 					utils.Mapper(request, &requestModel)
 
-					requestModel.Status = string(constants.RequestStatusCompleted)
-					requestModel.CompletedAt = &now
+					if *node.EndType == string(constants.NodeEndTypeTerminate) {
+						requestModel.Status = string(constants.RequestStatusTerminated)
+						requestModel.TerminatedAt = &now
+					} else {
+						requestModel.Status = string(constants.RequestStatusCompleted)
+						requestModel.CompletedAt = &now
+					}
+
 					requestModel.Progress = 100
+
 					if err := s.RequestRepo.UpdateRequest(ctx, tx, requestModel); err != nil {
 						return err
 					}
@@ -175,22 +202,6 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 					return err
 				}
 
-				// Update Connection Condition Destination Node To Completed
-				connectionConditionDestination, err := s.ConnectionRepo.FindConnectionsByToNodeIdTx(ctx, tx, nodeConditionDestination.DestinationNodeID)
-				if err != nil {
-					return err
-				}
-				for _, connection := range connectionConditionDestination {
-					connection.IsCompleted = true
-					connectionModel := model.Connections{}
-					if err := utils.Mapper(connection, &connectionModel); err != nil {
-						return err
-					}
-					if err := s.ConnectionRepo.UpdateConnection(ctx, tx, connectionModel); err != nil {
-						return err
-					}
-
-				}
 			}
 		}
 	}
@@ -238,7 +249,7 @@ func (s *NodeService) StartNodeHandler(ctx context.Context, nodeId string) error
 	return nil
 }
 
-func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, userId int32) error {
+func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, userId int32, isChangeToInProgress bool) error {
 
 	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
@@ -312,8 +323,15 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 					return err
 				}
 
-				request.Status = string(constants.RequestStatusCompleted)
-				request.CompletedAt = &now
+				if *node.EndType == string(constants.NodeEndTypeComplete) {
+					request.Status = string(constants.RequestStatusCompleted)
+					request.CompletedAt = &now
+				} else {
+					request.Status = string(constants.RequestStatusTerminated)
+					request.TerminatedAt = &now
+				}
+
+				request.Progress = 100
 
 				if err := s.RequestRepo.UpdateRequest(ctx, tx, request); err != nil {
 					return err
@@ -327,7 +345,7 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 						return err
 					}
 				} else {
-					err = s.CompleteNodeHandler(ctx, nodeSubRequest.ID, userId)
+					err = s.CompleteNodeHandler(ctx, nodeSubRequest.ID, userId, isChangeToInProgress)
 					if err != nil {
 						return err
 					}
@@ -335,6 +353,12 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 
 			} else {
 				connectionsToNode[i].Node.IsCurrent = true
+				if isChangeToInProgress {
+					connectionsToNode[i].Node.Status = string(constants.NodeStatusInProgress)
+
+					now := time.Now()
+					connectionsToNode[i].Node.ActualStartTime = &now
+				}
 				err := s.NodeRepo.UpdateNode(ctx, tx, connectionsToNode[i].Node)
 				if err != nil {
 					return err
@@ -357,29 +381,8 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 	s.NatsClient.Publish("notifications", notificationBytes)
 
 	// Calculate Request Process
-	request, _ := s.RequestRepo.FindOneRequestByRequestIdTx(ctx, tx, node.RequestID)
-	totalCompletedNode := 0
-	totalNode := len(request.Nodes)
-	for _, requestNode := range request.Nodes {
-		if requestNode.Type == string(constants.NodeTypeStart) || requestNode.Type == string(constants.NodeTypeEnd) {
-			totalNode--
-		} else if requestNode.Status == string(constants.NodeStatusCompleted) {
-			totalCompletedNode++
-		}
-	}
-
-	if totalNode == 0 {
-		request.Progress = 100
-	} else {
-		request.Progress = float32(float64(totalCompletedNode) / float64(totalNode) * 100)
-	}
-	requestModel := model.Requests{}
-	if err := utils.Mapper(request, &requestModel); err != nil {
-		return err
-	}
-
-	if err := s.RequestRepo.UpdateRequest(ctx, tx, requestModel); err != nil {
-		return err
+	if err := s.RequestService.UpdateCalculateRequestProgress(ctx, tx, node.RequestID); err != nil {
+		return fmt.Errorf("update calculate request progress fail: %w", err)
 	}
 
 	// Sync with Jira
@@ -542,6 +545,10 @@ func (s *NodeService) ApproveNode(ctx context.Context, userId int32, nodeId stri
 
 	node.IsApproved = true
 	node.Status = string(constants.NodeStatusCompleted)
+
+	now := time.Now()
+	node.ActualEndTime = &now
+
 	if err := s.NodeRepo.UpdateNode(ctx, tx, node); err != nil {
 		return err
 	}
@@ -630,19 +637,23 @@ func (s *NodeService) SubmitNodeForm(ctx context.Context, userId int32, nodeId s
 	}
 
 	// Update Node Form Is Submitted
+	nodeForm.SubmittedByUserID = &userId
+	now := time.Now()
+	nodeForm.SubmittedAt = &now
+	nodeForm.LastUpdateUserID = &userId
 	nodeForm.IsSubmitted = true
 	if err := s.NodeRepo.UpdateNodeForm(ctx, tx, nodeForm); err != nil {
 		return fmt.Errorf("update node form is submitted fail: %w", err)
 	}
 
-	node, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
+	node, err := s.NodeRepo.FindOneNodeByNodeIdTx(ctx, tx, nodeId)
 	if err != nil {
 		return fmt.Errorf("find node by node id fail: %w", err)
 	}
 
 	isCompletedNode := true
 	for _, nodeForm := range node.NodeForms {
-		if !nodeForm.IsSubmitted {
+		if !nodeForm.IsSubmitted && nodeForm.Permission == string(constants.NodeFormPermissionInput) {
 			isCompletedNode = false
 			break
 		}
@@ -650,15 +661,24 @@ func (s *NodeService) SubmitNodeForm(ctx context.Context, userId int32, nodeId s
 
 	// Update Node To Completed
 	if isCompletedNode {
-		if err := s.CompleteNodeHandler(ctx, nodeId, userId); err != nil {
+		if err := s.CompleteNodeHandler(ctx, nodeId, userId, true); err != nil {
 			return fmt.Errorf("complete node handler fail: %w", err)
 		}
 
 		nodeModel := model.Nodes{}
 		utils.Mapper(node, &nodeModel)
 		nodeModel.Status = string(constants.NodeStatusCompleted)
+
+		actualEndTime := time.Now()
+		nodeModel.ActualEndTime = &actualEndTime
+
 		if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
 			return fmt.Errorf("update node status to completed fail: %w", err)
+		}
+
+		// calculate request progress
+		if err := s.RequestService.UpdateCalculateRequestProgress(ctx, tx, node.RequestID); err != nil {
+			return fmt.Errorf("update calculate request progress fail: %w", err)
 		}
 	}
 
@@ -718,7 +738,6 @@ func (s *NodeService) RejectNodeForm(ctx context.Context, nodeId string, formId 
 }
 
 func (s *NodeService) GetNodeTaskDetail(ctx context.Context, nodeId string) (responses.TaskDetail, error) {
-
 	node, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
 	if err != nil {
 		return responses.TaskDetail{}, err
@@ -729,30 +748,68 @@ func (s *NodeService) GetNodeTaskDetail(ctx context.Context, nodeId string) (res
 		return responses.TaskDetail{}, err
 	}
 
-	assignee, err := s.UserAPI.FindUsersByUserIds([]int32{*node.AssigneeID})
-	if err != nil {
+	nodeTaskRelateds := []model.Nodes{}
+	if err := utils.Mapper(request.Nodes, &nodeTaskRelateds); err != nil {
 		return responses.TaskDetail{}, err
 	}
 
-	assigneeResponse := types.Assignee{
-		Id:           assignee.Data[0].ID,
-		Name:         assignee.Data[0].Name,
-		Email:        assignee.Data[0].Email,
-		AvatarUrl:    assignee.Data[0].AvatarUrl,
-		IsSystemUser: assignee.Data[0].IsSystemUser,
+	userIds := []int32{}
+	existingUserIds := map[int32]bool{}
+
+	if !existingUserIds[request.UserID] {
+		userIds = append(userIds, request.UserID)
+		existingUserIds[request.UserID] = true
 	}
 
-	requestBy, err := s.UserAPI.FindUsersByUserIds([]int32{request.UserID})
-	if err != nil {
-		return responses.TaskDetail{}, err
+	if node.AssigneeID != nil && !existingUserIds[*node.AssigneeID] {
+		userIds = append(userIds, *node.AssigneeID)
+		existingUserIds[*node.AssigneeID] = true
 	}
 
-	requestByResponse := types.Assignee{
-		Id:           requestBy.Data[0].ID,
-		Name:         requestBy.Data[0].Name,
-		Email:        requestBy.Data[0].Email,
-		AvatarUrl:    requestBy.Data[0].AvatarUrl,
-		IsSystemUser: requestBy.Data[0].IsSystemUser,
+	var parentNode *model.Nodes
+	if node.ParentID != nil {
+		nodeResult, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, *node.ParentID)
+		if err != nil {
+			return responses.TaskDetail{}, err
+		}
+		parentNode = &nodeResult.Nodes
+
+		if parentNode.AssigneeID != nil && !existingUserIds[*parentNode.AssigneeID] {
+			userIds = append(userIds, *parentNode.AssigneeID)
+			existingUserIds[*parentNode.AssigneeID] = true
+		}
+	}
+
+	for _, related := range nodeTaskRelateds {
+		if related.AssigneeID != nil && !existingUserIds[*related.AssigneeID] {
+			userIds = append(userIds, *related.AssigneeID)
+			existingUserIds[*related.AssigneeID] = true
+		}
+	}
+
+	userApiMap := map[int32]results.UserApiDataResult{}
+	if len(userIds) > 0 {
+		assigneeResult, err := s.UserAPI.FindUsersByUserIds(userIds)
+		if err != nil {
+			return responses.TaskDetail{}, err
+		}
+		for _, userApi := range assigneeResult.Data {
+			userApiMap[userApi.ID] = userApi
+		}
+	}
+
+	mapUser := func(id *int32) types.Assignee {
+		assignee := types.Assignee{}
+		if id != nil {
+			if user, ok := userApiMap[*id]; ok {
+				assignee.Id = user.ID
+				assignee.Name = user.Name
+				assignee.Email = user.Email
+				assignee.AvatarUrl = user.AvatarUrl
+				assignee.IsSystemUser = user.IsSystemUser
+			}
+		}
+		return assignee
 	}
 
 	taskDetail := responses.TaskDetail{
@@ -763,7 +820,7 @@ func (s *NodeService) GetNodeTaskDetail(ctx context.Context, nodeId string) (res
 			RequestID:        node.RequestID,
 			RequestTitle:     request.Title,
 			RequestProgress:  request.Progress,
-			Assignee:         assigneeResponse,
+			Assignee:         mapUser(node.AssigneeID),
 			PlannedStartTime: node.PlannedStartTime,
 			PlannedEndTime:   node.PlannedEndTime,
 			ActualStartTime:  node.ActualStartTime,
@@ -772,10 +829,45 @@ func (s *NodeService) GetNodeTaskDetail(ctx context.Context, nodeId string) (res
 			Status:           node.Status,
 			IsCurrent:        node.IsCurrent,
 		},
-		RequestRequestBy: requestByResponse,
+		RequestRequestBy: mapUser(&request.UserID),
 		IsApproval:       node.IsApproved,
 		UpdatedAt:        node.UpdatedAt,
+		JiraLinkURL:      node.JiraLinkURL,
 	}
+
+	if parentNode != nil {
+		taskDetail.Parent = &responses.TaskRelated{
+			Title:    parentNode.Title,
+			Type:     parentNode.Type,
+			Status:   parentNode.Status,
+			Assignee: mapUser(parentNode.AssigneeID),
+		}
+		if parentNode.JiraKey != nil {
+			taskDetail.Parent.Key = *parentNode.JiraKey
+		} else {
+			taskDetail.Parent.Key = strconv.Itoa(int(parentNode.Key))
+		}
+	}
+
+	nodeTaskRelatedsResponse := []responses.TaskRelated{}
+	for _, nodeTaskRelated := range nodeTaskRelateds {
+		assigneeResponse := mapUser(nodeTaskRelated.AssigneeID)
+
+		nodeTaskRelatedResponse := responses.TaskRelated{
+			Title:    nodeTaskRelated.Title,
+			Type:     nodeTaskRelated.Type,
+			Status:   nodeTaskRelated.Status,
+			Assignee: assigneeResponse,
+		}
+
+		if nodeTaskRelated.JiraKey != nil {
+			nodeTaskRelatedResponse.Key = *nodeTaskRelated.JiraKey
+		} else {
+			nodeTaskRelatedResponse.Key = strconv.Itoa(int(nodeTaskRelated.Key))
+		}
+		nodeTaskRelatedsResponse = append(nodeTaskRelatedsResponse, nodeTaskRelatedResponse)
+	}
+	taskDetail.Related = nodeTaskRelatedsResponse
 
 	if node.JiraKey != nil {
 		taskDetail.Key = *node.JiraKey
@@ -786,6 +878,32 @@ func (s *NodeService) GetNodeTaskDetail(ctx context.Context, nodeId string) (res
 	return taskDetail, nil
 }
 
+func (s *NodeService) GetNodeStoryByAssignee(ctx context.Context, userId int32) ([]responses.WorkflowResponse, error) {
+
+	workflows := []responses.WorkflowResponse{}
+
+	stories, err := s.NodeRepo.FindAllNodeStoryByAssigneeId(ctx, s.DB, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, story := range stories {
+		workflowResponse := responses.WorkflowResponse{}
+		if err := utils.Mapper(story.Workflows, &workflowResponse); err != nil {
+			return nil, err
+		}
+		categoryResponse := responses.CategoryResponse{}
+		if err := utils.Mapper(story.Category, &categoryResponse); err != nil {
+			return nil, err
+		}
+		workflowResponse.Category = categoryResponse
+		workflows = append(workflows, workflowResponse)
+	}
+
+	return workflows, nil
+}
+
+// JIRA ==========================
 func (s *NodeService) SyncJiraWhenCompleteNode(ctx context.Context, tx *sql.Tx, node model.Nodes) error {
 	// Update node status to completed
 	node.Status = string(constants.NodeStatusCompleted)

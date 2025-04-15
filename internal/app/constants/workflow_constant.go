@@ -17,6 +17,8 @@ const (
 	NodeTypeCondition   NodeType = "CONDITION"
 	NodeTypeTask        NodeType = "TASK"
 	NodeTypeBug         NodeType = "BUG"
+	NodeTypeInput       NodeType = "INPUT"
+	NodeTypeApproval    NodeType = "APPROVAL"
 )
 
 type NodeStatus string
@@ -34,4 +36,13 @@ const (
 	RequestStatusCompleted  RequestStatus = "COMPLETED"
 	RequestStatusTodo       RequestStatus = "TO_DO"
 	RequestStatusInProgress RequestStatus = "IN_PROGRESS"
+	RequestStatusCanceled   RequestStatus = "CANCELED"
+	RequestStatusTerminated RequestStatus = "TERMINATED"
+)
+
+type NodeEndType string
+
+const (
+	NodeEndTypeComplete  NodeEndType = "COMPLETE"
+	NodeEndTypeTerminate NodeEndType = "TERMINATE"
 )

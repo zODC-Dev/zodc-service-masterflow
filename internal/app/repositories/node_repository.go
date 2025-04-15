@@ -10,6 +10,7 @@ import (
 	"github.com/go-jet/jet/v2/postgres"
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/table"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/constants"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/results"
 )
@@ -50,6 +51,26 @@ func (r *NodeRepository) FindOneNodeByNodeId(ctx context.Context, db *sql.DB, no
 
 	result := results.NodeResult{}
 	err := statement.QueryContext(ctx, db, &result)
+
+	return result, err
+}
+
+func (r *NodeRepository) FindOneNodeByNodeIdTx(ctx context.Context, tx *sql.Tx, nodeId string) (results.NodeResult, error) {
+	Nodes := table.Nodes
+	NodeForms := table.NodeForms
+
+	statement := postgres.SELECT(
+		Nodes.AllColumns,
+		NodeForms.AllColumns,
+	).FROM(
+		Nodes.
+			LEFT_JOIN(NodeForms, Nodes.ID.EQ(NodeForms.NodeID)),
+	).WHERE(
+		Nodes.ID.EQ(postgres.String(nodeId)),
+	)
+
+	result := results.NodeResult{}
+	err := statement.QueryContext(ctx, tx, &result)
 
 	return result, err
 }
@@ -225,19 +246,6 @@ func (r *NodeRepository) FindAllNodeByRequestIdTx(ctx context.Context, tx *sql.T
 	return results, err
 }
 
-func (r *NodeRepository) FindOneNodeByNodeIdTx(ctx context.Context, tx *sql.Tx, nodeId string) (model.Nodes, error) {
-	Nodes := table.Nodes
-
-	statement := postgres.SELECT(Nodes.AllColumns).
-		FROM(Nodes).
-		WHERE(Nodes.ID.EQ(postgres.String(nodeId)))
-
-	result := model.Nodes{}
-	err := statement.QueryContext(ctx, tx, &result)
-
-	return result, err
-}
-
 func (r *NodeRepository) FindAllNodeFormByNodeIdAndPermission(ctx context.Context, db *sql.DB, nodeId string, permission string) ([]results.NodeFormResult, error) {
 	NodeForms := table.NodeForms
 	FormData := table.FormData
@@ -245,6 +253,7 @@ func (r *NodeRepository) FindAllNodeFormByNodeIdAndPermission(ctx context.Contex
 	FormTemplateFields := table.FormTemplateFields
 	FormTemplateVersions := table.FormTemplateVersions
 	FormTemplates := table.FormTemplates
+	NodeFormApproveOrRejectUsers := table.NodeFormApproveOrRejectUsers
 
 	statement := postgres.
 		SELECT(
@@ -255,6 +264,7 @@ func (r *NodeRepository) FindAllNodeFormByNodeIdAndPermission(ctx context.Contex
 		).
 		FROM(
 			NodeForms.
+				LEFT_JOIN(NodeFormApproveOrRejectUsers, NodeForms.ID.EQ(NodeFormApproveOrRejectUsers.NodeFormID)).
 				LEFT_JOIN(FormData, NodeForms.DataID.EQ(FormData.ID)).
 				LEFT_JOIN(FormFieldData, FormData.ID.EQ(FormFieldData.FormDataID)).
 				LEFT_JOIN(FormTemplates, NodeForms.TemplateID.EQ(FormTemplates.ID)).
@@ -385,6 +395,63 @@ func (r *NodeRepository) FindAllNodeConditionDestinationByNodeId(ctx context.Con
 	)
 
 	result := []model.NodeConditionDestinations{}
+	err := statement.QueryContext(ctx, db, &result)
+
+	return result, err
+}
+
+func (r *NodeRepository) FindAllNodeStoryByAssigneeId(ctx context.Context, db *sql.DB, userId int32) ([]results.NodeResult, error) {
+	Nodes := table.Nodes
+	Requests := table.Requests
+	WorkflowVersions := table.WorkflowVersions
+	Workflows := table.Workflows
+	Categories := table.Categories
+
+	statement := postgres.SELECT(
+		Nodes.AllColumns,
+		Workflows.AllColumns,
+		Categories.AllColumns,
+	).FROM(
+		Nodes.
+			LEFT_JOIN(Requests, Nodes.RequestID.EQ(Requests.ID)).
+			LEFT_JOIN(WorkflowVersions, Requests.WorkflowVersionID.EQ(WorkflowVersions.ID)).
+			LEFT_JOIN(Workflows, WorkflowVersions.WorkflowID.EQ(Workflows.ID)).
+			LEFT_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)),
+	).WHERE(
+		Nodes.AssigneeID.EQ(postgres.Int32(userId)).
+			AND(Nodes.Type.EQ(postgres.String(string(constants.NodeTypeStory)))).
+			AND(Workflows.IsArchived.EQ(postgres.Bool(false))),
+	)
+
+	results := []results.NodeResult{}
+	err := statement.QueryContext(ctx, db, &results)
+
+	return results, err
+}
+
+func (r *NodeRepository) FindOneFormDataByNodeId(ctx context.Context, db *sql.DB, nodeId string) ([]results.FormDataResult, error) {
+	FormData := table.FormData
+	FormFieldData := table.FormFieldData
+	Nodes := table.Nodes
+
+	FormTemplates := table.FormTemplates
+	FormTemplateVersions := table.FormTemplateVersions
+
+	statement := postgres.SELECT(
+		FormData.AllColumns,
+		FormTemplates.AllColumns,
+		FormFieldData.AllColumns,
+	).FROM(
+		FormData.
+			LEFT_JOIN(Nodes, FormData.ID.EQ(Nodes.FormDataID)).
+			LEFT_JOIN(FormFieldData, FormData.ID.EQ(FormFieldData.FormDataID)).
+			LEFT_JOIN(FormTemplateVersions, FormData.FormTemplateVersionID.EQ(FormTemplateVersions.ID)).
+			LEFT_JOIN(FormTemplates, FormTemplateVersions.FormTemplateID.EQ(FormTemplates.ID)),
+	).WHERE(
+		Nodes.ID.EQ(postgres.String(nodeId)),
+	)
+
+	result := []results.FormDataResult{}
 	err := statement.QueryContext(ctx, db, &result)
 
 	return result, err

@@ -27,24 +27,56 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 	WorkflowVerions := table.WorkflowVersions
 	Workflows := table.Workflows
 
-	rRequests := postgres.SELECT(
+	rRequestStatement := postgres.SELECT(
 		Requests.AllColumns,
-		Nodes.AllColumns,
 	).FROM(
 		Requests.
-			LEFT_JOIN(Nodes, Requests.ID.EQ(Nodes.RequestID)),
-	).WHERE(
-		Requests.UserID.EQ(postgres.Int32(userId)).
-			OR(Nodes.AssigneeID.EQ(postgres.Int32(userId))).
-			AND(Requests.IsTemplate.EQ(postgres.Bool(false))),
-	).LIMIT(int64(requestQueryParam.PageSize)).OFFSET(int64(requestQueryParam.Page - 1)).AsTable("rRequests")
+			LEFT_JOIN(WorkflowVerions, Requests.WorkflowVersionID.EQ(WorkflowVerions.ID)).
+			LEFT_JOIN(Workflows, WorkflowVerions.WorkflowID.EQ(Workflows.ID)),
+	).LIMIT(int64(requestQueryParam.PageSize)).OFFSET(int64(requestQueryParam.Page - 1))
+
+	rRequestsConditions := []postgres.BoolExpression{
+		Requests.UserID.EQ(postgres.Int32(userId)),
+		Requests.IsTemplate.EQ(postgres.Bool(false)),
+	}
+
+	if requestQueryParam.WorkflowType != "" {
+		rRequestsConditions = append(rRequestsConditions, Workflows.Type.EQ(postgres.String(requestQueryParam.WorkflowType)))
+	}
+
+	if requestQueryParam.Search != "" {
+		rRequestsConditions = append(rRequestsConditions, postgres.LOWER(Requests.Title).LIKE(postgres.LOWER(postgres.String("%"+requestQueryParam.Search+"%"))))
+	}
+
+	if requestQueryParam.ProjectKey != "" {
+		rRequestsConditions = append(rRequestsConditions, Workflows.ProjectKey.EQ(postgres.String(requestQueryParam.ProjectKey)))
+	}
+
+	if requestQueryParam.Status != "" {
+		if requestQueryParam.Status == "ALL" {
+			rRequestsConditions = append(rRequestsConditions, Requests.UserID.EQ(postgres.Int32(userId)))
+		} else {
+			rRequestsConditions = append(rRequestsConditions, Requests.Status.EQ(postgres.String(requestQueryParam.Status)))
+		}
+	}
+
+	if requestQueryParam.SprintID != "" {
+		sprintIdInt, err := strconv.Atoi(requestQueryParam.SprintID)
+		if err != nil {
+			return results.Count{}, []results.Request{}, err
+		}
+		rRequestsConditions = append(rRequestsConditions, Requests.SprintID.EQ(postgres.Int64(int64(sprintIdInt))))
+	}
+
+	var rRequests postgres.SelectTable
+	if len(rRequestsConditions) > 0 {
+		rRequests = rRequestStatement.WHERE(postgres.AND(rRequestsConditions...)).AsTable("rRequests")
+	} else {
+		rRequests = rRequestStatement.AsTable("rRequests")
+	}
 
 	requestId := Requests.ID.From(rRequests)
 	requestWorkflowVersionId := Requests.WorkflowVersionID.From(rRequests)
-	requestTitle := Requests.Title.From(rRequests)
-	requestStatus := Requests.Status.From(rRequests)
-	requestSprintId := Requests.SprintID.From(rRequests)
-	requestUserId := Requests.UserID.From(rRequests)
 
 	statement := postgres.SELECT(
 		rRequests.AllColumns(),
@@ -56,47 +88,12 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 			LEFT_JOIN(Nodes, requestId.EQ(Nodes.RequestID)).
 			LEFT_JOIN(WorkflowVerions, requestWorkflowVersionId.EQ(WorkflowVerions.ID)).
 			LEFT_JOIN(Workflows, Workflows.ID.EQ(WorkflowVerions.WorkflowID)),
-	)
-
-	conditions := []postgres.BoolExpression{
+	).WHERE(
 		Nodes.IsCurrent.EQ(postgres.Bool(true)),
-	}
-
-	if requestQueryParam.Search != "" {
-		conditions = append(conditions, postgres.LOWER(requestTitle).LIKE(postgres.LOWER(postgres.String("%"+requestQueryParam.Search+"%"))))
-	}
-
-	if requestQueryParam.ProjectKey != "" {
-		conditions = append(conditions, Workflows.ProjectKey.EQ(postgres.String(requestQueryParam.ProjectKey)))
-	}
-
-	if requestQueryParam.Status != "" {
-		if requestQueryParam.Status == "ALL" {
-			conditions = append(conditions, requestUserId.EQ(postgres.Int32(userId)))
-		} else {
-			conditions = append(conditions, requestStatus.EQ(postgres.String(requestQueryParam.Status)))
-		}
-	}
-
-	if requestQueryParam.SprintID != "" {
-		sprintIdInt, err := strconv.Atoi(requestQueryParam.SprintID)
-		if err != nil {
-			return results.Count{}, []results.Request{}, err
-		}
-		conditions = append(conditions, requestSprintId.EQ(postgres.Int64(int64(sprintIdInt))))
-	}
-
-	if requestQueryParam.WorkflowType != "" {
-		conditions = append(conditions, Workflows.Type.EQ(postgres.String(requestQueryParam.WorkflowType)))
-	}
-
-	if len(conditions) > 0 {
-		statement = statement.WHERE(postgres.AND(conditions...))
-	}
+	)
 
 	result := []results.Request{}
 	err := statement.QueryContext(ctx, db, &result)
-	fmt.Println(statement.DebugSql())
 
 	if err != nil {
 		return results.Count{}, result, err
@@ -130,6 +127,14 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 		} else {
 			conditionsCount = append(conditionsCount, Requests.Status.EQ(postgres.String(requestQueryParam.Status)))
 		}
+	}
+
+	if requestQueryParam.SprintID != "" {
+		sprintIdInt, err := strconv.Atoi(requestQueryParam.SprintID)
+		if err != nil {
+			return results.Count{}, []results.Request{}, err
+		}
+		conditionsCount = append(conditionsCount, Requests.SprintID.EQ(postgres.Int64(int64(sprintIdInt))))
 	}
 
 	if len(conditionsCount) > 0 {
@@ -550,7 +555,7 @@ func (r *RequestRepository) FindAllTasksByProject(ctx context.Context, db *sql.D
 	return len(count), result, err
 }
 
-func (r *RequestRepository) FindAllSubRequestByParentId(ctx context.Context, db *sql.DB, parentId int32, queryparams queryparams.RequestSubRequestQueryParam) (int, results.RequestSubRequest, error) {
+func (r *RequestRepository) FindAllSubRequestByParentId(ctx context.Context, db *sql.DB, parentId int32, queryparams queryparams.RequestSubRequestQueryParam) (int, []results.RequestSubRequest, error) {
 	Requests := table.Requests
 	Nodes := table.Nodes
 	Workflows := table.Workflows
@@ -571,7 +576,7 @@ func (r *RequestRepository) FindAllSubRequestByParentId(ctx context.Context, db 
 		Requests.ParentID.EQ(postgres.Int32(parentId)).AND(Nodes.Type.IN(postgres.String(string(constants.NodeTypeTask)), postgres.String(string(constants.NodeTypeStory)))),
 	).LIMIT(int64(queryparams.PageSize)).OFFSET(int64(queryparams.Page - 1))
 
-	requests := results.RequestSubRequest{}
+	requests := []results.RequestSubRequest{}
 	err = statement.QueryContext(ctx, db, &requests)
 	if err != nil {
 		return 0, requests, err
@@ -638,4 +643,97 @@ func (r *RequestRepository) RemoveNodesConnectionsStoriesByRequestId(ctx context
 	}
 
 	return nil
+}
+
+func (r *RequestRepository) FindAllRequestCompletedFormByRequestId(ctx context.Context, db *sql.DB, requestId int32, page int, pageSize int) (int, []results.NodeFormCompletedResult, error) {
+	NodeForms := table.NodeForms
+	Nodes := table.Nodes
+	NodeFormApproveOrRejectUsers := table.NodeFormApproveOrRejectUsers
+	FormData := table.FormData
+	FormFieldData := table.FormFieldData
+
+	statement := NodeForms.SELECT(
+		NodeForms.AllColumns,
+		Nodes.AllColumns,
+		NodeFormApproveOrRejectUsers.AllColumns,
+		FormData.AllColumns,
+		FormFieldData.AllColumns,
+	).FROM(
+		NodeForms.
+			LEFT_JOIN(Nodes, NodeForms.NodeID.EQ(Nodes.ID)).
+			LEFT_JOIN(
+				NodeFormApproveOrRejectUsers, NodeForms.ID.EQ(NodeFormApproveOrRejectUsers.NodeFormID),
+			).
+			LEFT_JOIN(FormData, NodeForms.DataID.EQ(FormData.ID)).
+			LEFT_JOIN(FormFieldData, FormData.ID.EQ(FormFieldData.FormDataID)),
+	).WHERE(
+		Nodes.RequestID.EQ(postgres.Int32(requestId)).
+			AND(NodeForms.IsSubmitted.EQ(postgres.Bool(true))),
+	).LIMIT(int64(pageSize)).OFFSET(int64(page - 1))
+
+	result := []results.NodeFormCompletedResult{}
+	err := statement.QueryContext(ctx, db, &result)
+	if err != nil {
+		return 0, result, err
+	}
+
+	statementCount := NodeForms.SELECT(
+		NodeForms.AllColumns,
+		Nodes.AllColumns,
+		NodeFormApproveOrRejectUsers.AllColumns,
+		FormData.AllColumns,
+		FormFieldData.AllColumns,
+	).FROM(
+		NodeForms.
+			LEFT_JOIN(Nodes, NodeForms.NodeID.EQ(Nodes.ID)).
+			LEFT_JOIN(
+				NodeFormApproveOrRejectUsers, NodeForms.ID.EQ(NodeFormApproveOrRejectUsers.NodeFormID),
+			).
+			LEFT_JOIN(FormData, NodeForms.DataID.EQ(FormData.ID)).
+			LEFT_JOIN(FormFieldData, FormData.ID.EQ(FormFieldData.FormDataID)),
+	).WHERE(
+		Nodes.RequestID.EQ(postgres.Int32(requestId)).
+			AND(NodeForms.IsSubmitted.EQ(postgres.Bool(true))),
+	)
+
+	count := []model.NodeForms{}
+	err = statementCount.QueryContext(ctx, db, &count)
+
+	return len(count), result, err
+}
+
+func (r *RequestRepository) FindAllRequestFileManagerByRequestId(ctx context.Context, db *sql.DB, requestId int32, page int, pageSize int) (int, []results.NodeFormResult, error) {
+	Requests := table.Requests
+	Nodes := table.Nodes
+	NodeForms := table.NodeForms
+
+	FormData := table.FormData
+	FormFieldData := table.FormFieldData
+
+	FormTemplateFields := table.FormTemplateFields
+
+	statement := Requests.SELECT(
+		NodeForms.AllColumns,
+		FormFieldData.AllColumns,
+	).FROM(
+		Requests.
+			LEFT_JOIN(Nodes, Requests.ID.EQ(Nodes.RequestID)).
+			LEFT_JOIN(NodeForms, Nodes.ID.EQ(NodeForms.NodeID)).
+
+			//
+			LEFT_JOIN(FormData, FormData.ID.EQ(NodeForms.DataID)).
+			LEFT_JOIN(FormFieldData, FormFieldData.FormDataID.EQ(FormData.ID)).
+			LEFT_JOIN(FormTemplateFields, FormTemplateFields.ID.EQ(FormFieldData.FormTemplateFieldID)),
+	).WHERE(
+		Requests.ID.EQ(postgres.Int32(requestId)).
+			AND(Nodes.Type.EQ(postgres.String(string(constants.NodeTypeInput)))).
+			AND(NodeForms.IsSubmitted.EQ(postgres.Bool(true))).
+			AND(FormTemplateFields.FieldType.EQ(postgres.String(string(constants.FormTemplateFieldTypeAttachment)))),
+	).LIMIT(int64(pageSize)).OFFSET(int64(page - 1))
+
+	result := []results.NodeFormResult{}
+	err := statement.QueryContext(ctx, db, &result)
+
+	return len(result), result, err
+
 }

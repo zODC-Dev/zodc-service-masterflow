@@ -28,6 +28,7 @@ type Nodes struct {
 	Type                      string
 	Status                    string
 	IsCurrent                 bool
+	JiraLinkURL               *string
 	EstimatePoint             *float32
 	PlannedStartTime          *time.Time
 	PlannedEndTime            *time.Time

@@ -348,6 +348,8 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			Status: string(constants.NodeStatusTodo),
 
 			JiraKey: storyReq.Node.JiraKey,
+
+			JiraLinkURL: storyReq.Node.Data.JiraLinkURL,
 		}
 
 		if formSystemVersionId, exists := formSystemTagMap["TASK"]; exists {
@@ -424,6 +426,8 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 				EstimatePoint: storyNodeReq.Data.EstimatePoint,
 
 				JiraKey: storyNodeReq.JiraKey,
+
+				JiraLinkURL: storyNodeReq.Data.JiraLinkURL,
 			}
 
 			if storyNodeReq.ParentId != "" {
@@ -563,6 +567,11 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			workflowNode.ParentID = &parentId
 		}
 
+		if workflowNodeReq.Type == string(constants.NodeTypeTask) {
+			formTemplateId := int32(1)
+			workflowNode.FormTemplateID = &formTemplateId
+		}
+
 		for _, formSystem := range formSystems {
 			if formSystem.Tag == workflowNodeReq.Type {
 				// Create Form Data
@@ -632,7 +641,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			formAttachedModel := model.NodeForms{
 				Key:                      formAttached.Key,
 				FromUserID:               formAttached.FromUserId,
-				OptionKey:                formAttached.OptionId,
+				OptionKey:                formAttached.OptionKey,
 				FromFormAttachedPosition: formAttached.FromFormAttachedPosition,
 				Permission:               formAttached.Permission,
 				IsOriginal:               formAttached.IsOriginal,
@@ -829,19 +838,15 @@ func (s *WorkflowService) CreateWorkflowHandler(ctx context.Context, req *reques
 func (s *WorkflowService) FindAllWorkflowHandler(ctx context.Context, workflowTemplateQueryParams queryparams.WorkflowQueryParam, userId int32) ([]responses.WorkflowResponse, error) {
 	workflowResponses := []responses.WorkflowResponse{}
 
-	userIds := []int32{int32(userId)}
+	users, err := s.UserAPI.FindUsersByUserIds([]int32{userId})
+	if err != nil {
+		return workflowResponses, err
+	}
 
+	// Get User Project
 	projects := []string{}
-	if workflowTemplateQueryParams.Type != string(constants.WorkflowTypeGeneral) {
-		users, err := s.UserAPI.FindUsersByUserIds(userIds)
-		if err != nil {
-			return workflowResponses, err
-		}
-
-		// Get User Project
-		for _, projectRole := range users.Data[0].ProjectRoles {
-			projects = append(projects, projectRole.ProjectKey)
-		}
+	for _, projectRole := range users.Data[0].ProjectRoles {
+		projects = append(projects, projectRole.ProjectKey)
 	}
 
 	workflows, err := s.WorkflowRepo.FindAllWorkflowTemplates(ctx, s.DB, workflowTemplateQueryParams, projects)
@@ -1032,6 +1037,33 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 				FieldId: formFieldData.FormTemplateField.FieldID,
 				Value:   formFieldData.Value,
 			})
+		}
+
+		if node.Type == string(constants.NodeTypeCondition) {
+
+			falseNodeDestinationIds := []string{}
+			trueNodeDestinationIds := []string{}
+
+			falseNodeDestinations, err := s.NodeRepo.FindAllNodeConditionDestinationByNodeId(ctx, s.DB, node.ID, false)
+			if err != nil {
+				return workflowResponse, fmt.Errorf("find node condition destination fail: %w", err)
+			}
+			for _, destination := range falseNodeDestinations {
+				falseNodeDestinationIds = append(falseNodeDestinationIds, destination.DestinationNodeID)
+			}
+
+			trueNodeDestinations, err := s.NodeRepo.FindAllNodeConditionDestinationByNodeId(ctx, s.DB, node.ID, true)
+			if err != nil {
+				return workflowResponse, fmt.Errorf("find node condition destination fail: %w", err)
+			}
+			for _, destination := range trueNodeDestinations {
+				trueNodeDestinationIds = append(trueNodeDestinationIds, destination.DestinationNodeID)
+			}
+
+			nodeResponse.Data.Condition = responses.NodeDataConditionResponse{
+				TrueDestinations:  trueNodeDestinationIds,
+				FalseDestinations: falseNodeDestinationIds,
+			}
 		}
 
 		workflowResponse.Nodes = append(workflowResponse.Nodes, nodeResponse)

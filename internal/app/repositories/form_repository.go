@@ -125,7 +125,7 @@ func (r *FormRepository) CreateFormTemplateFields(ctx context.Context, tx *sql.T
 	return err
 }
 
-func (r *FormRepository) FindAllFormSystem(ctx context.Context, db *sql.DB) ([]results.FormSystemResult, error) {
+func (r *FormRepository) FindAllFormSystem(ctx context.Context, db *sql.DB) ([]results.FormResult, error) {
 	FormTemplates := table.FormTemplates
 	FormTemplateVersions := table.FormTemplateVersions
 	FormTemplateFields := table.FormTemplateFields
@@ -142,7 +142,7 @@ func (r *FormRepository) FindAllFormSystem(ctx context.Context, db *sql.DB) ([]r
 		FormTemplates.Type.EQ(postgres.String("SYSTEM")),
 	)
 
-	formSystemResults := []results.FormSystemResult{}
+	formSystemResults := []results.FormResult{}
 
 	err := statement.QueryContext(ctx, db, &formSystemResults)
 
@@ -174,7 +174,7 @@ func (r *FormRepository) CreateFormFieldDatas(ctx context.Context, tx *sql.Tx, f
 	return err
 }
 
-func (r *FormRepository) FindOneFormTemplateByFormTemplateId(ctx context.Context, db *sql.DB, formTemplateId int32) (results.FormSystemResult, error) {
+func (r *FormRepository) FindOneFormTemplateByFormTemplateId(ctx context.Context, db *sql.DB, formTemplateId int32) (results.FormResult, error) {
 	FormTemplates := table.FormTemplates
 	FormTemplateVersions := table.FormTemplateVersions
 	FormTemplateFields := table.FormTemplateFields
@@ -194,7 +194,7 @@ func (r *FormRepository) FindOneFormTemplateByFormTemplateId(ctx context.Context
 		FormTemplates.ID.EQ(postgres.Int32(formTemplateId)),
 	)
 
-	formTemplate := results.FormSystemResult{}
+	formTemplate := results.FormResult{}
 
 	err := statement.QueryContext(ctx, db, &formTemplate)
 

@@ -3,12 +3,14 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/go-jet/jet/v2/postgres"
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/table"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/constants"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/results"
 )
@@ -65,10 +67,10 @@ func (r *WorkflowRepository) FindAllWorkflowTemplates(ctx context.Context, db *s
 			LEFT_JOIN(Requests, Requests.WorkflowVersionID.EQ(WorkflowVersions.ID)),
 	)
 
-	conditions := []postgres.BoolExpression{}
-
-	conditions = append(conditions, Requests.IsTemplate.EQ(postgres.Bool(true)))
-	conditions = append(conditions, WorkflowVersions.Version.EQ(Workflows.CurrentVersion))
+	conditions := []postgres.BoolExpression{
+		Requests.IsTemplate.EQ(postgres.Bool(true)),
+		WorkflowVersions.Version.EQ(Workflows.CurrentVersion),
+	}
 
 	if workflowTemplateQueryParams.Search != "" {
 		conditions = append(conditions, postgres.LOWER(Workflows.Title).LIKE(postgres.LOWER(postgres.String("%"+workflowTemplateQueryParams.Search+"%"))))
@@ -110,7 +112,7 @@ func (r *WorkflowRepository) FindAllWorkflowTemplates(ctx context.Context, db *s
 	}
 
 	// Filter Product
-	if len(projects) > 0 {
+	if workflowTemplateQueryParams.Type == string(constants.WorkflowTypeProject) && len(projects) > 0 {
 		projectExpressions := make([]postgres.Expression, len(projects))
 		for i, project := range projects {
 			projectExpressions[i] = postgres.String(project)
@@ -126,6 +128,7 @@ func (r *WorkflowRepository) FindAllWorkflowTemplates(ctx context.Context, db *s
 	result := []results.WorkflowTemplate{}
 
 	err := statement.QueryContext(ctx, db, &result)
+	fmt.Println(statement.DebugSql())
 
 	return result, err
 }

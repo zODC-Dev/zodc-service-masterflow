@@ -22,7 +22,7 @@ type NodeDataFormAttached struct {
 	Key                           string
 	FormTemplateId                int32
 	DataId                        string
-	OptionId                      *string
+	OptionKey                     *string
 	FromUserId                    *int32
 	FromFormAttachedPosition      *int32
 	Permission                    string
@@ -48,6 +48,8 @@ type NodeData struct {
 	SubRequestID  *int32
 	JiraKey       string
 	EstimatePoint *float32
+
+	JiraLinkURL *string
 
 	Condition NodeDataCondition
 

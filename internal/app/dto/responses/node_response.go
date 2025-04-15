@@ -21,9 +21,24 @@ type JiraFormDetailResponse struct {
 	Data     []NodeFormDataResponse      `json:"data"`
 }
 
+type TaskRelated struct {
+	Key      string         `json:"key"`
+	Title    string         `json:"title"`
+	Type     string         `json:"type"`
+	Status   string         `json:"status"`
+	Assignee types.Assignee `json:"assignee"`
+}
+
 type TaskDetail struct {
 	RequestTaskResponse
 	UpdatedAt        time.Time      `json:"updatedAt"`
 	RequestRequestBy types.Assignee `json:"requestRequestBy"`
 	IsApproval       bool           `json:"isApproval"`
+
+	SprintId      *int `json:"sprintId"`
+	EstimatePoint *int `json:"estimatePoint"`
+	Parent        *TaskRelated
+	Related       []TaskRelated
+
+	JiraLinkURL *string `json:"jiraLinkUrl"`
 }
