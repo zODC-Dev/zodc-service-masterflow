@@ -1,13 +1,17 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/configs"
 	db "github.com/zODC-Dev/zodc-service-masterflow/internal/app/database"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/routes"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/services"
+	"github.com/zODC-Dev/zodc-service-masterflow/pkg/nats"
 )
 
 // @title zODC Masterflow Service API
@@ -30,6 +34,9 @@ import (
 // @name Authorization
 // @description Type "Bearer" followed by a space and JWT token.
 func main() {
+	// Create context for services
+	ctx := context.Background()
+
 	e := echo.New()
 	{
 		e.Use(middleware.Logger())
@@ -42,10 +49,46 @@ func main() {
 	}
 
 	//Database Setup
-	db := db.ConnectDatabase()
+	database := db.ConnectDatabase()
+
+	// Initialize repositories
+	nodeRepo := repositories.NewNodeRepository()
+	requestRepo := repositories.NewRequestRepository()
+
+	// Initialize NATS client
+	natsConfig := nats.DefaultConfig()
+	natsConfig.URL = configs.Env.NATS_URL // Ensure NATS_URL is defined in your .env file
+	natsClient, err := nats.NewNATSClient(natsConfig)
+	if err != nil {
+		slog.Error("Failed to create NATS client", "error", err)
+	} else {
+		// Initialize and start NATS subscriber service
+		natsSubscriberService := services.NewNatsSubscriberService(
+			natsClient,
+			database,
+			nodeRepo,
+			requestRepo,
+		)
+
+		// Start the subscriber service in a goroutine
+		go func() {
+			if err := natsSubscriberService.Start(ctx); err != nil {
+				slog.Error("Failed to start NATS subscriber service", "error", err)
+			}
+		}()
+
+		// Ensure graceful shutdown
+		defer func() {
+			if err := natsSubscriberService.Shutdown(ctx); err != nil {
+				slog.Error("Error shutting down NATS subscriber service", "error", err)
+			}
+		}()
+
+		slog.Info("NATS subscriber service started")
+	}
 
 	//Route Setup
-	routes.RegisterRoutes(e, db)
+	routes.RegisterRoutes(e, database)
 
 	slog.Error(e.Start(configs.Env.SERVER_ADDRESS).Error())
 }

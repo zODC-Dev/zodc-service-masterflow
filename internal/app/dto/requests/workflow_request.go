@@ -42,7 +42,7 @@ type NodeDataCondition struct {
 type NodeData struct {
 	Type          string
 	Title         string
-	DueIn         int32
+	EndDate       string
 	Assignee      NodeDataAssignee
 	EndType       string
 	SubRequestID  *int32
