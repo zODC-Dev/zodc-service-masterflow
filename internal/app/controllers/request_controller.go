@@ -396,3 +396,52 @@ func (c *RequestController) GetRequestTasksCount(e echo.Context) error {
 
 	return e.JSON(http.StatusOK, requestTaskCountResponse)
 }
+
+// GetRequestCompletedForm godoc
+// @Summary      Get completed form for a request
+// @Description  Retrieves the completed form for a specific request ID.
+// @Tags         Requests
+// @Produce      json
+// @Param        id path int true "Request ID"
+// @Success      200 {object} responses.RequestCompletedFormResponse // Assuming responses.RequestCompletedFormResponse exists
+// @Failure      400 {object} string "Error message for invalid request ID"
+// @Failure      500 {object} string "Error message for internal server error"
+// @Router       /requests/{id}/completed-form [get]
+func (c *RequestController) GetRequestCompletedForm(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	requestId := e.Param("id")
+	requestIdInt, err := strconv.Atoi(requestId)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, fmt.Sprintf("Invalid request ID: %s", requestId))
+	}
+
+	page := 1
+	if pageStr := e.QueryParam("page"); pageStr != "" {
+		if parsedPage, err := strconv.Atoi(pageStr); err == nil && parsedPage > 0 {
+			page = parsedPage
+		}
+	}
+
+	pageSize := 10
+	if pageSizeStr := e.QueryParam("pageSize"); pageSizeStr != "" {
+		if parsedPageSize, err := strconv.Atoi(pageSizeStr); err == nil && parsedPageSize > 0 {
+			pageSize = parsedPageSize
+		}
+	}
+
+	requestCompletedFormQueryParam := queryparams.RequestTaskQueryParam{
+		Page:     page,
+		PageSize: pageSize,
+	}
+
+	requestCompletedFormResponse, err := c.requestService.GetRequestCompletedFormHandler(ctx, int32(requestIdInt), requestCompletedFormQueryParam)
+	if err != nil {
+		return e.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, responses.Response{
+		Message: "Success",
+		Data:    requestCompletedFormResponse,
+	})
+}

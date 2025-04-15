@@ -55,6 +55,7 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 		ConnectionRepo:  connectionRepo,
 		NodeRepo:        nodeRepo,
 		NatsService:     natsService,
+		NodeService:     nodeService,
 	})
 
 	requestController := controllers.NewRequestController(requestService)
@@ -75,6 +76,8 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 		requestRoute.PUT("/:id", requestController.UpdateRequest)
 
 		requestRoute.GET("/tasks/count", requestController.GetRequestTasksCount)
+
+		requestRoute.GET("/:id/completed-form", requestController.GetRequestCompletedForm)
 
 	}
 

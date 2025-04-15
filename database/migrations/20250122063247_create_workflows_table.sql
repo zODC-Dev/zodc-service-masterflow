@@ -164,9 +164,14 @@ CREATE TABLE node_forms (
     from_form_attached_position INT,
 
     is_original BOOLEAN NOT NULL DEFAULT false,
-    is_submitted BOOLEAN NOT NULL DEFAULT false,
     is_approved BOOLEAN NOT NULL DEFAULT false,
     is_rejected BOOLEAN NOT NULL DEFAULT false,
+
+    is_submitted BOOLEAN NOT NULL DEFAULT false,
+
+    submitted_at TIMESTAMP,
+    submitted_by_user_id INT,
+    
 
     -- Form
     data_id TEXT REFERENCES form_data (id) ON DELETE CASCADE,

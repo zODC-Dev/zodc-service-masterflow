@@ -27,6 +27,7 @@ type RequestService struct {
 	ConnectionRepo  *repositories.ConnectionRepository
 	WorkflowService *WorkflowService
 	NatsService     *NatsService
+	NodeService     *NodeService
 }
 
 func NewRequestService(cfg RequestService) *RequestService {
@@ -38,6 +39,7 @@ func NewRequestService(cfg RequestService) *RequestService {
 		ConnectionRepo:  cfg.ConnectionRepo,
 		WorkflowService: cfg.WorkflowService,
 		NatsService:     cfg.NatsService,
+		NodeService:     cfg.NodeService,
 	}
 }
 
@@ -847,4 +849,93 @@ func (s *RequestService) UpdateRequestHandler(ctx context.Context, requestId int
 	}
 
 	return nil
+}
+
+func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, requestId int32, queryParams queryparams.RequestTaskQueryParam) (responses.Paginate[[]responses.RequestCompletedFormResponse], error) {
+	paginatedResponse := responses.Paginate[[]responses.RequestCompletedFormResponse]{}
+	requestCompletedFormResponse := []responses.RequestCompletedFormResponse{}
+	paginatedResponse.Items = requestCompletedFormResponse
+
+	total, request, err := s.RequestRepo.FindAllRequestCompletedFormByRequestId(ctx, s.DB, requestId, queryParams.Page, queryParams.PageSize)
+	if err != nil {
+		return paginatedResponse, err
+	}
+
+	userIds := []int32{}
+	existingUserIds := make(map[int32]bool)
+
+	for _, node := range request.Nodes {
+		if node.AssigneeID != nil && !existingUserIds[*node.AssigneeID] {
+			userIds = append(userIds, *node.AssigneeID)
+			existingUserIds[*node.AssigneeID] = true
+		}
+	}
+
+	userApiMap := map[int32]results.UserApiDataResult{}
+	if len(userIds) > 0 {
+		assigneeResult, err := s.UserAPI.FindUsersByUserIds(userIds)
+		if err != nil {
+			return paginatedResponse, err
+		}
+		for _, userApi := range assigneeResult.Data {
+			userApiMap[userApi.ID] = userApi
+		}
+	}
+
+	mapUser := func(id *int32) types.Assignee {
+		assignee := types.Assignee{}
+		if id != nil {
+			if user, ok := userApiMap[*id]; ok {
+				assignee.Id = user.ID
+				assignee.Name = user.Name
+				assignee.Email = user.Email
+				assignee.AvatarUrl = user.AvatarUrl
+				assignee.IsSystemUser = user.IsSystemUser
+			}
+		}
+		return assignee
+	}
+
+	requestCompletedFormRes := responses.RequestCompletedFormResponse{}
+	for _, node := range request.Nodes {
+		if node.Type == string(constants.NodeTypeInput) {
+			requestCompletedFormRes.RequestTaskResponse = responses.RequestTaskResponse{
+				Id:               node.ID,
+				Title:            node.Title,
+				Type:             node.Type,
+				RequestID:        node.RequestID,
+				RequestTitle:     request.Title,
+				RequestProgress:  request.Progress,
+				Assignee:         mapUser(node.AssigneeID),
+				PlannedStartTime: node.PlannedStartTime,
+				PlannedEndTime:   node.PlannedEndTime,
+				ActualStartTime:  node.ActualStartTime,
+				ActualEndTime:    node.ActualEndTime,
+				EstimatePoint:    node.EstimatePoint,
+				Status:           node.Status,
+				IsCurrent:        node.IsCurrent,
+			}
+
+			requestCompletedFormResData, err := s.NodeService.GetNodeFormWithPermission(ctx, node.ID, string(constants.NodeFormPermissionInput))
+			if err != nil {
+				return paginatedResponse, err
+			}
+
+			requestCompletedFormRes.Data = requestCompletedFormResData
+		}
+
+		requestCompletedFormResponse = append(requestCompletedFormResponse, requestCompletedFormRes)
+	}
+
+	totalPages := (int(total) + queryParams.PageSize - 1) / queryParams.PageSize
+
+	paginatedResponse = responses.Paginate[[]responses.RequestCompletedFormResponse]{
+		Items:      requestCompletedFormResponse,
+		Total:      int(total),
+		Page:       queryParams.Page,
+		PageSize:   queryParams.PageSize,
+		TotalPages: totalPages,
+	}
+
+	return paginatedResponse, nil
 }

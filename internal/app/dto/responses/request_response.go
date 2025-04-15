@@ -73,3 +73,8 @@ type RequestOverviewResponse struct {
 	Progress float32         `json:"progress"`
 	Category CategoryFindAll `json:"category"`
 }
+
+type RequestCompletedFormResponse struct {
+	RequestTaskResponse
+	Data []NodeFormDetailResponse
+}

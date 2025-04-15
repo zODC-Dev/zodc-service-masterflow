@@ -17,6 +17,7 @@ const (
 	NodeTypeCondition   NodeType = "CONDITION"
 	NodeTypeTask        NodeType = "TASK"
 	NodeTypeBug         NodeType = "BUG"
+	NodeTypeInput       NodeType = "INPUT"
 )
 
 type NodeStatus string

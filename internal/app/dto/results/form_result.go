@@ -8,7 +8,7 @@ type FormTemplateResult struct {
 	Category model.Categories
 }
 
-type FormSystemResult struct {
+type FormResult struct {
 	model.FormTemplates
 	Version  model.FormTemplateVersions
 	Fields   []model.FormTemplateFields

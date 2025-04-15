@@ -644,3 +644,46 @@ func (r *RequestRepository) RemoveNodesConnectionsStoriesByRequestId(ctx context
 
 	return nil
 }
+
+func (r *RequestRepository) FindAllRequestCompletedFormByRequestId(ctx context.Context, db *sql.DB, requestId int32, page int, pageSize int) (int, results.Request, error) {
+	Requests := table.Requests
+	Nodes := table.Nodes
+	NodeForms := table.NodeForms
+
+	statement := Requests.SELECT(
+		Requests.AllColumns,
+		Nodes.AllColumns,
+		NodeForms.AllColumns,
+	).FROM(
+		Requests.
+			LEFT_JOIN(Nodes, Requests.ID.EQ(Nodes.RequestID)).
+			LEFT_JOIN(NodeForms, Nodes.ID.EQ(NodeForms.NodeID)),
+	).WHERE(
+		Requests.ID.EQ(postgres.Int32(requestId)).
+			AND(Nodes.Type.EQ(postgres.String(string(constants.NodeTypeInput)))).
+			AND(NodeForms.IsSubmitted.EQ(postgres.Bool(true))),
+	).LIMIT(int64(pageSize)).OFFSET(int64(page - 1))
+
+	result := results.Request{}
+	err := statement.QueryContext(ctx, db, &result)
+	if err != nil {
+		return 0, result, err
+	}
+
+	totalStatment := Requests.SELECT(
+		NodeForms.AllColumns,
+	).FROM(
+		Requests.
+			LEFT_JOIN(Nodes, Requests.ID.EQ(Nodes.RequestID)).
+			LEFT_JOIN(NodeForms, Nodes.ID.EQ(NodeForms.NodeID)),
+	).WHERE(
+		Requests.ID.EQ(postgres.Int32(requestId)).
+			AND(Nodes.Type.EQ(postgres.String(string(constants.NodeTypeInput)))).
+			AND(NodeForms.IsSubmitted.EQ(postgres.Bool(true))),
+	)
+
+	totalResult := []model.NodeForms{}
+	err = totalStatment.QueryContext(ctx, db, &totalResult)
+
+	return len(totalResult), result, err
+}
