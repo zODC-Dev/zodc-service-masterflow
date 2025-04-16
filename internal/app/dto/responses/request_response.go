@@ -59,6 +59,8 @@ type RequestTaskResponse struct {
 	ActualEndTime    *time.Time     `json:"actualEndTime"`
 	EstimatePoint    *float32       `json:"estimatePoint"`
 	IsCurrent        bool           `json:"isCurrent"`
+	IsApproved       bool           `json:"isApproved"`
+	IsRejected       bool           `json:"isRejected"`
 }
 
 type RequestTaskCountResponse struct {

@@ -958,6 +958,8 @@ func (s *NodeService) GetNodeTaskDetail(ctx context.Context, nodeId string) (res
 			EstimatePoint:    node.EstimatePoint,
 			Status:           node.Status,
 			IsCurrent:        node.IsCurrent,
+			IsApproved:       node.IsApproved,
+			IsRejected:       node.IsRejected,
 		},
 		RequestRequestBy: mapUser(&request.UserID),
 		IsApproval:       node.IsApproved,
