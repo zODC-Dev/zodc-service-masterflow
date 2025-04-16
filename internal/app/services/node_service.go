@@ -30,6 +30,7 @@ type NodeService struct {
 	NatsService     *NatsService
 	NatsClient      *nats.NATSClient
 	FormRepo        *repositories.FormRepository
+	FormService     *FormService
 	UserAPI         *externals.UserAPI
 	RequestService  *RequestService
 }
@@ -44,6 +45,7 @@ func NewNodeService(cfg NodeService) *NodeService {
 		NatsService:     cfg.NatsService,
 		NatsClient:      cfg.NatsClient,
 		FormRepo:        cfg.FormRepo,
+		FormService:     cfg.FormService,
 		UserAPI:         cfg.UserAPI,
 		RequestService:  cfg.RequestService,
 	}
@@ -583,14 +585,13 @@ func (s *NodeService) GetNodeJiraForm(ctx context.Context, nodeId string) (respo
 		return responses.JiraFormDetailResponse{}, err
 	}
 
-	formTemplate := responses.FormTemplateFindAll{}
-	utils.Mapper(nodeJiraForm.FormTemplates, &formTemplate)
-
-	formTemplateFields := []responses.FormTemplateFieldsFindAll{}
-	utils.Mapper(nodeJiraForm.FormTemplateFields, &formTemplateFields)
+	formTemplateSystem, err := s.FormService.FindOneFormTemplateDetailByFormTemplateId(ctx, constants.FormTemplateIDJiraSystemForm)
+	if err != nil {
+		return responses.JiraFormDetailResponse{}, err
+	}
 
 	fieldMap := map[int32]string{}
-	for _, formTemplateField := range formTemplateFields {
+	for _, formTemplateField := range nodeJiraForm.FormTemplateFields {
 		fieldMap[formTemplateField.ID] = formTemplateField.FieldID
 	}
 
@@ -603,8 +604,8 @@ func (s *NodeService) GetNodeJiraForm(ctx context.Context, nodeId string) (respo
 	}
 
 	response := responses.JiraFormDetailResponse{
-		Template: formTemplate,
-		Fields:   formTemplateFields,
+		Template: formTemplateSystem.Template,
+		Fields:   formTemplateSystem.Fields,
 		Data:     formDatas,
 	}
 

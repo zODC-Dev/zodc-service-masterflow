@@ -38,6 +38,8 @@ func NodeRoute(group *echo.Group, db *sql.DB) {
 		ConnectionRepo: connectionRepo,
 	})
 
+	formService := services.NewFormService(db, formRepo, natsClient)
+
 	nodeService := services.NewNodeService(services.NodeService{
 		NodeRepo:       nodeRepo,
 		ConnectionRepo: connectionRepo,
@@ -47,6 +49,7 @@ func NodeRoute(group *echo.Group, db *sql.DB) {
 		NatsClient:     natsClient,
 		NatsService:    natsService,
 		RequestService: requestService,
+		FormService:    formService,
 	})
 
 	workflowService := services.NewWorkflowService(services.WorkflowService{

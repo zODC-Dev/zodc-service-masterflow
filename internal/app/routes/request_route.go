@@ -59,6 +59,7 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 		NatsService:     natsService,
 		NodeService:     nodeService,
 		FormService:     formService,
+		FormRepo:        formRepo,
 	})
 
 	requestController := controllers.NewRequestController(requestService)

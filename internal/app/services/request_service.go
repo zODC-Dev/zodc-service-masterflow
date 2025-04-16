@@ -29,6 +29,7 @@ type RequestService struct {
 	NatsService     *NatsService
 	NodeService     *NodeService
 	FormService     *FormService
+	FormRepo        *repositories.FormRepository
 }
 
 func NewRequestService(cfg RequestService) *RequestService {
@@ -42,6 +43,7 @@ func NewRequestService(cfg RequestService) *RequestService {
 		NatsService:     cfg.NatsService,
 		NodeService:     cfg.NodeService,
 		FormService:     cfg.FormService,
+		FormRepo:        cfg.FormRepo,
 	}
 }
 
@@ -924,11 +926,21 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 					return paginatedResponse, err
 				}
 
+				formTemplateSystem, err := s.FormRepo.FindOneFormTemplateByFormTemplateId(ctx, s.DB, constants.FormTemplateIDJiraSystemForm)
+				if err != nil {
+					return paginatedResponse, err
+				}
+
+				formFieldMap := make(map[int32]string)
+				for _, formTemplateField := range formTemplateSystem.Fields {
+					formFieldMap[formTemplateField.ID] = formTemplateField.FieldID
+				}
+
 				formDataResponse := []responses.RequestCompletedFormDataResponse{}
 				for _, form := range formData {
 					for _, formFieldData := range form.FormFieldData {
 						formDataResponse = append(formDataResponse, responses.RequestCompletedFormDataResponse{
-							FieldID: formFieldData.FormTemplateFieldID,
+							FieldID: formFieldMap[formFieldData.FormTemplateFieldID],
 							Value:   formFieldData.Value,
 						})
 					}
@@ -1030,11 +1042,21 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 			}
 			requestCompletedFormRes.Approval = approval
 
+			formTemplateNodeForm, err := s.FormRepo.FindOneFormTemplateByFormTemplateId(ctx, s.DB, nodeForm.FormData.FormTemplate.ID)
+			if err != nil {
+				return paginatedResponse, err
+			}
+
+			fieldMap := make(map[int32]string)
+			for _, formTemplateField := range formTemplateNodeForm.Fields {
+				fieldMap[formTemplateField.ID] = formTemplateField.FieldID
+			}
+
 			//
 			formData := []responses.RequestCompletedFormDataResponse{}
 			for _, formFieldData := range nodeForm.FormData.FormFieldData {
 				formData = append(formData, responses.RequestCompletedFormDataResponse{
-					FieldID: formFieldData.FormTemplateFieldID,
+					FieldID: fieldMap[formFieldData.FormTemplateFieldID],
 					Value:   formFieldData.Value,
 				})
 			}

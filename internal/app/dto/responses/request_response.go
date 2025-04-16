@@ -88,7 +88,7 @@ type RequestCompletedFormApprovalResponse struct {
 }
 
 type RequestCompletedFormDataResponse struct {
-	FieldID int32  `json:"fieldId"`
+	FieldID string `json:"fieldId"`
 	Value   string `json:"value"`
 }
 

@@ -651,6 +651,8 @@ func (r *RequestRepository) FindAllRequestCompletedFormByRequestId(ctx context.C
 	NodeFormApproveOrRejectUsers := table.NodeFormApproveOrRejectUsers
 	FormData := table.FormData
 	FormFieldData := table.FormFieldData
+	FormTemplateVersions := table.FormTemplateVersions
+	FormTemplates := table.FormTemplates
 
 	statement := NodeForms.SELECT(
 		NodeForms.AllColumns,
@@ -658,6 +660,8 @@ func (r *RequestRepository) FindAllRequestCompletedFormByRequestId(ctx context.C
 		NodeFormApproveOrRejectUsers.AllColumns,
 		FormData.AllColumns,
 		FormFieldData.AllColumns,
+		FormTemplateVersions.AllColumns,
+		FormTemplates.AllColumns,
 	).FROM(
 		NodeForms.
 			LEFT_JOIN(Nodes, NodeForms.NodeID.EQ(Nodes.ID)).
@@ -665,7 +669,10 @@ func (r *RequestRepository) FindAllRequestCompletedFormByRequestId(ctx context.C
 				NodeFormApproveOrRejectUsers, NodeForms.ID.EQ(NodeFormApproveOrRejectUsers.NodeFormID),
 			).
 			LEFT_JOIN(FormData, NodeForms.DataID.EQ(FormData.ID)).
-			LEFT_JOIN(FormFieldData, FormData.ID.EQ(FormFieldData.FormDataID)),
+			LEFT_JOIN(FormFieldData, FormData.ID.EQ(FormFieldData.FormDataID)).
+			//
+			LEFT_JOIN(FormTemplateVersions, FormData.FormTemplateVersionID.EQ(FormTemplateVersions.ID)).
+			LEFT_JOIN(FormTemplates, FormTemplateVersions.FormTemplateID.EQ(FormTemplates.ID)),
 	).WHERE(
 		Nodes.RequestID.EQ(postgres.Int32(requestId)).
 			AND(NodeForms.IsSubmitted.EQ(postgres.Bool(true))),
@@ -678,19 +685,10 @@ func (r *RequestRepository) FindAllRequestCompletedFormByRequestId(ctx context.C
 	}
 
 	statementCount := NodeForms.SELECT(
-		NodeForms.AllColumns,
-		Nodes.AllColumns,
-		NodeFormApproveOrRejectUsers.AllColumns,
-		FormData.AllColumns,
-		FormFieldData.AllColumns,
+		NodeForms.ID,
 	).FROM(
 		NodeForms.
-			LEFT_JOIN(Nodes, NodeForms.NodeID.EQ(Nodes.ID)).
-			LEFT_JOIN(
-				NodeFormApproveOrRejectUsers, NodeForms.ID.EQ(NodeFormApproveOrRejectUsers.NodeFormID),
-			).
-			LEFT_JOIN(FormData, NodeForms.DataID.EQ(FormData.ID)).
-			LEFT_JOIN(FormFieldData, FormData.ID.EQ(FormFieldData.FormDataID)),
+			LEFT_JOIN(Nodes, NodeForms.NodeID.EQ(Nodes.ID)),
 	).WHERE(
 		Nodes.RequestID.EQ(postgres.Int32(requestId)).
 			AND(NodeForms.IsSubmitted.EQ(postgres.Bool(true))),

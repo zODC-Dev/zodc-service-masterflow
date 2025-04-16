@@ -17,9 +17,9 @@ type NodeFormDetailResponse struct {
 }
 
 type JiraFormDetailResponse struct {
-	Template FormTemplateFindAll         `json:"template"`
-	Fields   []FormTemplateFieldsFindAll `json:"fields"`
-	Data     []NodeFormDataResponse      `json:"data"`
+	Template FormTemplateFindAll           `json:"template"`
+	Fields   [][]FormTemplateFieldsFindAll `json:"fields"`
+	Data     []NodeFormDataResponse        `json:"data"`
 }
 
 type TaskRelated struct {
