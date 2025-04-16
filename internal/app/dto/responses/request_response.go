@@ -91,6 +91,7 @@ type RequestCompletedFormDataResponse struct {
 }
 
 type RequestCompletedFormInputResponse struct {
+	Key         string                                 `json:"key"`
 	Type        string                                 `json:"type"`
 	SubmittedAt time.Time                              `json:"submittedAt"`
 	Submitter   types.Assignee                         `json:"submitter"`

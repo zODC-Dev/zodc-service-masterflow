@@ -109,20 +109,23 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 	}
 
 	for _, connection := range connections {
+		connection.IsCompleted = true
+		connectionModel := model.Connections{}
+		if err := utils.Mapper(connection, &connectionModel); err != nil {
+			return err
+		}
+		if err := s.ConnectionRepo.UpdateConnection(ctx, tx, connectionModel); err != nil {
+			return err
+		}
 		if connection.Node.Type == string(constants.NodeTypeCondition) {
-			connection.IsCompleted = true
-			connectionModel := model.Connections{}
-			if err := utils.Mapper(connection, &connectionModel); err != nil {
-				return err
-			}
-			if err := s.ConnectionRepo.UpdateConnection(ctx, tx, connectionModel); err != nil {
-				return err
-			}
-
 			// Update Condition Node
 			conditionNode := model.Nodes{}
 			utils.Mapper(connection.Node, &conditionNode)
 			conditionNode.Status = string(constants.NodeStatusCompleted)
+			conditionNode.IsCurrent = true
+			now := time.Now()
+			conditionNode.ActualStartTime = &now
+			conditionNode.ActualEndTime = &now
 			if err := s.NodeRepo.UpdateNode(ctx, tx, conditionNode); err != nil {
 				return err
 			}
@@ -193,11 +196,77 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 					}
 
 					return nil
-				}
+				} else if node.Type == string(constants.NodeTypeNotification) {
+					node.Status = string(constants.NodeStatusCompleted)
+					node.IsCurrent = true
+					now := time.Now()
+					node.ActualStartTime = &now
+					node.ActualEndTime = &now
 
+					nodeModel := model.Nodes{}
+					utils.Mapper(node, &nodeModel)
+					if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
+						return err
+					}
+
+					connectionToNode, err := s.ConnectionRepo.FindConnectionsWithToNodesByFromNodeId(ctx, s.DB, node.ID)
+					if err != nil {
+						return err
+					}
+					for _, connection := range connectionToNode {
+						connection.IsCompleted = true
+						connectionModel := model.Connections{}
+						if err := utils.Mapper(connection, &connectionModel); err != nil {
+							return err
+						}
+						if err := s.ConnectionRepo.UpdateConnection(ctx, tx, connectionModel); err != nil {
+							return err
+						}
+
+						if connection.Node.Type == string(constants.NodeTypeEnd) {
+							nodeModel := model.Nodes{}
+							utils.Mapper(node, &nodeModel)
+							nodeModel.IsCurrent = true
+							nodeModel.Status = string(constants.NodeStatusCompleted)
+							if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
+								return err
+							}
+
+							// Update Request
+							now := time.Now()
+
+							request, err := s.RequestRepo.FindOneRequestByRequestIdTx(ctx, tx, node.RequestID)
+							if err != nil {
+								return err
+							}
+
+							requestModel := model.Requests{}
+							utils.Mapper(request, &requestModel)
+
+							if *node.EndType == string(constants.NodeEndTypeTerminate) {
+								requestModel.Status = string(constants.RequestStatusTerminated)
+								requestModel.TerminatedAt = &now
+							} else {
+								requestModel.Status = string(constants.RequestStatusCompleted)
+								requestModel.CompletedAt = &now
+							}
+
+							requestModel.Progress = 100
+
+							if err := s.RequestRepo.UpdateRequest(ctx, tx, requestModel); err != nil {
+								return err
+							}
+
+							return nil
+						}
+					}
+				}
 				nodeModel := model.Nodes{}
 				utils.Mapper(node, &nodeModel)
 				nodeModel.IsCurrent = true
+				nodeModel.Status = string(constants.NodeStatusInProgress)
+				now := time.Now()
+				nodeModel.ActualStartTime = &now
 				if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
 					return err
 				}

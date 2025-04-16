@@ -945,6 +945,12 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 					LastUpdate:  assignee,
 				}
 
+				if node.JiraKey != nil {
+					requestCompletedFormRes.Key = *node.JiraKey
+				} else {
+					requestCompletedFormRes.Key = strconv.Itoa(int(node.Key))
+				}
+
 				requestCompletedFormResponse = append(requestCompletedFormResponse, requestCompletedFormRes)
 			}
 		}
