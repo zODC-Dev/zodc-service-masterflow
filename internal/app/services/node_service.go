@@ -436,7 +436,7 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 					return err
 				}
 
-				if *node.EndType == string(constants.NodeEndTypeComplete) {
+				if node.EndType != nil && *node.EndType == string(constants.NodeEndTypeComplete) {
 					request.Status = string(constants.RequestStatusCompleted)
 					request.CompletedAt = &now
 				} else {

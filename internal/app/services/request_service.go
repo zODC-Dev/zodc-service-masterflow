@@ -547,6 +547,10 @@ func (s *RequestService) GetRequestTasksByProjectHandler(ctx context.Context, re
 			IsRejected:       node.IsRejected,
 		}
 
+		if node.Workflows.ProjectKey != nil {
+			requestTask.ProjectKey = *node.Workflows.ProjectKey
+		}
+
 		if node.JiraKey != nil {
 			requestTask.Key = *node.JiraKey
 		} else {
