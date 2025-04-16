@@ -107,6 +107,9 @@ CREATE TABLE nodes (
     -- notification node
     body TEXT,
     subject TEXT,
+    cc_email TEXT,
+    to_email TEXT,
+    bcc_email TEXT,
 
     --
     is_approved BOOLEAN NOT NULL DEFAULT false,

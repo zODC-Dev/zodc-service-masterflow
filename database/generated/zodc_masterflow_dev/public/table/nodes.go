@@ -41,6 +41,9 @@ type nodesTable struct {
 	ActualEndTime             postgres.ColumnTimestamp
 	Body                      postgres.ColumnString
 	Subject                   postgres.ColumnString
+	CcEmail                   postgres.ColumnString
+	ToEmail                   postgres.ColumnString
+	BccEmail                  postgres.ColumnString
 	IsApproved                postgres.ColumnBool
 	IsRejected                postgres.ColumnBool
 	EndType                   postgres.ColumnString
@@ -121,6 +124,9 @@ func newNodesTableImpl(schemaName, tableName, alias string) nodesTable {
 		ActualEndTimeColumn             = postgres.TimestampColumn("actual_end_time")
 		BodyColumn                      = postgres.StringColumn("body")
 		SubjectColumn                   = postgres.StringColumn("subject")
+		CcEmailColumn                   = postgres.StringColumn("cc_email")
+		ToEmailColumn                   = postgres.StringColumn("to_email")
+		BccEmailColumn                  = postgres.StringColumn("bcc_email")
 		IsApprovedColumn                = postgres.BoolColumn("is_approved")
 		IsRejectedColumn                = postgres.BoolColumn("is_rejected")
 		EndTypeColumn                   = postgres.StringColumn("end_type")
@@ -137,8 +143,8 @@ func newNodesTableImpl(schemaName, tableName, alias string) nodesTable {
 		RequestIDColumn                 = postgres.IntegerColumn("request_id")
 		FormTemplateIDColumn            = postgres.IntegerColumn("form_template_id")
 		FormDataIDColumn                = postgres.StringColumn("form_data_id")
-		allColumns                      = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, KeyColumn, JiraKeyColumn, TitleColumn, AssigneeIDColumn, SubRequestIDColumn, TypeColumn, StatusColumn, IsCurrentColumn, JiraLinkURLColumn, EstimatePointColumn, PlannedStartTimeColumn, PlannedEndTimeColumn, ActualStartTimeColumn, ActualEndTimeColumn, BodyColumn, SubjectColumn, IsApprovedColumn, IsRejectedColumn, EndTypeColumn, TaskAssignedRequesterColumn, TaskAssignedAssigneeColumn, TaskAssignedParticipantsColumn, TaskStartedRequesterColumn, TaskStartedAssigneeColumn, TaskStartedParticipantsColumn, TaskCompletedRequesterColumn, TaskCompletedAssigneeColumn, TaskCompletedParticipantsColumn, ParentIDColumn, RequestIDColumn, FormTemplateIDColumn, FormDataIDColumn}
-		mutableColumns                  = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, KeyColumn, JiraKeyColumn, TitleColumn, AssigneeIDColumn, SubRequestIDColumn, TypeColumn, StatusColumn, IsCurrentColumn, JiraLinkURLColumn, EstimatePointColumn, PlannedStartTimeColumn, PlannedEndTimeColumn, ActualStartTimeColumn, ActualEndTimeColumn, BodyColumn, SubjectColumn, IsApprovedColumn, IsRejectedColumn, EndTypeColumn, TaskAssignedRequesterColumn, TaskAssignedAssigneeColumn, TaskAssignedParticipantsColumn, TaskStartedRequesterColumn, TaskStartedAssigneeColumn, TaskStartedParticipantsColumn, TaskCompletedRequesterColumn, TaskCompletedAssigneeColumn, TaskCompletedParticipantsColumn, ParentIDColumn, RequestIDColumn, FormTemplateIDColumn, FormDataIDColumn}
+		allColumns                      = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, KeyColumn, JiraKeyColumn, TitleColumn, AssigneeIDColumn, SubRequestIDColumn, TypeColumn, StatusColumn, IsCurrentColumn, JiraLinkURLColumn, EstimatePointColumn, PlannedStartTimeColumn, PlannedEndTimeColumn, ActualStartTimeColumn, ActualEndTimeColumn, BodyColumn, SubjectColumn, CcEmailColumn, ToEmailColumn, BccEmailColumn, IsApprovedColumn, IsRejectedColumn, EndTypeColumn, TaskAssignedRequesterColumn, TaskAssignedAssigneeColumn, TaskAssignedParticipantsColumn, TaskStartedRequesterColumn, TaskStartedAssigneeColumn, TaskStartedParticipantsColumn, TaskCompletedRequesterColumn, TaskCompletedAssigneeColumn, TaskCompletedParticipantsColumn, ParentIDColumn, RequestIDColumn, FormTemplateIDColumn, FormDataIDColumn}
+		mutableColumns                  = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, KeyColumn, JiraKeyColumn, TitleColumn, AssigneeIDColumn, SubRequestIDColumn, TypeColumn, StatusColumn, IsCurrentColumn, JiraLinkURLColumn, EstimatePointColumn, PlannedStartTimeColumn, PlannedEndTimeColumn, ActualStartTimeColumn, ActualEndTimeColumn, BodyColumn, SubjectColumn, CcEmailColumn, ToEmailColumn, BccEmailColumn, IsApprovedColumn, IsRejectedColumn, EndTypeColumn, TaskAssignedRequesterColumn, TaskAssignedAssigneeColumn, TaskAssignedParticipantsColumn, TaskStartedRequesterColumn, TaskStartedAssigneeColumn, TaskStartedParticipantsColumn, TaskCompletedRequesterColumn, TaskCompletedAssigneeColumn, TaskCompletedParticipantsColumn, ParentIDColumn, RequestIDColumn, FormTemplateIDColumn, FormDataIDColumn}
 	)
 
 	return nodesTable{
@@ -169,6 +175,9 @@ func newNodesTableImpl(schemaName, tableName, alias string) nodesTable {
 		ActualEndTime:             ActualEndTimeColumn,
 		Body:                      BodyColumn,
 		Subject:                   SubjectColumn,
+		CcEmail:                   CcEmailColumn,
+		ToEmail:                   ToEmailColumn,
+		BccEmail:                  BccEmailColumn,
 		IsApproved:                IsApprovedColumn,
 		IsRejected:                IsRejectedColumn,
 		EndType:                   EndTypeColumn,

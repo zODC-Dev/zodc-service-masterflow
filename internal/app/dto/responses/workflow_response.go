@@ -18,6 +18,14 @@ type NodeDataConditionResponse struct {
 	FalseDestinations []string `json:"falseDestinations"`
 }
 
+type NodeDataResponseEditorContent struct {
+	Subject *string   `json:"subject"`
+	Body    *string   `json:"body"`
+	Cc      *[]string `json:"cc"`
+	To      *[]string `json:"to"`
+	Bcc     *[]string `json:"bcc"`
+}
+
 type NodeDataResponse struct {
 	Type  string `json:"type"`
 	Title string `json:"title"`
@@ -34,6 +42,8 @@ type NodeDataResponse struct {
 	JiraLinkURL *string `json:"jiraLinkUrl"`
 
 	FormAttached []NodeFormResponse `json:"formAttached"`
+
+	EditorContent NodeDataResponseEditorContent `json:"editorContent"`
 }
 
 type NodeFormApprovalOrRejectUsersResponse struct {

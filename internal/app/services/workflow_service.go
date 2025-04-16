@@ -84,6 +84,37 @@ func (s *WorkflowService) MapToWorkflowNodeResponse(node model.Nodes) (responses
 		return responses.NodeResponse{}, err
 	}
 
+	var cc []string
+	if node.CcEmail != nil {
+		err := json.Unmarshal([]byte(*node.CcEmail), &cc)
+		if err != nil {
+			return responses.NodeResponse{}, err
+		}
+	}
+
+	var to []string
+	if node.ToEmail != nil {
+		err := json.Unmarshal([]byte(*node.ToEmail), &to)
+		if err != nil {
+			return responses.NodeResponse{}, err
+		}
+	}
+
+	var bcc []string
+	if node.BccEmail != nil {
+		err := json.Unmarshal([]byte(*node.BccEmail), &bcc)
+		if err != nil {
+			return responses.NodeResponse{}, err
+		}
+	}
+	nodeDataResponse.EditorContent = responses.NodeDataResponseEditorContent{
+		Subject: node.Subject,
+		Body:    node.Body,
+		Cc:      &cc,
+		To:      &to,
+		Bcc:     &bcc,
+	}
+
 	if node.AssigneeID != nil {
 		nodeDataResponse.Assignee.Id = *node.AssigneeID
 	}
@@ -561,6 +592,39 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			EstimatePoint: workflowNodeReq.Data.EstimatePoint,
 
 			JiraKey: workflowNodeReq.JiraKey,
+
+			Subject: workflowNodeReq.Data.EditorContent.Subject,
+			Body:    workflowNodeReq.Data.EditorContent.Body,
+		}
+
+		if workflowNodeReq.Data.EditorContent.Cc != nil {
+			ccEmail, err := json.Marshal(workflowNodeReq.Data.EditorContent.Cc)
+			if err != nil {
+				return fmt.Errorf("marshal cc email fail: %w", err)
+			}
+
+			ccEmailString := string(ccEmail)
+			workflowNode.CcEmail = &ccEmailString
+		}
+
+		if workflowNodeReq.Data.EditorContent.To != nil {
+			toEmail, err := json.Marshal(workflowNodeReq.Data.EditorContent.To)
+			if err != nil {
+				return fmt.Errorf("marshal to email fail: %w", err)
+			}
+
+			toEmailString := string(toEmail)
+			workflowNode.ToEmail = &toEmailString
+		}
+
+		if workflowNodeReq.Data.EditorContent.Bcc != nil {
+			bccEmail, err := json.Marshal(workflowNodeReq.Data.EditorContent.Bcc)
+			if err != nil {
+				return fmt.Errorf("marshal bcc email fail: %w", err)
+			}
+
+			bccEmailString := string(bccEmail)
+			workflowNode.BccEmail = &bccEmailString
 		}
 
 		if parentId != "" {

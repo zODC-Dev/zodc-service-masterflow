@@ -13,6 +13,7 @@ type NodeFormDetailResponse struct {
 	DataId      string                        `json:"dataId"`
 	IsSubmitted bool                          `json:"isSubmitted"`
 	IsApproved  bool                          `json:"isApproved"`
+	IsRejected  bool                          `json:"isRejected"`
 }
 
 type JiraFormDetailResponse struct {

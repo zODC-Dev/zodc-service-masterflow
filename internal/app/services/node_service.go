@@ -109,6 +109,7 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 	}
 
 	for _, connection := range connections {
+		// Update Condition Node
 		connection.IsCompleted = true
 		connectionModel := model.Connections{}
 		if err := utils.Mapper(connection, &connectionModel); err != nil {
@@ -117,7 +118,9 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 		if err := s.ConnectionRepo.UpdateConnection(ctx, tx, connectionModel); err != nil {
 			return err
 		}
+
 		if connection.Node.Type == string(constants.NodeTypeCondition) {
+
 			// Update Condition Node
 			conditionNode := model.Nodes{}
 			utils.Mapper(connection.Node, &conditionNode)
@@ -145,21 +148,19 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 				}
 
 				// Update Connection Condition Destination Node To Completed
-				connectionConditionDestination, err := s.ConnectionRepo.FindConnectionsByToNodeIdTx(ctx, tx, nodeConditionDestination.DestinationNodeID)
-				if err != nil {
-					return err
-				}
-				for _, connection := range connectionConditionDestination {
-					connection.IsCompleted = true
-					connectionModel := model.Connections{}
-					if err := utils.Mapper(connection, &connectionModel); err != nil {
-						return err
-					}
-					if err := s.ConnectionRepo.UpdateConnection(ctx, tx, connectionModel); err != nil {
-						return err
-					}
-
-				}
+				// connectionConditionDestination, err := s.ConnectionRepo.FindConnectionsByToNodeIdTx(ctx, tx, nodeConditionDestination.DestinationNodeID)
+				// if err != nil {
+				// 	return err
+				// }
+				// for _, connection := range connectionConditionDestination {
+				// 	if connection.FromNodeID == nodeConditionDestination.NodeID {
+				// 		connection.IsCompleted = true
+				// 		connectionModel := model.Connections{}
+				// 		if err := utils.Mapper(connection, &connectionModel); err != nil {
+				// 			return err
+				// 		}
+				// 	}
+				// }
 
 				if node.Type == string(constants.NodeTypeEnd) {
 					nodeModel := model.Nodes{}
@@ -197,6 +198,47 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 
 					return nil
 				} else if node.Type == string(constants.NodeTypeNotification) {
+					// Send Notification
+					var cc []string
+					if node.CcEmail != nil {
+						err := json.Unmarshal([]byte(*node.CcEmail), &cc)
+						if err != nil {
+							return err
+						}
+					}
+					var to []string
+					if node.ToEmail != nil {
+						err := json.Unmarshal([]byte(*node.ToEmail), &to)
+						if err != nil {
+							return err
+						}
+					}
+					var bcc []string
+					if node.BccEmail != nil {
+						err := json.Unmarshal([]byte(*node.BccEmail), &bcc)
+						if err != nil {
+							return err
+						}
+					}
+					notification := types.Notification{
+						ToUserIds:    to,
+						ToCcUserIds:  cc,
+						ToBccUserIds: bcc,
+						Subject:      *node.Subject,
+					}
+					if node.Body != nil {
+						notification.Body = *node.Body
+					}
+					if node.Subject != nil {
+						notification.Subject = *node.Subject
+					}
+					notificationBytes, err := json.Marshal(notification)
+					if err != nil {
+						return fmt.Errorf("marshal notification failed: %w", err)
+					}
+					s.NatsClient.Publish("notifications", notificationBytes)
+
+					// Update Node
 					node.Status = string(constants.NodeStatusCompleted)
 					node.IsCurrent = true
 					now := time.Now()
@@ -523,6 +565,7 @@ func (s *NodeService) GetNodeFormWithPermission(ctx context.Context, nodeId stri
 			Data:        formDatas,
 			IsSubmitted: nodeForm.NodeForms.IsSubmitted,
 			IsApproved:  nodeForm.NodeForms.IsApproved,
+			IsRejected:  nodeForm.NodeForms.IsRejected,
 		}
 		if nodeForm.NodeForms.DataID != nil {
 			nodeFormRes.DataId = *nodeForm.NodeForms.DataID
@@ -619,13 +662,18 @@ func (s *NodeService) ApproveNode(ctx context.Context, userId int32, nodeId stri
 	node.ActualEndTime = &now
 
 	if err := s.NodeRepo.UpdateNode(ctx, tx, node); err != nil {
-		return err
+		return fmt.Errorf("update node status to completed fail: %w", err)
 	}
 
 	//
 	err = s.LogicForConditionNode(ctx, tx, nodeId, true)
 	if err != nil {
-		return err
+		return fmt.Errorf("logic for condition node fail: %w", err)
+	}
+
+	//
+	if err := s.RequestService.UpdateCalculateRequestProgress(ctx, tx, node.RequestID); err != nil {
+		return fmt.Errorf("update calculate request progress fail: %w", err)
 	}
 
 	// Commit
@@ -653,18 +701,26 @@ func (s *NodeService) RejectNode(ctx context.Context, userId int32, nodeId strin
 
 	node.IsRejected = true
 	node.Status = string(constants.NodeStatusCompleted)
+
+	now := time.Now()
+	node.ActualEndTime = &now
 	if err := s.NodeRepo.UpdateNode(ctx, tx, node); err != nil {
-		return err
+		return fmt.Errorf("update node status to completed fail: %w", err)
 	}
 
 	//
 	err = s.LogicForConditionNode(ctx, tx, nodeId, false)
 	if err != nil {
-		return err
+		return fmt.Errorf("logic for condition node fail: %w", err)
+	}
+
+	//
+	if err := s.RequestService.UpdateCalculateRequestProgress(ctx, tx, node.RequestID); err != nil {
+		return fmt.Errorf("update calculate request progress fail: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {
-		return err
+		return fmt.Errorf("commit fail: %w", err)
 	}
 
 	return nil
@@ -749,6 +805,11 @@ func (s *NodeService) SubmitNodeForm(ctx context.Context, userId int32, nodeId s
 		if err := s.RequestService.UpdateCalculateRequestProgress(ctx, tx, node.RequestID); err != nil {
 			return fmt.Errorf("update calculate request progress fail: %w", err)
 		}
+	}
+
+	// Update Calculate Request Progress
+	if err := s.RequestService.UpdateCalculateRequestProgress(ctx, tx, node.RequestID); err != nil {
+		return fmt.Errorf("update calculate request progress fail: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {

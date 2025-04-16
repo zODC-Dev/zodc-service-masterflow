@@ -39,6 +39,14 @@ type NodeDataCondition struct {
 	FalseDestinations []string
 }
 
+type NodeDataEditorContent struct {
+	Subject *string
+	Body    *string
+	Cc      *[]string
+	To      *[]string
+	Bcc     *[]string
+}
+
 type NodeData struct {
 	Type          string
 	Title         string
@@ -54,6 +62,8 @@ type NodeData struct {
 	Condition NodeDataCondition
 
 	FormAttached []NodeDataFormAttached
+
+	EditorContent NodeDataEditorContent
 }
 
 type NodeForm struct {
