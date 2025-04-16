@@ -1032,6 +1032,14 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 				requestCompletedFormRes.LastUpdate = mapUser(nodeForm.LastUpdateUserID)
 			}
 
+			requestCompletedFormRes.Type = nodeForm.Node.Type
+
+			if nodeForm.Node.JiraKey != nil {
+				requestCompletedFormRes.Key = *nodeForm.Node.JiraKey
+			} else {
+				requestCompletedFormRes.Key = strconv.Itoa(int(nodeForm.Node.Key))
+			}
+
 			//
 			approval := []responses.RequestCompletedFormApprovalResponse{}
 			for _, approveOrRejectUser := range nodeForm.ApproveOrRejectUsers {

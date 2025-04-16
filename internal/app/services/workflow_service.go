@@ -1146,6 +1146,10 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 			IsCompleted: connection.IsCompleted,
 		}
 
+		if connection.Text != nil {
+			connectionResponse.Text = *connection.Text
+		}
+
 		workflowResponse.Connections = append(workflowResponse.Connections, connectionResponse)
 	}
 
