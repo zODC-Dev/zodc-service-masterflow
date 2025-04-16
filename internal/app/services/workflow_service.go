@@ -775,6 +775,10 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			RequestID: requestId,
 		}
 
+		if workflowConnectionReq.Text != "" {
+			workflowConnection.Text = &workflowConnectionReq.Text
+		}
+
 		workflowConnections = append(workflowConnections, workflowConnection)
 	}
 	if len(workflowConnections) > 0 {
