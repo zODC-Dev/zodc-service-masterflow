@@ -51,7 +51,8 @@ type RequestTaskResponse struct {
 	RequestID        int32          `json:"requestId"`
 	RequestTitle     string         `json:"requestTitle"`
 	RequestProgress  float32        `json:"requestProgress"`
-	ProjectKey       string         `json:"projectKey"`
+	ProjectKey       *string        `json:"projectKey"`
+	JiraLinkUrl      *string        `json:"jiraLinkUrl"`
 	Assignee         types.Assignee `json:"assignee"`
 	Status           string         `json:"status"`
 	PlannedStartTime *time.Time     `json:"plannedStartTime"`

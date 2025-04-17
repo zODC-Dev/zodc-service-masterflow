@@ -995,11 +995,14 @@ func (s *NodeService) GetNodeTaskDetail(ctx context.Context, nodeId string) (res
 			IsCurrent:        node.IsCurrent,
 			IsApproved:       node.IsApproved,
 			IsRejected:       node.IsRejected,
+			ProjectKey:       request.Workflow.ProjectKey,
+			JiraLinkUrl:      node.JiraLinkURL,
 		},
 		RequestRequestBy: mapUser(&request.UserID),
 		IsApproval:       node.IsApproved,
 		UpdatedAt:        node.UpdatedAt,
 		JiraLinkURL:      node.JiraLinkURL,
+		ProjectKey:       request.Workflow.ProjectKey,
 	}
 
 	if parentNode != nil {

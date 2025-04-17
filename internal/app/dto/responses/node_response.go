@@ -42,4 +42,5 @@ type TaskDetail struct {
 	Related       []TaskRelated `json:"related"`
 
 	JiraLinkURL *string `json:"jiraLinkUrl"`
+	ProjectKey  *string `json:"projectKey"`
 }

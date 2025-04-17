@@ -431,6 +431,8 @@ func (s *RequestService) GetRequestTasksHandler(ctx context.Context, requestId i
 			Assignee:         assignees[*node.AssigneeID],
 			IsApproved:       node.IsApproved,
 			IsRejected:       node.IsRejected,
+			ProjectKey:       request.Workflow.ProjectKey,
+			JiraLinkUrl:      node.JiraLinkURL,
 		}
 
 		// Task Key
@@ -552,10 +554,8 @@ func (s *RequestService) GetRequestTasksByProjectHandler(ctx context.Context, re
 			RequestID:        node.RequestID,
 			IsApproved:       node.IsApproved,
 			IsRejected:       node.IsRejected,
-		}
-
-		if node.Workflows.ProjectKey != nil {
-			requestTask.ProjectKey = *node.Workflows.ProjectKey
+			ProjectKey:       node.Workflows.ProjectKey,
+			JiraLinkUrl:      node.JiraLinkURL,
 		}
 
 		if node.JiraKey != nil {
