@@ -462,7 +462,7 @@ func (r *NodeRepository) CreateApproveOrRejectUser(ctx context.Context, tx *sql.
 
 	columns := NodeFormApproveOrRejectUsers.AllColumns.Except(NodeFormApproveOrRejectUsers.ID, NodeFormApproveOrRejectUsers.CreatedAt, NodeFormApproveOrRejectUsers.UpdatedAt, NodeFormApproveOrRejectUsers.DeletedAt)
 
-	statement := NodeFormApproveOrRejectUsers.INSERT(columns).MODEL(approveOrRejectUser)
+	statement := NodeFormApproveOrRejectUsers.INSERT(columns).MODEL(approveOrRejectUser).RETURNING(NodeFormApproveOrRejectUsers.ID)
 
 	err := statement.QueryContext(ctx, tx, &approveOrRejectUser)
 

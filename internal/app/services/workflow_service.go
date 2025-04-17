@@ -85,24 +85,24 @@ func (s *WorkflowService) MapToWorkflowNodeResponse(node model.Nodes) (responses
 	}
 
 	var cc []string
-	if node.CcEmail != nil {
-		err := json.Unmarshal([]byte(*node.CcEmail), &cc)
+	if node.CcUserIds != nil {
+		err := json.Unmarshal([]byte(*node.CcUserIds), &cc)
 		if err != nil {
 			return responses.NodeResponse{}, err
 		}
 	}
 
 	var to []string
-	if node.ToEmail != nil {
-		err := json.Unmarshal([]byte(*node.ToEmail), &to)
+	if node.ToUserIds != nil {
+		err := json.Unmarshal([]byte(*node.ToUserIds), &to)
 		if err != nil {
 			return responses.NodeResponse{}, err
 		}
 	}
 
 	var bcc []string
-	if node.BccEmail != nil {
-		err := json.Unmarshal([]byte(*node.BccEmail), &bcc)
+	if node.BccUserIds != nil {
+		err := json.Unmarshal([]byte(*node.BccUserIds), &bcc)
 		if err != nil {
 			return responses.NodeResponse{}, err
 		}
@@ -604,7 +604,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			}
 
 			ccEmailString := string(ccEmail)
-			workflowNode.CcEmail = &ccEmailString
+			workflowNode.CcUserIds = &ccEmailString
 		}
 
 		if workflowNodeReq.Data.EditorContent.To != nil {
@@ -614,7 +614,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			}
 
 			toEmailString := string(toEmail)
-			workflowNode.ToEmail = &toEmailString
+			workflowNode.ToUserIds = &toEmailString
 		}
 
 		if workflowNodeReq.Data.EditorContent.Bcc != nil {
@@ -624,7 +624,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			}
 
 			bccEmailString := string(bccEmail)
-			workflowNode.BccEmail = &bccEmailString
+			workflowNode.BccUserIds = &bccEmailString
 		}
 
 		if parentId != "" {

@@ -36,9 +36,9 @@ type Nodes struct {
 	ActualEndTime             *time.Time
 	Body                      *string
 	Subject                   *string
-	CcEmail                   *string
-	ToEmail                   *string
-	BccEmail                  *string
+	CcUserIds                 *string
+	ToUserIds                 *string
+	BccUserIds                *string
 	IsApproved                bool
 	IsRejected                bool
 	EndType                   *string

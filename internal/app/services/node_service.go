@@ -119,35 +119,35 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 		return err
 	}
 
-	for _, connection := range connections {
+	for _, mainConnection := range connections {
 		// Update Condition Node
-		connection.IsCompleted = true
+		mainConnection.IsCompleted = true
 		connectionModel := model.Connections{}
-		if err := utils.Mapper(connection, &connectionModel); err != nil {
-			return err
+		if err := utils.Mapper(mainConnection, &connectionModel); err != nil {
+			return fmt.Errorf("mapper connection fail: %w", err)
 		}
 		if err := s.ConnectionRepo.UpdateConnection(ctx, tx, connectionModel); err != nil {
-			return err
+			return fmt.Errorf("update connection fail: %w", err)
 		}
 
-		if connection.Node.Type == string(constants.NodeTypeCondition) {
+		if mainConnection.Node.Type == string(constants.NodeTypeCondition) {
 
 			// Update Condition Node
 			conditionNode := model.Nodes{}
-			utils.Mapper(connection.Node, &conditionNode)
+			utils.Mapper(mainConnection.Node, &conditionNode)
 			conditionNode.Status = string(constants.NodeStatusCompleted)
 			conditionNode.IsCurrent = true
 			now := time.Now().UTC().Add(7 * time.Hour)
 			conditionNode.ActualStartTime = &now
 			conditionNode.ActualEndTime = &now
 			if err := s.NodeRepo.UpdateNode(ctx, tx, conditionNode); err != nil {
-				return err
+				return fmt.Errorf("update condition node fail: %w", err)
 			}
 
 			// condition destination
-			nodeConditionDestinations, err := s.NodeRepo.FindAllNodeConditionDestinationByNodeId(ctx, s.DB, connection.Node.ID, isTrue)
+			nodeConditionDestinations, err := s.NodeRepo.FindAllNodeConditionDestinationByNodeId(ctx, s.DB, mainConnection.Node.ID, isTrue)
 			if err != nil {
-				return err
+				return fmt.Errorf("find all node condition destination by node id fail: %w", err)
 			}
 
 			// Update Connection Condition Destination Node To Completed
@@ -155,36 +155,42 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 
 				node, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeConditionDestination.DestinationNodeID)
 				if err != nil {
-					return err
+					return fmt.Errorf("find one node by node id fail: %w", err)
 				}
 
 				// Update Connection Condition Destination Node To Completed
 				connectionConditionDestination, err := s.ConnectionRepo.FindConnectionsByToNodeIdTx(ctx, tx, nodeConditionDestination.DestinationNodeID)
 				if err != nil {
-					return err
+					return fmt.Errorf("find connections by to node id fail: %w", err)
 				}
-				for _, connection := range connectionConditionDestination {
-					if connection.FromNodeID == nodeConditionDestination.NodeID {
-						connection.IsCompleted = true
+				for _, connectionDestination := range connectionConditionDestination {
+					if mainConnection.Node.ID == connectionDestination.FromNodeID {
+						connectionDestination.IsCompleted = true
 						connectionModel := model.Connections{}
-						if err := utils.Mapper(connection, &connectionModel); err != nil {
-							return err
+						if err := utils.Mapper(connectionDestination, &connectionModel); err != nil {
+							return fmt.Errorf("mapper connection fail: %w", err)
+						}
+						if err := s.ConnectionRepo.UpdateConnection(ctx, tx, connectionModel); err != nil {
+							return fmt.Errorf("update connection fail: %w", err)
 						}
 					}
 				}
 
 				if node.Type == string(constants.NodeTypeEnd) {
+					now := time.Now().UTC().Add(7 * time.Hour)
+
 					nodeModel := model.Nodes{}
 					utils.Mapper(node, &nodeModel)
 					nodeModel.IsCurrent = true
 					nodeModel.Status = string(constants.NodeStatusCompleted)
+
+					nodeModel.ActualStartTime = &now
+					nodeModel.ActualEndTime = &now
 					if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
 						return err
 					}
 
 					// Update Request
-					now := time.Now().UTC().Add(7 * time.Hour)
-
 					request, err := s.RequestRepo.FindOneRequestByRequestIdTx(ctx, tx, node.RequestID)
 					if err != nil {
 						return err
@@ -211,22 +217,22 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 				} else if node.Type == string(constants.NodeTypeNotification) {
 					// Send Notification
 					var cc []string
-					if node.CcEmail != nil {
-						err := json.Unmarshal([]byte(*node.CcEmail), &cc)
+					if node.CcUserIds != nil {
+						err := json.Unmarshal([]byte(*node.CcUserIds), &cc)
 						if err != nil {
 							return err
 						}
 					}
 					var to []string
-					if node.ToEmail != nil {
-						err := json.Unmarshal([]byte(*node.ToEmail), &to)
+					if node.ToUserIds != nil {
+						err := json.Unmarshal([]byte(*node.ToUserIds), &to)
 						if err != nil {
 							return err
 						}
 					}
 					var bcc []string
-					if node.BccEmail != nil {
-						err := json.Unmarshal([]byte(*node.BccEmail), &bcc)
+					if node.BccUserIds != nil {
+						err := json.Unmarshal([]byte(*node.BccUserIds), &bcc)
 						if err != nil {
 							return err
 						}
