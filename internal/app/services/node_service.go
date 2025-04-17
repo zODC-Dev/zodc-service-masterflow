@@ -217,31 +217,31 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 				} else if node.Type == string(constants.NodeTypeNotification) {
 					// Send Notification
 					var cc []string
-					if node.CcUserIds != nil {
-						err := json.Unmarshal([]byte(*node.CcUserIds), &cc)
+					if node.CcEmails != nil {
+						err := json.Unmarshal([]byte(*node.CcEmails), &cc)
 						if err != nil {
 							return err
 						}
 					}
 					var to []string
-					if node.ToUserIds != nil {
-						err := json.Unmarshal([]byte(*node.ToUserIds), &to)
+					if node.ToEmails != nil {
+						err := json.Unmarshal([]byte(*node.ToEmails), &to)
 						if err != nil {
 							return err
 						}
 					}
 					var bcc []string
-					if node.BccUserIds != nil {
-						err := json.Unmarshal([]byte(*node.BccUserIds), &bcc)
+					if node.BccEmails != nil {
+						err := json.Unmarshal([]byte(*node.BccEmails), &bcc)
 						if err != nil {
 							return err
 						}
 					}
 					notification := types.Notification{
-						ToUserIds:    to,
-						ToCcUserIds:  cc,
-						ToBccUserIds: bcc,
-						Subject:      *node.Subject,
+						ToEmails:    to,
+						ToCcEmails:  cc,
+						ToBccEmails: bcc,
+						Subject:     *node.Subject,
 					}
 					if node.Body != nil {
 						notification.Body = *node.Body
