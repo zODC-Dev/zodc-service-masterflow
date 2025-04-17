@@ -56,7 +56,7 @@ func (s *RequestService) UpdateCalculateRequestProgress(ctx context.Context, tx 
 	totalCompletedNode := 0
 	totalNode := len(request.Nodes)
 	for _, requestNode := range request.Nodes {
-		if requestNode.Type == string(constants.NodeTypeStart) || requestNode.Type == string(constants.NodeTypeEnd) {
+		if requestNode.Type == string(constants.NodeTypeStart) || requestNode.Type == string(constants.NodeTypeEnd) || requestNode.Type == string(constants.NodeTypeCondition) {
 			totalNode--
 		} else if requestNode.Status == string(constants.NodeStatusCompleted) {
 			totalCompletedNode++
@@ -75,6 +75,13 @@ func (s *RequestService) UpdateCalculateRequestProgress(ctx context.Context, tx 
 
 	if err := s.RequestRepo.UpdateRequest(ctx, tx, requestModel); err != nil {
 		return err
+	}
+
+	// Update Parent Request Count Progress
+	if request.ParentID != nil {
+		if err := s.UpdateCalculateRequestProgress(ctx, tx, *request.ParentID); err != nil {
+			return err
+		}
 	}
 
 	return nil

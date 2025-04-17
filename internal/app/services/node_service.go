@@ -1018,6 +1018,11 @@ func (s *NodeService) GetNodeTaskDetail(ctx context.Context, nodeId string) (res
 
 	nodeTaskRelatedsResponse := []responses.TaskRelated{}
 	for _, nodeTaskRelated := range nodeTaskRelateds {
+
+		if nodeTaskRelated.Type == string(constants.NodeTypeStart) || nodeTaskRelated.Type == string(constants.NodeTypeEnd) {
+			continue
+		}
+
 		assigneeResponse := mapUser(nodeTaskRelated.AssigneeID)
 
 		nodeTaskRelatedResponse := responses.TaskRelated{
