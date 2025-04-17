@@ -44,7 +44,6 @@ type NodeFormCompletedFormDataResult struct {
 type NodeFormCompletedResult struct {
 	model.NodeForms
 	Node                 model.Nodes
-	Request              model.Requests
 	ApproveOrRejectUsers []model.NodeFormApproveOrRejectUsers
 	FormData             NodeFormCompletedFormDataResult
 }

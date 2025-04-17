@@ -51,6 +51,7 @@ type RequestTaskResponse struct {
 	RequestID        int32          `json:"requestId"`
 	RequestTitle     string         `json:"requestTitle"`
 	RequestProgress  float32        `json:"requestProgress"`
+	ProjectKey       string         `json:"projectKey"`
 	Assignee         types.Assignee `json:"assignee"`
 	Status           string         `json:"status"`
 	PlannedStartTime *time.Time     `json:"plannedStartTime"`
@@ -59,6 +60,8 @@ type RequestTaskResponse struct {
 	ActualEndTime    *time.Time     `json:"actualEndTime"`
 	EstimatePoint    *float32       `json:"estimatePoint"`
 	IsCurrent        bool           `json:"isCurrent"`
+	IsApproved       bool           `json:"isApproved"`
+	IsRejected       bool           `json:"isRejected"`
 }
 
 type RequestTaskCountResponse struct {
@@ -86,11 +89,12 @@ type RequestCompletedFormApprovalResponse struct {
 }
 
 type RequestCompletedFormDataResponse struct {
-	FieldID int32  `json:"fieldId"`
+	FieldID string `json:"fieldId"`
 	Value   string `json:"value"`
 }
 
 type RequestCompletedFormInputResponse struct {
+	Key         string                                 `json:"key"`
 	Type        string                                 `json:"type"`
 	SubmittedAt time.Time                              `json:"submittedAt"`
 	Submitter   types.Assignee                         `json:"submitter"`

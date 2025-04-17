@@ -13,12 +13,13 @@ type NodeFormDetailResponse struct {
 	DataId      string                        `json:"dataId"`
 	IsSubmitted bool                          `json:"isSubmitted"`
 	IsApproved  bool                          `json:"isApproved"`
+	IsRejected  bool                          `json:"isRejected"`
 }
 
 type JiraFormDetailResponse struct {
-	Template FormTemplateFindAll         `json:"template"`
-	Fields   []FormTemplateFieldsFindAll `json:"fields"`
-	Data     []NodeFormDataResponse      `json:"data"`
+	Template FormTemplateFindAll           `json:"template"`
+	Fields   [][]FormTemplateFieldsFindAll `json:"fields"`
+	Data     []NodeFormDataResponse        `json:"data"`
 }
 
 type TaskRelated struct {
@@ -35,10 +36,10 @@ type TaskDetail struct {
 	RequestRequestBy types.Assignee `json:"requestRequestBy"`
 	IsApproval       bool           `json:"isApproval"`
 
-	SprintId      *int `json:"sprintId"`
-	EstimatePoint *int `json:"estimatePoint"`
-	Parent        *TaskRelated
-	Related       []TaskRelated
+	SprintId      *int          `json:"sprintId"`
+	EstimatePoint *int          `json:"estimatePoint"`
+	Parent        *TaskRelated  `json:"parent"`
+	Related       []TaskRelated `json:"related"`
 
 	JiraLinkURL *string `json:"jiraLinkUrl"`
 }

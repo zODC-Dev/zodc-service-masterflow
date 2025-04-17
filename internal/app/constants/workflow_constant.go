@@ -10,15 +10,16 @@ const (
 type NodeType string
 
 const (
-	NodeTypeStart       NodeType = "START"
-	NodeTypeEnd         NodeType = "END"
-	NodeTypeSubWorkflow NodeType = "SUB_WORKFLOW"
-	NodeTypeStory       NodeType = "STORY"
-	NodeTypeCondition   NodeType = "CONDITION"
-	NodeTypeTask        NodeType = "TASK"
-	NodeTypeBug         NodeType = "BUG"
-	NodeTypeInput       NodeType = "INPUT"
-	NodeTypeApproval    NodeType = "APPROVAL"
+	NodeTypeStart        NodeType = "START"
+	NodeTypeEnd          NodeType = "END"
+	NodeTypeSubWorkflow  NodeType = "SUB_WORKFLOW"
+	NodeTypeStory        NodeType = "STORY"
+	NodeTypeCondition    NodeType = "CONDITION"
+	NodeTypeTask         NodeType = "TASK"
+	NodeTypeBug          NodeType = "BUG"
+	NodeTypeInput        NodeType = "INPUT"
+	NodeTypeApproval     NodeType = "APPROVAL"
+	NodeTypeNotification NodeType = "NOTIFICATION"
 )
 
 type NodeStatus string

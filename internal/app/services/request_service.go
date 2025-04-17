@@ -29,6 +29,7 @@ type RequestService struct {
 	NatsService     *NatsService
 	NodeService     *NodeService
 	FormService     *FormService
+	FormRepo        *repositories.FormRepository
 }
 
 func NewRequestService(cfg RequestService) *RequestService {
@@ -42,6 +43,7 @@ func NewRequestService(cfg RequestService) *RequestService {
 		NatsService:     cfg.NatsService,
 		NodeService:     cfg.NodeService,
 		FormService:     cfg.FormService,
+		FormRepo:        cfg.FormRepo,
 	}
 }
 
@@ -54,7 +56,7 @@ func (s *RequestService) UpdateCalculateRequestProgress(ctx context.Context, tx 
 	totalCompletedNode := 0
 	totalNode := len(request.Nodes)
 	for _, requestNode := range request.Nodes {
-		if requestNode.Type == string(constants.NodeTypeStart) || requestNode.Type == string(constants.NodeTypeEnd) {
+		if requestNode.Type == string(constants.NodeTypeStart) || requestNode.Type == string(constants.NodeTypeEnd) || requestNode.Type == string(constants.NodeTypeCondition) {
 			totalNode--
 		} else if requestNode.Status == string(constants.NodeStatusCompleted) {
 			totalCompletedNode++
@@ -73,6 +75,13 @@ func (s *RequestService) UpdateCalculateRequestProgress(ctx context.Context, tx 
 
 	if err := s.RequestRepo.UpdateRequest(ctx, tx, requestModel); err != nil {
 		return err
+	}
+
+	// Update Parent Request Count Progress
+	if request.ParentID != nil {
+		if err := s.UpdateCalculateRequestProgress(ctx, tx, *request.ParentID); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -420,6 +429,8 @@ func (s *RequestService) GetRequestTasksHandler(ctx context.Context, requestId i
 			RequestTitle:     request.Title,
 			RequestID:        request.ID,
 			Assignee:         assignees[*node.AssigneeID],
+			IsApproved:       node.IsApproved,
+			IsRejected:       node.IsRejected,
 		}
 
 		// Task Key
@@ -539,6 +550,12 @@ func (s *RequestService) GetRequestTasksByProjectHandler(ctx context.Context, re
 			Assignee:         assignees[*node.AssigneeID],
 			IsCurrent:        node.IsCurrent,
 			RequestID:        node.RequestID,
+			IsApproved:       node.IsApproved,
+			IsRejected:       node.IsRejected,
+		}
+
+		if node.Workflows.ProjectKey != nil {
+			requestTask.ProjectKey = *node.Workflows.ProjectKey
 		}
 
 		if node.JiraKey != nil {
@@ -920,11 +937,21 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 					return paginatedResponse, err
 				}
 
+				formTemplateSystem, err := s.FormRepo.FindOneFormTemplateByFormTemplateId(ctx, s.DB, constants.FormTemplateIDJiraSystemForm)
+				if err != nil {
+					return paginatedResponse, err
+				}
+
+				formFieldMap := make(map[int32]string)
+				for _, formTemplateField := range formTemplateSystem.Fields {
+					formFieldMap[formTemplateField.ID] = formTemplateField.FieldID
+				}
+
 				formDataResponse := []responses.RequestCompletedFormDataResponse{}
 				for _, form := range formData {
 					for _, formFieldData := range form.FormFieldData {
 						formDataResponse = append(formDataResponse, responses.RequestCompletedFormDataResponse{
-							FieldID: formFieldData.FormTemplateFieldID,
+							FieldID: formFieldMap[formFieldData.FormTemplateFieldID],
 							Value:   formFieldData.Value,
 						})
 					}
@@ -943,6 +970,12 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 					Template:    formTemplate,
 					Submitter:   assignee,
 					LastUpdate:  assignee,
+				}
+
+				if node.JiraKey != nil {
+					requestCompletedFormRes.Key = *node.JiraKey
+				} else {
+					requestCompletedFormRes.Key = strconv.Itoa(int(node.Key))
 				}
 
 				requestCompletedFormResponse = append(requestCompletedFormResponse, requestCompletedFormRes)
@@ -1010,6 +1043,14 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 				requestCompletedFormRes.LastUpdate = mapUser(nodeForm.LastUpdateUserID)
 			}
 
+			requestCompletedFormRes.Type = nodeForm.Node.Type
+
+			if nodeForm.Node.JiraKey != nil {
+				requestCompletedFormRes.Key = *nodeForm.Node.JiraKey
+			} else {
+				requestCompletedFormRes.Key = strconv.Itoa(int(nodeForm.Node.Key))
+			}
+
 			//
 			approval := []responses.RequestCompletedFormApprovalResponse{}
 			for _, approveOrRejectUser := range nodeForm.ApproveOrRejectUsers {
@@ -1020,11 +1061,21 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 			}
 			requestCompletedFormRes.Approval = approval
 
+			formTemplateNodeForm, err := s.FormRepo.FindOneFormTemplateByFormTemplateId(ctx, s.DB, nodeForm.FormData.FormTemplate.ID)
+			if err != nil {
+				return paginatedResponse, err
+			}
+
+			fieldMap := make(map[int32]string)
+			for _, formTemplateField := range formTemplateNodeForm.Fields {
+				fieldMap[formTemplateField.ID] = formTemplateField.FieldID
+			}
+
 			//
 			formData := []responses.RequestCompletedFormDataResponse{}
 			for _, formFieldData := range nodeForm.FormData.FormFieldData {
 				formData = append(formData, responses.RequestCompletedFormDataResponse{
-					FieldID: formFieldData.FormTemplateFieldID,
+					FieldID: fieldMap[formFieldData.FormTemplateFieldID],
 					Value:   formFieldData.Value,
 				})
 			}

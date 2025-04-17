@@ -84,6 +84,37 @@ func (s *WorkflowService) MapToWorkflowNodeResponse(node model.Nodes) (responses
 		return responses.NodeResponse{}, err
 	}
 
+	var cc []string
+	if node.CcEmails != nil {
+		err := json.Unmarshal([]byte(*node.CcEmails), &cc)
+		if err != nil {
+			return responses.NodeResponse{}, err
+		}
+	}
+
+	var to []string
+	if node.ToEmails != nil {
+		err := json.Unmarshal([]byte(*node.ToEmails), &to)
+		if err != nil {
+			return responses.NodeResponse{}, err
+		}
+	}
+
+	var bcc []string
+	if node.BccEmails != nil {
+		err := json.Unmarshal([]byte(*node.BccEmails), &bcc)
+		if err != nil {
+			return responses.NodeResponse{}, err
+		}
+	}
+	nodeDataResponse.EditorContent = responses.NodeDataResponseEditorContent{
+		Subject: node.Subject,
+		Body:    node.Body,
+		Cc:      &cc,
+		To:      &to,
+		Bcc:     &bcc,
+	}
+
 	if node.AssigneeID != nil {
 		nodeDataResponse.Assignee.Id = *node.AssigneeID
 	}
@@ -133,7 +164,7 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 		return fmt.Errorf("request not found")
 	}
 
-	currentTime := time.Now()
+	currentTime := time.Now().UTC().Add(7 * time.Hour)
 
 	// Update request status to in processing
 	request.Status = string(constants.RequestStatusInProgress)
@@ -151,7 +182,7 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 	nextNodeIds := make(map[string]bool)
 	for i := range request.Nodes {
 		if request.Nodes[i].Type == string(constants.NodeTypeStart) {
-			currentTime := time.Now()
+			currentTime := time.Now().UTC().Add(7 * time.Hour)
 
 			request.Nodes[i].Status = string(constants.NodeStatusCompleted)
 			request.Nodes[i].IsCurrent = true
@@ -194,7 +225,7 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 			if request.Workflow.Type == string(constants.WorkflowTypeGeneral) {
 				nodeModel.Status = string(constants.NodeStatusInProgress)
 
-				currentTime := time.Now()
+				currentTime := time.Now().UTC().Add(7 * time.Hour)
 				nodeModel.ActualStartTime = &currentTime
 			}
 
@@ -204,7 +235,7 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 
 			if nodeModel.Type == string(constants.NodeTypeStory) || nodeModel.Type == string(constants.NodeTypeSubWorkflow) {
 
-				currentTime := time.Now()
+				currentTime := time.Now().UTC().Add(7 * time.Hour)
 				nodeModel.ActualStartTime = &currentTime
 				if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
 					return fmt.Errorf("update node status to in processing fail: %w", err)
@@ -349,7 +380,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 			JiraKey: storyReq.Node.JiraKey,
 
-			JiraLinkURL: storyReq.Node.Data.JiraLinkURL,
+			JiraLinkURL: storyReq.Node.Data.JiraLinkUrl,
 		}
 
 		if formSystemVersionId, exists := formSystemTagMap["TASK"]; exists {
@@ -427,7 +458,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 				JiraKey: storyNodeReq.JiraKey,
 
-				JiraLinkURL: storyNodeReq.Data.JiraLinkURL,
+				JiraLinkURL: storyNodeReq.Data.JiraLinkUrl,
 			}
 
 			if storyNodeReq.ParentId != "" {
@@ -561,6 +592,39 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			EstimatePoint: workflowNodeReq.Data.EstimatePoint,
 
 			JiraKey: workflowNodeReq.JiraKey,
+
+			Subject: workflowNodeReq.Data.EditorContent.Subject,
+			Body:    workflowNodeReq.Data.EditorContent.Body,
+		}
+
+		if workflowNodeReq.Data.EditorContent.Cc != nil {
+			ccEmail, err := json.Marshal(workflowNodeReq.Data.EditorContent.Cc)
+			if err != nil {
+				return fmt.Errorf("marshal cc email fail: %w", err)
+			}
+
+			ccEmailString := string(ccEmail)
+			workflowNode.CcEmails = &ccEmailString
+		}
+
+		if workflowNodeReq.Data.EditorContent.To != nil {
+			toEmail, err := json.Marshal(workflowNodeReq.Data.EditorContent.To)
+			if err != nil {
+				return fmt.Errorf("marshal to email fail: %w", err)
+			}
+
+			toEmailString := string(toEmail)
+			workflowNode.ToEmails = &toEmailString
+		}
+
+		if workflowNodeReq.Data.EditorContent.Bcc != nil {
+			bccEmail, err := json.Marshal(workflowNodeReq.Data.EditorContent.Bcc)
+			if err != nil {
+				return fmt.Errorf("marshal bcc email fail: %w", err)
+			}
+
+			bccEmailString := string(bccEmail)
+			workflowNode.BccEmails = &bccEmailString
 		}
 
 		if parentId != "" {
@@ -709,6 +773,10 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			ToNodeID:   workflowConnectionReq.To,
 
 			RequestID: requestId,
+		}
+
+		if workflowConnectionReq.Text != "" {
+			workflowConnection.Text = &workflowConnectionReq.Text
 		}
 
 		workflowConnections = append(workflowConnections, workflowConnection)
@@ -1078,6 +1146,10 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 			IsCompleted: connection.IsCompleted,
 		}
 
+		if connection.Text != nil {
+			connectionResponse.Text = *connection.Text
+		}
+
 		workflowResponse.Connections = append(workflowResponse.Connections, connectionResponse)
 	}
 
@@ -1189,7 +1261,7 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 
 	}
 
-	startedAt := time.Now()
+	startedAt := time.Now().UTC().Add(7 * time.Hour)
 
 	requestModel := model.Requests{
 		Title:             req.Title,
