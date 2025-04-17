@@ -6,10 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strconv"
 
 	natslib "github.com/nats-io/nats.go"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/constants"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
-	"github.com/zODC-Dev/zodc-service-masterflow/pkg/nats"
+	natsModel "github.com/zODC-Dev/zodc-service-masterflow/internal/app/types/nats"
+	nats "github.com/zODC-Dev/zodc-service-masterflow/pkg/nats"
 )
 
 // NatsSubscriberService handles listening for messages from NATS
@@ -18,17 +21,19 @@ type NatsSubscriberService struct {
 	DB          *sql.DB
 	NodeRepo    *repositories.NodeRepository
 	RequestRepo *repositories.RequestRepository
+	NodeService *NodeService
 	// Store subscriptions to properly unsubscribe later
 	subscriptions []*natslib.Subscription
 }
 
 // NewNatsSubscriberService creates a new instance of NatsSubscriberService
-func NewNatsSubscriberService(natsClient *nats.NATSClient, db *sql.DB, nodeRepo *repositories.NodeRepository, requestRepo *repositories.RequestRepository) *NatsSubscriberService {
+func NewNatsSubscriberService(natsClient *nats.NATSClient, db *sql.DB, nodeRepo *repositories.NodeRepository, requestRepo *repositories.RequestRepository, nodeService *NodeService) *NatsSubscriberService {
 	return &NatsSubscriberService{
 		NatsClient:    natsClient,
 		DB:            db,
 		NodeRepo:      nodeRepo,
 		RequestRepo:   requestRepo,
+		NodeService:   nodeService,
 		subscriptions: make([]*natslib.Subscription, 0),
 	}
 }
@@ -50,9 +55,7 @@ func (s *NatsSubscriberService) Start(ctx context.Context) error {
 func (s *NatsSubscriberService) subscribeToTopics(ctx context.Context) error {
 	// List of topics to subscribe to
 	topics := []string{
-		// Add your topics here
-		"topic1.event",
-		"topic2.event",
+		"jira.issue.update",
 	}
 
 	for _, topic := range topics {
@@ -86,10 +89,8 @@ func (s *NatsSubscriberService) handleMessage(msg *natslib.Msg) {
 	// Process message based on subject
 	var processErr error
 	switch msg.Subject {
-	case "topic1.event":
-		processErr = s.handleTopic1(tx, msg.Data)
-	case "topic2.event":
-		processErr = s.handleTopic2(tx, msg.Data)
+	case "jira.issue.update":
+		processErr = s.handleJiraIssueUpdate(tx, msg.Data)
 	default:
 		slog.Warn("No handler for subject", "subject", msg.Subject)
 	}
@@ -108,33 +109,285 @@ func (s *NatsSubscriberService) handleMessage(msg *natslib.Msg) {
 	slog.Info("Successfully processed message", "subject", msg.Subject)
 }
 
-// handleTopic1 processes messages from topic1
-func (s *NatsSubscriberService) handleTopic1(tx *sql.Tx, data []byte) error {
+// handleJiraIssueUpdate processes messages from jira.issue.update
+func (s *NatsSubscriberService) handleJiraIssueUpdate(tx *sql.Tx, data []byte) error {
 	// Parse message data
-	var messageData struct {
-		// Define your message structure
-		ID     string `json:"id"`
-		Action string `json:"action"`
+	var message natsModel.JiraIssueUpdateMessage
+	if err := json.Unmarshal(data, &message); err != nil {
+		return fmt.Errorf("failed to unmarshal Jira issue update message: %w", err)
 	}
 
-	if err := json.Unmarshal(data, &messageData); err != nil {
-		return fmt.Errorf("failed to unmarshal message: %w", err)
+	slog.Info("Processing Jira issue update",
+		"jiraKey", message.JiraKey,
+		"summary", message.Summary,
+		"status", message.Status,
+		"oldStatus", message.OldStatus,
+		"assignee", message.AssigneeEmail,
+		"sprintId", message.SprintId)
+
+	// Validation
+	if message.JiraKey == "" {
+		return fmt.Errorf("missing required field: jiraKey")
 	}
 
-	// Process based on message content
-	slog.Info("Processing topic1 message", "id", messageData.ID, "action", messageData.Action)
+	// Map Jira status to system status
+	var systemStatus string
+	switch message.Status {
+	case "To Do":
+		systemStatus = string(constants.NodeStatusTodo) // "TO_DO"
+	case "In Progress":
+		systemStatus = string(constants.NodeStatusInProgress) // "IN_PROGRESS"
+	case "Done":
+		systemStatus = string(constants.NodeStatusCompleted) // "COMPLETED"
+	default:
+		// If status isn't recognized, use the original value
+		systemStatus = message.Status
+	}
 
-	// Implement your business logic here
+	// Map old status if present
+	var oldSystemStatus *string
+	if message.OldStatus != nil {
+		var oldStatusValue string
+		switch *message.OldStatus {
+		case "To Do":
+			oldStatusValue = string(constants.NodeStatusTodo)
+		case "In Progress":
+			oldStatusValue = string(constants.NodeStatusInProgress)
+		case "Done":
+			oldStatusValue = string(constants.NodeStatusCompleted)
+		default:
+			oldStatusValue = *message.OldStatus
+		}
+		oldSystemStatus = &oldStatusValue
+	}
 
-	return nil
-}
+	// Step 1: Update all nodes with the same Jira key to maintain data consistency
+	updateNodeQuery := `
+		UPDATE nodes
+		SET title = $1,
+			status = $2
+		WHERE jira_key = $3
+	`
 
-// handleTopic2 processes messages from topic2
-func (s *NatsSubscriberService) handleTopic2(tx *sql.Tx, data []byte) error {
-	// Similar to handleTopic1
-	slog.Info("Processing topic2 message")
+	// Additional fields that may be null
+	var updateParams []interface{}
+	var additionalSets []string
 
-	// Implement your business logic here
+	// Add estimate point if provided
+	if message.EstimatePoint != nil {
+		additionalSets = append(additionalSets, "estimate_point = $"+strconv.Itoa(4+len(updateParams)))
+		updateParams = append(updateParams, *message.EstimatePoint)
+	}
+
+	// Add assignee ID if provided
+	if message.AssigneeId != nil {
+		// Convert string assignee ID to int32
+		assigneeId, err := strconv.ParseInt(*message.AssigneeId, 10, 32)
+		if err != nil {
+			slog.Warn("Failed to parse assignee ID", "assigneeId", *message.AssigneeId, "error", err)
+		} else {
+			assigneeId32 := int32(assigneeId)
+			additionalSets = append(additionalSets, "assignee_id = $"+strconv.Itoa(4+len(updateParams)))
+			updateParams = append(updateParams, assigneeId32)
+		}
+	}
+
+	// Build the final query with additional fields
+	finalUpdateQuery := updateNodeQuery
+	if len(additionalSets) > 0 {
+		// Cắt bỏ phần WHERE từ câu query gốc để thêm các fields
+		wherePos := len(finalUpdateQuery) - 21 // Độ dài của "\n\t\tWHERE jira_key = $3\n\t"
+		finalUpdateQuery = finalUpdateQuery[:wherePos]
+
+		// Thêm các fields bổ sung
+		for _, set := range additionalSets {
+			finalUpdateQuery += ", " + set
+		}
+
+		// Thêm lại mệnh đề WHERE
+		finalUpdateQuery += "\n\t\tWHERE jira_key = $3\n\t"
+	}
+
+	// Add base parameters
+	baseParams := []interface{}{
+		message.Summary,
+		systemStatus,
+		message.JiraKey,
+	}
+
+	// Combine all parameters
+	allParams := append(baseParams, updateParams...)
+	slog.Info("All parameters", "params", allParams)
+
+	slog.Info("Final update query", "query", finalUpdateQuery)
+
+	// Execute the update for all nodes with this Jira key
+	nodeUpdateResult, err := tx.ExecContext(context.Background(), finalUpdateQuery, allParams...)
+	if err != nil {
+		return fmt.Errorf("failed to update nodes: %w", err)
+	}
+
+	rowsAffected, _ := nodeUpdateResult.RowsAffected()
+	slog.Info("Updated nodes data", "jiraKey", message.JiraKey, "rowsAffected", rowsAffected)
+
+	// Step 2: Update form data for all corresponding forms
+	formUpdateQuery := `
+		UPDATE form_field_data ffd
+		SET value = CASE
+			WHEN form_template_field_id = (
+				SELECT ftf.id
+				FROM form_template_fields ftf
+				WHERE ftf.field_id = 'summary'
+			) THEN $1
+			WHEN form_template_field_id = (
+				SELECT ftf.id
+				FROM form_template_fields ftf
+				WHERE ftf.field_id = 'assignee_email'
+			) THEN $2
+			WHEN form_template_field_id = (
+				SELECT ftf.id
+				FROM form_template_fields ftf
+				WHERE ftf.field_id = 'status'
+			) THEN $3
+			ELSE value
+		END
+		WHERE form_data_id IN (
+			SELECT fd.id
+			FROM form_data fd
+			INNER JOIN form_field_data ffd ON ffd.form_data_id = fd.id
+			INNER JOIN form_template_fields ftf ON ftf.id = ffd.form_template_field_id
+			INNER JOIN form_template_versions ftv ON ftv.id = fd.form_template_version_id
+			INNER JOIN form_templates ft ON ft.id = ftv.form_template_id
+			WHERE ft.tag = 'TASK' AND ftf.field_id = 'key' AND ffd.value = $4
+		)
+	`
+
+	// Execute the update for form data
+	formResult, err := tx.ExecContext(
+		context.Background(),
+		formUpdateQuery,
+		message.Summary,       // $1 - Summary field
+		message.AssigneeEmail, // $2 - Assignee email field
+		systemStatus,          // $3 - Status field
+		message.JiraKey,       // $4 - Jira key for finding matching forms
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update form field data: %w", err)
+	}
+
+	formRowsAffected, _ := formResult.RowsAffected()
+	slog.Info("Form field data updated", "jiraKey", message.JiraKey, "rowsAffected", formRowsAffected)
+
+	// Step 3: Find active node for workflow state transition
+	if message.SprintId != nil && message.OldStatus != nil {
+		findActiveNodeQuery := `
+			SELECT n.id
+			FROM requests r 
+			INNER JOIN nodes n ON n.request_id = r.id
+			WHERE r.status = 'IN_PROGRESS' 
+			AND r.sprint_id = $1 
+			AND n.jira_key = $2
+		`
+
+		var activeNodeId string
+		err := tx.QueryRowContext(context.Background(), findActiveNodeQuery, *message.SprintId, message.JiraKey).Scan(&activeNodeId)
+
+		if err != nil {
+			if err == sql.ErrNoRows {
+				slog.Info("No active node found for the given sprint and Jira key",
+					"jiraKey", message.JiraKey,
+					"sprintId", *message.SprintId)
+			} else {
+				slog.Error("Error finding active node", "error", err)
+			}
+		} else {
+			slog.Info("Found active node", "nodeId", activeNodeId)
+
+			// Step 4: Apply workflow state transition based on status change
+			if message.OldStatus != nil && message.Status != "" {
+				// Use mapped system status values for state transition logic
+				if oldSystemStatus != nil && systemStatus != "" {
+					slog.Info("Processing workflow state transition",
+						"oldStatus", *oldSystemStatus,
+						"newStatus", systemStatus,
+						"nodeId", activeNodeId)
+
+					// From Todo to In Progress -> Start Node
+					if *oldSystemStatus == string(constants.NodeStatusTodo) && systemStatus == string(constants.NodeStatusInProgress) {
+						// Use NodeService to start the node - this will be handled in a separate transaction
+						ctx := context.Background()
+						if err := s.NodeService.StartNodeHandler(ctx, activeNodeId); err != nil {
+							slog.Error("Failed to start node", "nodeId", activeNodeId, "error", err)
+							// Continue execution even if node start fails
+						} else {
+							slog.Info("Node started successfully", "nodeId", activeNodeId)
+						}
+					} else if *oldSystemStatus == string(constants.NodeStatusInProgress) && systemStatus == string(constants.NodeStatusCompleted) {
+						// Use NodeService to complete the node - this will be handled in a separate transaction
+						ctx := context.Background()
+
+						// Use system user ID for completion or a default value
+						var systemUserId int32 = 1 // default system user ID
+						if message.AssigneeId != nil {
+							if assigneeId, err := strconv.ParseInt(*message.AssigneeId, 10, 32); err == nil {
+								systemUserId = int32(assigneeId)
+							}
+						}
+
+						if err := s.NodeService.CompleteNodeHandler(ctx, activeNodeId, systemUserId, false); err != nil {
+							slog.Error("Failed to complete node", "nodeId", activeNodeId, "error", err)
+							// Continue execution even if node completion fails
+						} else {
+							slog.Info("Node completed successfully", "nodeId", activeNodeId)
+						}
+					} else {
+						slog.Info("No workflow state transition needed",
+							"oldStatus", *oldSystemStatus,
+							"newStatus", systemStatus)
+					}
+				}
+			}
+		}
+	} else {
+		slog.Info("Skipping workflow state transition - missing sprint ID or old status",
+			"sprintId", message.SprintId,
+			"oldStatus", message.OldStatus)
+	}
+
+	// Optionally, also update the estimate point in form data if provided
+	if message.EstimatePoint != nil {
+		estimatePointQuery := `
+			UPDATE form_field_data ffd
+			SET value = $1
+			WHERE form_template_field_id = (
+				SELECT ftf.id
+				FROM form_template_fields ftf
+				WHERE ftf.field_id = 'estimate_point'
+			)
+			AND form_data_id IN (
+				SELECT fd.id
+				FROM form_data fd
+				INNER JOIN form_field_data ffd ON ffd.form_data_id = fd.id
+				INNER JOIN form_template_fields ftf ON ftf.id = ffd.form_template_field_id
+				INNER JOIN form_template_versions ftv ON ftv.id = fd.form_template_version_id
+				INNER JOIN form_templates ft ON ft.id = ftv.form_template_id
+				WHERE ft.tag = 'TASK' AND ftf.field_id = 'key' AND ffd.value = $2
+			)
+		`
+
+		estimatePointResult, err := tx.ExecContext(
+			context.Background(),
+			estimatePointQuery,
+			fmt.Sprintf("%f", *message.EstimatePoint), // Convert to string
+			message.JiraKey,
+		)
+		if err != nil {
+			slog.Warn("Failed to update estimate point", "error", err)
+		} else {
+			epRowsAffected, _ := estimatePointResult.RowsAffected()
+			slog.Info("Estimate point updated", "jiraKey", message.JiraKey, "rowsAffected", epRowsAffected)
+		}
+	}
 
 	return nil
 }

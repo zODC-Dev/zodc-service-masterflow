@@ -1,0 +1,16 @@
+package nats
+
+import "time"
+
+type JiraIssueUpdateMessage struct {
+	JiraKey       string    `json:"jiraKey"`
+	Summary       string    `json:"summary"`
+	Description   string    `json:"description"`
+	AssigneeEmail string    `json:"assigneeEmail"`
+	AssigneeId    *string   `json:"assigneeId"`
+	EstimatePoint *float64  `json:"estimatePoint"`
+	Status        string    `json:"status"`
+	UpdatedAt     time.Time `json:"updatedAt"`
+	OldStatus     *string   `json:"oldStatus"`
+	SprintId      *int32    `json:"sprintId"`
+}

@@ -8,6 +8,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/configs"
 	db "github.com/zODC-Dev/zodc-service-masterflow/internal/app/database"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/externals"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/routes"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/services"
@@ -68,7 +69,37 @@ func main() {
 			database,
 			nodeRepo,
 			requestRepo,
+			nil, // We will create a proper NodeService below and set it
 		)
+
+		// Initialize other required dependencies for NodeService
+		connectionRepo := repositories.NewConnectionRepository()
+		formRepo := repositories.NewFormRepository()
+
+		// Set up UserAPI if needed for NodeService
+		userApi := externals.NewUserAPI()
+
+		// Create NatsService needed for NodeService
+		natsService := services.NewNatsService(services.NatsService{
+			NatsClient:  natsClient,
+			NodeRepo:    nodeRepo,
+			RequestRepo: requestRepo,
+		})
+
+		// Initialize the NodeService with all dependencies
+		nodeService := services.NewNodeService(services.NodeService{
+			DB:             database,
+			NodeRepo:       nodeRepo,
+			ConnectionRepo: connectionRepo,
+			RequestRepo:    requestRepo,
+			FormRepo:       formRepo,
+			NatsClient:     natsClient,
+			NatsService:    natsService,
+			UserAPI:        userApi,
+		})
+
+		// Now set the NodeService in the NatsSubscriberService
+		natsSubscriberService.NodeService = nodeService
 
 		// Start the subscriber service in a goroutine
 		go func() {
