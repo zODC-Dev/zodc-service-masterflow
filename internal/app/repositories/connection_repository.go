@@ -62,7 +62,7 @@ func (r *ConnectionRepository) FindConnectionsWithToNodesByFromNodeId(ctx contex
 func (r *ConnectionRepository) UpdateConnection(ctx context.Context, tx *sql.Tx, connection model.Connections) error {
 	Connections := table.Connections
 
-	connection.UpdatedAt = time.Now()
+	connection.UpdatedAt = time.Now().UTC().Add(7 * time.Hour)
 
 	columns := Connections.AllColumns.Except(Connections.ID, Connections.CreatedAt, Connections.DeletedAt)
 

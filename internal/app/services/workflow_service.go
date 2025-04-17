@@ -164,7 +164,7 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 		return fmt.Errorf("request not found")
 	}
 
-	currentTime := time.Now()
+	currentTime := time.Now().UTC().Add(7 * time.Hour)
 
 	// Update request status to in processing
 	request.Status = string(constants.RequestStatusInProgress)
@@ -182,7 +182,7 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 	nextNodeIds := make(map[string]bool)
 	for i := range request.Nodes {
 		if request.Nodes[i].Type == string(constants.NodeTypeStart) {
-			currentTime := time.Now()
+			currentTime := time.Now().UTC().Add(7 * time.Hour)
 
 			request.Nodes[i].Status = string(constants.NodeStatusCompleted)
 			request.Nodes[i].IsCurrent = true
@@ -225,7 +225,7 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 			if request.Workflow.Type == string(constants.WorkflowTypeGeneral) {
 				nodeModel.Status = string(constants.NodeStatusInProgress)
 
-				currentTime := time.Now()
+				currentTime := time.Now().UTC().Add(7 * time.Hour)
 				nodeModel.ActualStartTime = &currentTime
 			}
 
@@ -235,7 +235,7 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 
 			if nodeModel.Type == string(constants.NodeTypeStory) || nodeModel.Type == string(constants.NodeTypeSubWorkflow) {
 
-				currentTime := time.Now()
+				currentTime := time.Now().UTC().Add(7 * time.Hour)
 				nodeModel.ActualStartTime = &currentTime
 				if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
 					return fmt.Errorf("update node status to in processing fail: %w", err)
@@ -1261,7 +1261,7 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 
 	}
 
-	startedAt := time.Now()
+	startedAt := time.Now().UTC().Add(7 * time.Hour)
 
 	requestModel := model.Requests{
 		Title:             req.Title,

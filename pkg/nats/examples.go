@@ -23,7 +23,7 @@ func ExamplePublish(client *NATSClient) {
 	msg := ExampleMessage{
 		ID:      "msg-123",
 		Content: "Hello NATS",
-		Time:    time.Now(),
+		Time:    time.Now().UTC().Add(7 * time.Hour),
 	}
 
 	// Marshal the message to JSON

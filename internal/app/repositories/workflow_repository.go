@@ -158,7 +158,7 @@ func (r *WorkflowRepository) FindOneWorkflowByWorkflowId(ctx context.Context, db
 func (r *WorkflowRepository) UpdateWorkflow(ctx context.Context, tx *sql.Tx, workflow model.Workflows) error {
 	Workflows := table.Workflows
 
-	workflow.UpdatedAt = time.Now()
+	workflow.UpdatedAt = time.Now().UTC().Add(7 * time.Hour)
 
 	columns := Workflows.AllColumns.Except(Workflows.ID, Workflows.CreatedAt, Workflows.DeletedAt)
 

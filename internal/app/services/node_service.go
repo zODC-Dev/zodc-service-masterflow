@@ -84,7 +84,7 @@ func (s *NodeService) CheckIfAllNodeFormIsApprovedOrRejected(ctx context.Context
 	return true, nil
 }
 
-func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nodeId string, isTrue bool) error {
+func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nodeId string, isTrue bool, userId int32) error {
 	// Update Node Form
 	node, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
 	if err != nil {
@@ -99,6 +99,15 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 			}
 
 			if err := s.NodeRepo.UpdateNodeForm(ctx, tx, nodeForm); err != nil {
+				return err
+			}
+
+			approveOrRejectUser := model.NodeFormApproveOrRejectUsers{
+				UserID:     userId,
+				NodeFormID: nodeForm.ID,
+				IsApproved: isTrue,
+			}
+			if err := s.NodeRepo.CreateApproveOrRejectUser(ctx, tx, approveOrRejectUser); err != nil {
 				return err
 			}
 		}
@@ -128,7 +137,7 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 			utils.Mapper(connection.Node, &conditionNode)
 			conditionNode.Status = string(constants.NodeStatusCompleted)
 			conditionNode.IsCurrent = true
-			now := time.Now()
+			now := time.Now().UTC().Add(7 * time.Hour)
 			conditionNode.ActualStartTime = &now
 			conditionNode.ActualEndTime = &now
 			if err := s.NodeRepo.UpdateNode(ctx, tx, conditionNode); err != nil {
@@ -150,19 +159,19 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 				}
 
 				// Update Connection Condition Destination Node To Completed
-				// connectionConditionDestination, err := s.ConnectionRepo.FindConnectionsByToNodeIdTx(ctx, tx, nodeConditionDestination.DestinationNodeID)
-				// if err != nil {
-				// 	return err
-				// }
-				// for _, connection := range connectionConditionDestination {
-				// 	if connection.FromNodeID == nodeConditionDestination.NodeID {
-				// 		connection.IsCompleted = true
-				// 		connectionModel := model.Connections{}
-				// 		if err := utils.Mapper(connection, &connectionModel); err != nil {
-				// 			return err
-				// 		}
-				// 	}
-				// }
+				connectionConditionDestination, err := s.ConnectionRepo.FindConnectionsByToNodeIdTx(ctx, tx, nodeConditionDestination.DestinationNodeID)
+				if err != nil {
+					return err
+				}
+				for _, connection := range connectionConditionDestination {
+					if connection.FromNodeID == nodeConditionDestination.NodeID {
+						connection.IsCompleted = true
+						connectionModel := model.Connections{}
+						if err := utils.Mapper(connection, &connectionModel); err != nil {
+							return err
+						}
+					}
+				}
 
 				if node.Type == string(constants.NodeTypeEnd) {
 					nodeModel := model.Nodes{}
@@ -174,7 +183,7 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 					}
 
 					// Update Request
-					now := time.Now()
+					now := time.Now().UTC().Add(7 * time.Hour)
 
 					request, err := s.RequestRepo.FindOneRequestByRequestIdTx(ctx, tx, node.RequestID)
 					if err != nil {
@@ -243,7 +252,7 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 					// Update Node
 					node.Status = string(constants.NodeStatusCompleted)
 					node.IsCurrent = true
-					now := time.Now()
+					now := time.Now().UTC().Add(7 * time.Hour)
 					node.ActualStartTime = &now
 					node.ActualEndTime = &now
 
@@ -277,7 +286,7 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 							}
 
 							// Update Request
-							now := time.Now()
+							now := time.Now().UTC().Add(7 * time.Hour)
 
 							request, err := s.RequestRepo.FindOneRequestByRequestIdTx(ctx, tx, node.RequestID)
 							if err != nil {
@@ -309,7 +318,7 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 				utils.Mapper(node, &nodeModel)
 				nodeModel.IsCurrent = true
 				nodeModel.Status = string(constants.NodeStatusInProgress)
-				now := time.Now()
+				now := time.Now().UTC().Add(7 * time.Hour)
 				nodeModel.ActualStartTime = &now
 				if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
 					return err
@@ -342,7 +351,7 @@ func (s *NodeService) StartNodeHandler(ctx context.Context, nodeId string) error
 	node.Status = string(constants.NodeStatusInProgress)
 
 	// Set actual start time
-	now := time.Now()
+	now := time.Now().UTC().Add(7 * time.Hour)
 	node.ActualStartTime = &now
 
 	if err := s.NodeRepo.UpdateNode(ctx, tx, node); err != nil {
@@ -382,7 +391,7 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 	node.Status = string(constants.NodeStatusCompleted)
 
 	// Set actual finish time
-	now := time.Now()
+	now := time.Now().UTC().Add(7 * time.Hour)
 	node.ActualEndTime = &now
 
 	if err := s.NodeRepo.UpdateNode(ctx, tx, node); err != nil {
@@ -436,12 +445,13 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 					return err
 				}
 
-				if node.EndType != nil && *node.EndType == string(constants.NodeEndTypeComplete) {
-					request.Status = string(constants.RequestStatusCompleted)
-					request.CompletedAt = &now
-				} else {
+				if node.EndType != nil && *node.EndType == string(constants.NodeEndTypeTerminate) {
 					request.Status = string(constants.RequestStatusTerminated)
 					request.TerminatedAt = &now
+
+				} else {
+					request.Status = string(constants.RequestStatusCompleted)
+					request.CompletedAt = &now
 				}
 
 				request.Progress = 100
@@ -469,7 +479,7 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 				if isChangeToInProgress {
 					connectionsToNode[i].Node.Status = string(constants.NodeStatusInProgress)
 
-					now := time.Now()
+					now := time.Now().UTC().Add(7 * time.Hour)
 					connectionsToNode[i].Node.ActualStartTime = &now
 				}
 				err := s.NodeRepo.UpdateNode(ctx, tx, connectionsToNode[i].Node)
@@ -659,7 +669,7 @@ func (s *NodeService) ApproveNode(ctx context.Context, userId int32, nodeId stri
 	node.IsApproved = true
 	node.Status = string(constants.NodeStatusCompleted)
 
-	now := time.Now()
+	now := time.Now().UTC().Add(7 * time.Hour)
 	node.ActualEndTime = &now
 
 	if err := s.NodeRepo.UpdateNode(ctx, tx, node); err != nil {
@@ -667,7 +677,7 @@ func (s *NodeService) ApproveNode(ctx context.Context, userId int32, nodeId stri
 	}
 
 	//
-	err = s.LogicForConditionNode(ctx, tx, nodeId, true)
+	err = s.LogicForConditionNode(ctx, tx, nodeId, true, userId)
 	if err != nil {
 		return fmt.Errorf("logic for condition node fail: %w", err)
 	}
@@ -703,14 +713,14 @@ func (s *NodeService) RejectNode(ctx context.Context, userId int32, nodeId strin
 	node.IsRejected = true
 	node.Status = string(constants.NodeStatusCompleted)
 
-	now := time.Now()
+	now := time.Now().UTC().Add(7 * time.Hour)
 	node.ActualEndTime = &now
 	if err := s.NodeRepo.UpdateNode(ctx, tx, node); err != nil {
 		return fmt.Errorf("update node status to completed fail: %w", err)
 	}
 
 	//
-	err = s.LogicForConditionNode(ctx, tx, nodeId, false)
+	err = s.LogicForConditionNode(ctx, tx, nodeId, false, userId)
 	if err != nil {
 		return fmt.Errorf("logic for condition node fail: %w", err)
 	}
@@ -764,7 +774,7 @@ func (s *NodeService) SubmitNodeForm(ctx context.Context, userId int32, nodeId s
 
 	// Update Node Form Is Submitted
 	nodeForm.SubmittedByUserID = &userId
-	now := time.Now()
+	now := time.Now().UTC().Add(7 * time.Hour)
 	nodeForm.SubmittedAt = &now
 	nodeForm.LastUpdateUserID = &userId
 	nodeForm.IsSubmitted = true
@@ -795,7 +805,7 @@ func (s *NodeService) SubmitNodeForm(ctx context.Context, userId int32, nodeId s
 		utils.Mapper(node, &nodeModel)
 		nodeModel.Status = string(constants.NodeStatusCompleted)
 
-		actualEndTime := time.Now()
+		actualEndTime := time.Now().UTC().Add(7 * time.Hour)
 		nodeModel.ActualEndTime = &actualEndTime
 
 		if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
@@ -837,6 +847,15 @@ func (s *NodeService) ApproveNodeForm(ctx context.Context, nodeId string, formId
 		return err
 	}
 
+	approveOrRejectUser := model.NodeFormApproveOrRejectUsers{
+		UserID:     userId,
+		NodeFormID: nodeForm.ID,
+		IsApproved: true,
+	}
+	if err := s.NodeRepo.CreateApproveOrRejectUser(ctx, tx, approveOrRejectUser); err != nil {
+		return err
+	}
+
 	if err := tx.Commit(); err != nil {
 		return err
 	}
@@ -858,6 +877,15 @@ func (s *NodeService) RejectNodeForm(ctx context.Context, nodeId string, formId 
 	}
 	nodeForm.IsRejected = true
 	if err := s.NodeRepo.UpdateNodeForm(ctx, tx, nodeForm); err != nil {
+		return err
+	}
+
+	approveOrRejectUser := model.NodeFormApproveOrRejectUsers{
+		UserID:     userId,
+		NodeFormID: nodeForm.ID,
+		IsApproved: false,
+	}
+	if err := s.NodeRepo.CreateApproveOrRejectUser(ctx, tx, approveOrRejectUser); err != nil {
 		return err
 	}
 

@@ -288,7 +288,7 @@ func (r *RequestRepository) FindOneRequestByRequestIdTx(ctx context.Context, tx 
 func (r *RequestRepository) UpdateRequest(ctx context.Context, tx *sql.Tx, request model.Requests) error {
 	Requests := table.Requests
 
-	request.UpdatedAt = time.Now()
+	request.UpdatedAt = time.Now().UTC().Add(7 * time.Hour)
 
 	columns := Requests.AllColumns.Except(Requests.ID, Requests.CreatedAt, Requests.DeletedAt)
 

@@ -24,7 +24,7 @@ func NewNodeRepository() *NodeRepository {
 func (r *NodeRepository) UpdateNode(ctx context.Context, tx *sql.Tx, node model.Nodes) error {
 	Nodes := table.Nodes
 
-	node.UpdatedAt = time.Now()
+	node.UpdatedAt = time.Now().UTC().Add(7 * time.Hour)
 
 	columns := Nodes.AllColumns.Except(Nodes.ID, Nodes.CreatedAt, Nodes.DeletedAt)
 
@@ -202,7 +202,7 @@ func (r *NodeRepository) UpdateNodePlannedTimes(ctx context.Context, tx *sql.Tx,
 			ID:               update.NodeId,
 			PlannedStartTime: &update.PlannedStartTime,
 			PlannedEndTime:   &update.PlannedEndTime,
-			UpdatedAt:        time.Now(),
+			UpdatedAt:        time.Now().UTC().Add(7 * time.Hour),
 		}
 
 		// Cập nhật theo cách sử dụng MODEL
@@ -339,7 +339,7 @@ func (r *NodeRepository) FindOneNodeFormByNodeIdAndFormId(ctx context.Context, d
 func (r *NodeRepository) UpdateNodeForm(ctx context.Context, tx *sql.Tx, nodeForm model.NodeForms) error {
 	NodeForms := table.NodeForms
 
-	nodeForm.UpdatedAt = time.Now()
+	nodeForm.UpdatedAt = time.Now().UTC().Add(7 * time.Hour)
 
 	columns := NodeForms.AllColumns.Except(NodeForms.ID, NodeForms.CreatedAt, NodeForms.DeletedAt)
 
@@ -455,4 +455,16 @@ func (r *NodeRepository) FindOneFormDataByNodeId(ctx context.Context, db *sql.DB
 	err := statement.QueryContext(ctx, db, &result)
 
 	return result, err
+}
+
+func (r *NodeRepository) CreateApproveOrRejectUser(ctx context.Context, tx *sql.Tx, approveOrRejectUser model.NodeFormApproveOrRejectUsers) error {
+	NodeFormApproveOrRejectUsers := table.NodeFormApproveOrRejectUsers
+
+	columns := NodeFormApproveOrRejectUsers.AllColumns.Except(NodeFormApproveOrRejectUsers.ID, NodeFormApproveOrRejectUsers.CreatedAt, NodeFormApproveOrRejectUsers.UpdatedAt, NodeFormApproveOrRejectUsers.DeletedAt)
+
+	statement := NodeFormApproveOrRejectUsers.INSERT(columns).MODEL(approveOrRejectUser)
+
+	err := statement.QueryContext(ctx, tx, &approveOrRejectUser)
+
+	return err
 }
