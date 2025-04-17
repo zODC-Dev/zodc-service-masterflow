@@ -95,6 +95,7 @@ type RequestCompletedFormDataResponse struct {
 }
 
 type RequestCompletedFormInputResponse struct {
+	DataId      *string                                `json:"dataId"`
 	Key         string                                 `json:"key"`
 	Type        string                                 `json:"type"`
 	SubmittedAt time.Time                              `json:"submittedAt"`

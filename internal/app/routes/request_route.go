@@ -82,7 +82,7 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 		requestRoute.GET("/tasks/count", requestController.GetRequestTasksCount)
 
 		requestRoute.GET("/:id/completed-form", requestController.GetRequestCompletedForm)
-		requestRoute.GET("/:id/completed-form/approval", requestController.GetRequestCompletedFormApproval)
+		requestRoute.GET("/:id/completed-form/:dataId", requestController.GetRequestCompletedFormApproval)
 
 		requestRoute.GET("/:id/file-manager", requestController.GetRequestFileManager)
 

@@ -970,6 +970,7 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 					Template:    formTemplate,
 					Submitter:   assignee,
 					LastUpdate:  assignee,
+					DataId:      node.FormDataID,
 				}
 
 				if node.JiraKey != nil {
@@ -1176,7 +1177,7 @@ func (s *RequestService) GetRequestFileManagerHandler(ctx context.Context, reque
 	return paginatedResponse, nil
 }
 
-func (s *RequestService) GetRequestCompletedFormApprovalHandler(ctx context.Context, requestId int32) ([]responses.RequestCompletedFormApprovalOverviewResponse, error) {
+func (s *RequestService) GetRequestCompletedFormApprovalHandler(ctx context.Context, requestId int32, dataId string) ([]responses.RequestCompletedFormApprovalOverviewResponse, error) {
 	requestCompletedFormApprovalResponse := []responses.RequestCompletedFormApprovalOverviewResponse{}
 
 	request, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, requestId)
@@ -1188,7 +1189,7 @@ func (s *RequestService) GetRequestCompletedFormApprovalHandler(ctx context.Cont
 	existUserIds := make(map[int32]bool)
 
 	for _, node := range request.Nodes {
-		if node.Type == string(constants.NodeTypeApproval) {
+		if node.AssigneeID != nil && !existUserIds[*node.AssigneeID] {
 			userIds = append(userIds, *node.AssigneeID)
 			existUserIds[*node.AssigneeID] = true
 		}
@@ -1219,16 +1220,24 @@ func (s *RequestService) GetRequestCompletedFormApprovalHandler(ctx context.Cont
 		return assignee
 	}
 
-	requestCompletedFormApprovalRes := responses.RequestCompletedFormApprovalOverviewResponse{}
 	for _, node := range request.Nodes {
-		if node.Type == string(constants.NodeTypeApproval) {
-			requestCompletedFormApprovalRes.Key = node.Key
-			requestCompletedFormApprovalRes.TaskTitle = node.Title
-			requestCompletedFormApprovalRes.IsApproved = node.IsApproved
-			requestCompletedFormApprovalRes.IsRejected = node.IsRejected
-			requestCompletedFormApprovalRes.Assignee = mapUser(node.AssigneeID)
+		isApproveNodeInlcudeNodeFormDataId := false
 
-			requestCompletedFormApprovalResponse = append(requestCompletedFormApprovalResponse, requestCompletedFormApprovalRes)
+		for _, nodeForm := range node.NodeForms {
+			if nodeForm.Permission == string(constants.NodeFormPermissionView) && nodeForm.DataID != nil && *nodeForm.DataID == dataId {
+				isApproveNodeInlcudeNodeFormDataId = true
+				break
+			}
+		}
+
+		if isApproveNodeInlcudeNodeFormDataId {
+			requestCompletedFormApprovalResponse = append(requestCompletedFormApprovalResponse, responses.RequestCompletedFormApprovalOverviewResponse{
+				Key:        node.Key,
+				TaskTitle:  node.Title,
+				IsApproved: node.IsApproved,
+				IsRejected: node.IsRejected,
+				Assignee:   mapUser(node.AssigneeID),
+			})
 		}
 	}
 

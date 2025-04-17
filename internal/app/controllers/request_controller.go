@@ -514,7 +514,12 @@ func (c *RequestController) GetRequestCompletedFormApproval(e echo.Context) erro
 		return e.JSON(http.StatusBadRequest, fmt.Sprintf("Invalid request ID: %s", requestId))
 	}
 
-	requestCompletedFormApprovalResponse, err := c.requestService.GetRequestCompletedFormApprovalHandler(ctx, int32(requestIdInt))
+	dataId := e.QueryParam("dataId")
+	if dataId == "" {
+		return e.JSON(http.StatusBadRequest, "Data ID is required")
+	}
+
+	requestCompletedFormApprovalResponse, err := c.requestService.GetRequestCompletedFormApprovalHandler(ctx, int32(requestIdInt), dataId)
 	if err != nil {
 		return e.JSON(http.StatusInternalServerError, err.Error())
 	}

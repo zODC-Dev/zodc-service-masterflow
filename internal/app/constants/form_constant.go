@@ -8,6 +8,7 @@ type NodeFormPermission string
 
 const (
 	NodeFormPermissionInput NodeFormPermission = "INPUT"
+	NodeFormPermissionView  NodeFormPermission = "VIEW"
 )
 
 type FormTemplateFieldType string
