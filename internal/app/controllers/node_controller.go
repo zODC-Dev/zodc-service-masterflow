@@ -123,6 +123,8 @@ func (c *NodeController) GetNodeJiraForm(e echo.Context) error {
 func (c *NodeController) ReassignNode(e echo.Context) error {
 	ctx := e.Request().Context()
 
+	userIdReq, _ := middlewares.GetUserID(e)
+
 	nodeId := e.Param("id")
 	userId := e.Param("userId")
 
@@ -135,7 +137,7 @@ func (c *NodeController) ReassignNode(e echo.Context) error {
 		return e.JSON(http.StatusBadRequest, map[string]string{"error": "invalid userId"})
 	}
 
-	if err := c.nodeService.ReassignNode(ctx, nodeId, int32(userIdInt)); err != nil {
+	if err := c.nodeService.ReassignNode(ctx, nodeId, int32(userIdInt), int32(userIdReq)); err != nil {
 		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
@@ -164,6 +166,29 @@ func (c *NodeController) SubmitNodeForm(e echo.Context) error {
 	}
 
 	return e.JSON(http.StatusOK, map[string]string{"message": "Node form submitted successfully"})
+}
+
+func (c *NodeController) EditNodeForm(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	userId, _ := middlewares.GetUserID(e)
+
+	nodeId := e.Param("id")
+	formId := e.Param("formDataId")
+	if nodeId == "" || formId == "" {
+		return e.JSON(http.StatusBadRequest, map[string]string{"error": "nodeId and formId are required"})
+	}
+
+	req := new([]requests.SubmitNodeFormRequest)
+	if err := e.Bind(req); err != nil {
+		return e.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+	}
+
+	if err := c.nodeService.EditNodeForm(ctx, int32(userId), nodeId, formId, req); err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, map[string]string{"message": "Node form edited successfully"})
 }
 
 func (c *NodeController) ApproveNodeForm(e echo.Context) error {

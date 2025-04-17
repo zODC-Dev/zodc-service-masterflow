@@ -3,7 +3,6 @@ package repositories
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -382,7 +381,14 @@ func (r *RequestRepository) CountRequestTaskByStatusAndUserIdAndQueryParams(ctx 
 	}
 
 	if status != "" {
-		conditions = append(conditions, Nodes.Status.EQ(postgres.String(string(status))))
+		if status == constants.NodeStatusToday {
+			conditions = append(conditions, Nodes.IsCurrent.EQ(postgres.Bool(true)))
+			conditions = append(conditions, Nodes.Status.NOT_EQ(postgres.String(string(constants.NodeStatusCompleted))))
+		} else if status == constants.NodeStatusInComing {
+			conditions = append(conditions, Nodes.IsCurrent.EQ(postgres.Bool(false)))
+		} else {
+			conditions = append(conditions, Nodes.Status.EQ(postgres.String(string(status))))
+		}
 	}
 
 	if len(conditions) > 0 {
@@ -391,7 +397,6 @@ func (r *RequestRepository) CountRequestTaskByStatusAndUserIdAndQueryParams(ctx 
 
 	result := []model.Nodes{}
 	err := statement.QueryContext(ctx, db, &result)
-	fmt.Println(statement.DebugSql())
 
 	return len(result), err
 }
@@ -493,7 +498,7 @@ func (r *RequestRepository) FindAllTasksByProject(ctx context.Context, db *sql.D
 
 	result := []results.NodeResult{}
 	err := statement.QueryContext(ctx, db, &result)
-	fmt.Println(statement.DebugSql())
+
 	if err != nil {
 		return 0, result, err
 	}
@@ -654,8 +659,23 @@ func (r *RequestRepository) FindAllRequestCompletedFormByRequestId(ctx context.C
 	FormTemplateVersions := table.FormTemplateVersions
 	FormTemplates := table.FormTemplates
 
-	statement := NodeForms.SELECT(
+	rNodeFormStatement := postgres.SELECT(
 		NodeForms.AllColumns,
+	).FROM(
+		NodeForms.
+			LEFT_JOIN(Nodes, NodeForms.NodeID.EQ(Nodes.ID)),
+	).WHERE(
+		Nodes.RequestID.EQ(postgres.Int32(requestId)).
+			AND(NodeForms.IsSubmitted.EQ(postgres.Bool(true))),
+	).LIMIT(int64(pageSize)).OFFSET(int64(page - 1)).AsTable("nodeFormTable")
+
+	nodeFormNodeId := NodeForms.NodeID.From(rNodeFormStatement)
+	nodeFormDataId := NodeForms.DataID.From(rNodeFormStatement)
+	nodeFormId := NodeForms.ID.From(rNodeFormStatement)
+	nodeFormIsSubmitted := NodeForms.IsSubmitted.From(rNodeFormStatement)
+
+	statement := NodeForms.SELECT(
+		rNodeFormStatement.AllColumns(),
 		Nodes.AllColumns,
 		NodeFormApproveOrRejectUsers.AllColumns,
 		FormData.AllColumns,
@@ -663,23 +683,24 @@ func (r *RequestRepository) FindAllRequestCompletedFormByRequestId(ctx context.C
 		FormTemplateVersions.AllColumns,
 		FormTemplates.AllColumns,
 	).FROM(
-		NodeForms.
-			LEFT_JOIN(Nodes, NodeForms.NodeID.EQ(Nodes.ID)).
+		rNodeFormStatement.
+			LEFT_JOIN(Nodes, nodeFormNodeId.EQ(Nodes.ID)).
 			LEFT_JOIN(
-				NodeFormApproveOrRejectUsers, NodeForms.ID.EQ(NodeFormApproveOrRejectUsers.NodeFormID),
+				NodeFormApproveOrRejectUsers, nodeFormId.EQ(NodeFormApproveOrRejectUsers.NodeFormID),
 			).
-			LEFT_JOIN(FormData, NodeForms.DataID.EQ(FormData.ID)).
+			LEFT_JOIN(FormData, nodeFormDataId.EQ(FormData.ID)).
 			LEFT_JOIN(FormFieldData, FormData.ID.EQ(FormFieldData.FormDataID)).
 			//
 			LEFT_JOIN(FormTemplateVersions, FormData.FormTemplateVersionID.EQ(FormTemplateVersions.ID)).
 			LEFT_JOIN(FormTemplates, FormTemplateVersions.FormTemplateID.EQ(FormTemplates.ID)),
 	).WHERE(
 		Nodes.RequestID.EQ(postgres.Int32(requestId)).
-			AND(NodeForms.IsSubmitted.EQ(postgres.Bool(true))),
-	).LIMIT(int64(pageSize)).OFFSET(int64(page - 1))
+			AND(nodeFormIsSubmitted.EQ(postgres.Bool(true))),
+	)
 
 	result := []results.NodeFormCompletedResult{}
 	err := statement.QueryContext(ctx, db, &result)
+
 	if err != nil {
 		return 0, result, err
 	}

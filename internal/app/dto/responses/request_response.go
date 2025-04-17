@@ -66,10 +66,13 @@ type RequestTaskResponse struct {
 }
 
 type RequestTaskCountResponse struct {
-	OverdueCount   int32 `json:"overdueCount"`
-	TotalCount     int32 `json:"totalCount"`
-	CompletedCount int32 `json:"completedCount"`
-	TodoCount      int32 `json:"todoCount"`
+	OverdueCount    int32 `json:"overdueCount"`
+	TotalCount      int32 `json:"totalCount"`
+	CompletedCount  int32 `json:"completedCount"`
+	TodoCount       int32 `json:"todoCount"`
+	InProgressCount int32 `json:"inProgressCount"`
+	TodayCount      int32 `json:"todayCount"`
+	InComingCount   int32 `json:"inComingCount"`
 }
 
 type RequestOverviewResponse struct {
