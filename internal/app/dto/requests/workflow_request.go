@@ -57,7 +57,7 @@ type NodeData struct {
 	JiraKey       string
 	EstimatePoint *float32
 
-	JiraLinkURL *string
+	JiraLinkUrl *string
 
 	Condition NodeDataCondition
 

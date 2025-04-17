@@ -380,7 +380,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 			JiraKey: storyReq.Node.JiraKey,
 
-			JiraLinkURL: storyReq.Node.Data.JiraLinkURL,
+			JiraLinkURL: storyReq.Node.Data.JiraLinkUrl,
 		}
 
 		if formSystemVersionId, exists := formSystemTagMap["TASK"]; exists {
@@ -458,7 +458,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 				JiraKey: storyNodeReq.JiraKey,
 
-				JiraLinkURL: storyNodeReq.Data.JiraLinkURL,
+				JiraLinkURL: storyNodeReq.Data.JiraLinkUrl,
 			}
 
 			if storyNodeReq.ParentId != "" {

@@ -36,10 +36,10 @@ type TaskDetail struct {
 	RequestRequestBy types.Assignee `json:"requestRequestBy"`
 	IsApproval       bool           `json:"isApproval"`
 
-	SprintId      *int `json:"sprintId"`
-	EstimatePoint *int `json:"estimatePoint"`
-	Parent        *TaskRelated
-	Related       []TaskRelated
+	SprintId      *int          `json:"sprintId"`
+	EstimatePoint *int          `json:"estimatePoint"`
+	Parent        *TaskRelated  `json:"parent"`
+	Related       []TaskRelated `json:"related"`
 
 	JiraLinkURL *string `json:"jiraLinkUrl"`
 }
