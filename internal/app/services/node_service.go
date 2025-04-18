@@ -727,32 +727,6 @@ func (s *NodeService) ApproveNode(ctx context.Context, userId int32, nodeId stri
 		return fmt.Errorf("logic for condition node fail: %w", err)
 	}
 
-	//
-	request, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, node.RequestID)
-	if err != nil {
-		return fmt.Errorf("find request by request id fail: %w", err)
-	}
-
-	for _, node := range request.Nodes {
-		if node.Type == string(constants.NodeTypeEnd) && node.Status == string(constants.NodeStatusCompleted) {
-			request.Progress = 100
-			break
-		}
-
-		request.Progress = 100
-
-		requestModel := model.Requests{}
-		utils.Mapper(request, &requestModel)
-
-		if err := s.RequestRepo.UpdateRequest(ctx, tx, requestModel); err != nil {
-			return fmt.Errorf("update request progress fail: %w", err)
-		}
-	}
-
-	// if err := s.RequestService.UpdateCalculateRequestProgress(ctx, tx, node.RequestID); err != nil {
-	// 	return fmt.Errorf("update calculate request progress fail: %w", err)
-	// }
-
 	// Commit
 	if err := tx.Commit(); err != nil {
 		return err
@@ -790,32 +764,6 @@ func (s *NodeService) RejectNode(ctx context.Context, userId int32, nodeId strin
 	if err != nil {
 		return fmt.Errorf("logic for condition node fail: %w", err)
 	}
-
-	//
-	request, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, node.RequestID)
-	if err != nil {
-		return fmt.Errorf("find request by request id fail: %w", err)
-	}
-
-	for _, node := range request.Nodes {
-		if node.Type == string(constants.NodeTypeEnd) && node.Status == string(constants.NodeStatusCompleted) {
-			request.Progress = 100
-			break
-		}
-
-		request.Progress = 100
-
-		requestModel := model.Requests{}
-		utils.Mapper(request, &requestModel)
-
-		if err := s.RequestRepo.UpdateRequest(ctx, tx, requestModel); err != nil {
-			return fmt.Errorf("update request progress fail: %w", err)
-		}
-	}
-
-	// if err := s.RequestService.UpdateCalculateRequestProgress(ctx, tx, node.RequestID); err != nil {
-	// 	return fmt.Errorf("update calculate request progress fail: %w", err)
-	// }
 
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit fail: %w", err)
