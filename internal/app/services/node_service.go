@@ -349,6 +349,11 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 		}
 	}
 
+	// Calculate Request Process
+	if err := s.RequestService.UpdateCalculateRequestProgress(ctx, tx, node.RequestID); err != nil {
+		return fmt.Errorf("update calculate request progress fail: %w", err)
+	}
+
 	return nil
 }
 
