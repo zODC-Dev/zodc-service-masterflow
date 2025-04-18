@@ -1,13 +1,19 @@
 package main
 
 import (
+	"context"
+	"database/sql"
 	"log/slog"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/configs"
 	db "github.com/zODC-Dev/zodc-service-masterflow/internal/app/database"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/externals"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/routes"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/services"
+	"github.com/zODC-Dev/zodc-service-masterflow/pkg/nats"
 )
 
 // @title zODC Masterflow Service API
@@ -30,6 +36,7 @@ import (
 // @name Authorization
 // @description Type "Bearer" followed by a space and JWT token.
 func main() {
+	ctx := context.Background()
 	e := echo.New()
 	{
 		// e.Use(middleware.Logger())
@@ -42,10 +49,86 @@ func main() {
 	}
 
 	//Database Setup
-	db := db.ConnectDatabase()
+	database := db.ConnectDatabase()
+
+	//Nats Setup
+	natsSubscriber := setupNats(ctx, database)
+	// Đảm bảo cleanup khi chương trình kết thúc
+	if natsSubscriber != nil {
+		defer func() {
+			ctx := context.Background()
+			if err := natsSubscriber.Shutdown(ctx); err != nil {
+				slog.Error("Error shutting down NATS subscriber service", "error", err)
+			}
+		}()
+	}
 
 	//Route Setup
-	routes.RegisterRoutes(e, db)
+	routes.RegisterRoutes(e, database)
 
 	slog.Error(e.Start(configs.Env.SERVER_ADDRESS).Error())
+}
+
+func setupNats(ctx context.Context, database *sql.DB) *services.NatsSubscriberService {
+	// Initialize repositories
+	nodeRepo := repositories.NewNodeRepository()
+	requestRepo := repositories.NewRequestRepository()
+
+	// Initialize NATS client
+	natsConfig := nats.DefaultConfig()
+	natsConfig.URL = configs.Env.NATS_URL // Ensure NATS_URL is defined in your .env file
+	natsClient, err := nats.NewNATSClient(natsConfig)
+	if err != nil {
+		slog.Error("Failed to create NATS client", "error", err)
+		return nil
+	}
+
+	// Initialize and start NATS subscriber service
+	natsSubscriberService := services.NewNatsSubscriberService(
+		natsClient,
+		database,
+		nodeRepo,
+		requestRepo,
+		nil, // We will create a proper NodeService below and set it
+	)
+
+	// Initialize other required dependencies for NodeService
+	connectionRepo := repositories.NewConnectionRepository()
+	formRepo := repositories.NewFormRepository()
+
+	// Set up UserAPI if needed for NodeService
+	userApi := externals.NewUserAPI()
+
+	// Create NatsService needed for NodeService
+	natsService := services.NewNatsService(services.NatsService{
+		NatsClient:  natsClient,
+		NodeRepo:    nodeRepo,
+		RequestRepo: requestRepo,
+		FormRepo:    formRepo,
+	})
+
+	// Initialize the NodeService with all dependencies
+	nodeService := services.NewNodeService(services.NodeService{
+		DB:             database,
+		NodeRepo:       nodeRepo,
+		ConnectionRepo: connectionRepo,
+		RequestRepo:    requestRepo,
+		FormRepo:       formRepo,
+		NatsClient:     natsClient,
+		NatsService:    natsService,
+		UserAPI:        userApi,
+	})
+
+	// Now set the NodeService in the NatsSubscriberService
+	natsSubscriberService.NodeService = nodeService
+
+	// Start the subscriber service in a goroutine
+	go func() {
+		if err := natsSubscriberService.Start(ctx); err != nil {
+			slog.Error("Failed to start NATS subscriber service", "error", err)
+		}
+	}()
+
+	slog.Info("NATS subscriber service started")
+	return natsSubscriberService
 }

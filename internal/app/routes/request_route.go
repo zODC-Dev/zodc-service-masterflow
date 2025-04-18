@@ -31,6 +31,7 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 		NatsClient:  natsClient,
 		NodeRepo:    nodeRepo,
 		RequestRepo: requestRepo,
+		FormRepo:    formRepo,
 	})
 
 	workflowService := services.NewWorkflowService(services.WorkflowService{

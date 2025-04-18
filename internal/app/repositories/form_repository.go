@@ -3,6 +3,8 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"log/slog"
 	"strconv"
 
 	"github.com/go-jet/jet/v2/postgres"
@@ -236,4 +238,84 @@ func (r *FormRepository) FindFormDataById(ctx context.Context, db *sql.DB, formD
 	err := statement.QueryContext(ctx, db, &result)
 
 	return result, err
+}
+
+func (r *FormRepository) UpdateFormFieldJiraKey(ctx context.Context, tx *sql.Tx, nodeId string, jiraKey string) error {
+	Nodes := table.Nodes
+	FormFieldData := table.FormFieldData
+	FormTemplateFields := table.FormTemplateFields
+
+	// 2. Lấy formDataId từ nodeId
+	formDataQuery := postgres.SELECT(
+		Nodes.FormDataID,
+	).FROM(
+		Nodes,
+	).WHERE(
+		Nodes.ID.EQ(postgres.String(nodeId)),
+	)
+
+	var nodeData struct {
+		FormDataID *string
+	}
+	if err := formDataQuery.QueryContext(ctx, tx, &nodeData); err != nil {
+		slog.Error("Lỗi khi truy vấn formDataId", "nodeId", nodeId, "error", err)
+		return fmt.Errorf("không thể lấy formDataId từ nodeId: %w", err)
+	}
+
+	// Nếu node không có formDataId thì return
+	if nodeData.FormDataID == nil || *nodeData.FormDataID == "" {
+		return nil
+	}
+
+	formDataId := *nodeData.FormDataID
+
+	// 3. Tìm và cập nhật trường có fieldId là "key" trong form_field_data
+	// Trước tiên, tìm xem có field nào có fieldId="key" không
+	findKeyFieldQuery := postgres.SELECT(
+		FormFieldData.ID,
+		FormTemplateFields.FieldID,
+	).FROM(
+		FormFieldData.
+			INNER_JOIN(FormTemplateFields, FormFieldData.FormTemplateFieldID.EQ(FormTemplateFields.ID)),
+	).WHERE(
+		FormFieldData.FormDataID.EQ(postgres.String(formDataId)).
+			AND(FormTemplateFields.FieldID.EQ(postgres.String("key"))),
+	)
+
+	var keyFields []struct {
+		ID      int32
+		FieldID string
+	}
+
+	if err := findKeyFieldQuery.QueryContext(ctx, tx, &keyFields); err != nil {
+		slog.Error("Lỗi khi tìm field có fieldId='key'", "formDataId", formDataId, "error", err)
+		return fmt.Errorf("không thể tìm field có fieldId='key': %w", err)
+	}
+
+	if len(keyFields) == 0 {
+		return nil
+	}
+
+	// 4. Thực hiện update
+	subQuery := postgres.SELECT(
+		FormFieldData.ID,
+	).FROM(
+		FormFieldData.
+			INNER_JOIN(FormTemplateFields, FormFieldData.FormTemplateFieldID.EQ(FormTemplateFields.ID)),
+	).WHERE(
+		FormFieldData.FormDataID.EQ(postgres.String(formDataId)).
+			AND(FormTemplateFields.FieldID.EQ(postgres.String("key"))),
+	)
+
+	statement := FormFieldData.UPDATE(FormFieldData.Value).
+		SET(postgres.String(jiraKey)).
+		WHERE(FormFieldData.ID.IN(subQuery))
+
+	_, err := statement.ExecContext(ctx, tx)
+	if err != nil {
+		slog.Error("Lỗi khi cập nhật jiraKey", "formDataId", formDataId, "error", err)
+		return fmt.Errorf("không thể cập nhật jiraKey trong form field data: %w", err)
+	}
+
+	return nil
 }

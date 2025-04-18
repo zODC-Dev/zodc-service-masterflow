@@ -35,7 +35,7 @@ type NodeDataResponse struct {
 
 	SubRequestID *int32 `json:"subRequestId"`
 
-	EstimatePoint int32 `json:"estimatePoint"`
+	EstimatePoint *float32 `json:"estimatePoint"`
 
 	Condition NodeDataConditionResponse `json:"condition"`
 

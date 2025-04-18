@@ -144,38 +144,6 @@ func (s *FormService) FindAllFormTemplate(ctx context.Context, queryParam queryp
 		formTemplatesResponse = append(formTemplatesResponse, formTemplateResponse)
 	}
 
-	// Sử dụng request-reply với NATS thay vì chỉ publish
-	// if s.natsClient != nil && s.natsClient.IsConnected() {
-	// 	data, err := json.Marshal(formTemplatesResponse)
-	// 	if err != nil {
-	// 		slog.Error("Failed to marshal form templates for NATS", "error", err)
-	// 	} else {
-	// 		// Tạo context với timeout
-	// 		reqCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	// 		defer cancel()
-
-	// 		// Gửi request và đợi reply
-	// 		reply, err := s.natsClient.RequestWithContext(reqCtx, "form.templates.request", data)
-	// 		if err != nil {
-	// 			slog.Error("Failed to send request to NATS", "error", err)
-	// 		} else {
-	// 			// Log data từ reply
-	// 			slog.Info("Received reply from NATS",
-	// 				"subject", reply.Subject,
-	// 				"reply", string(reply.Data),
-	// 				"headers", reply.Header)
-
-	// 			// Nếu muốn parse reply data thành struct
-	// 			var replyData map[string]interface{}
-	// 			if err := json.Unmarshal(reply.Data, &replyData); err != nil {
-	// 				slog.Error("Failed to unmarshal reply data", "error", err)
-	// 			} else {
-	// 				slog.Info("Parsed reply data", "data", replyData)
-	// 			}
-	// 		}
-	// 	}
-	// }
-
 	return formTemplatesResponse, nil
 }
 

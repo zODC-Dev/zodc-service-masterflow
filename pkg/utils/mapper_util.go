@@ -3,7 +3,6 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"strconv"
 )
 
@@ -34,7 +33,6 @@ func StringToInt32(value string) (int32, error) {
 }
 
 func PtrStringToPtrInt32(value *string) (*int32, error) {
-	slog.Info("value", "value", value)
 	if value == nil {
 		return nil, fmt.Errorf("value is empty")
 	}

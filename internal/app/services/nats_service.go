@@ -23,6 +23,7 @@ type NatsService struct {
 	NodeRepo    *repositories.NodeRepository
 	NatsClient  *nats.NATSClient
 	RequestRepo *repositories.RequestRepository
+	FormRepo    *repositories.FormRepository
 }
 
 func NewNatsService(cfg NatsService) *NatsService {
@@ -30,19 +31,20 @@ func NewNatsService(cfg NatsService) *NatsService {
 		NodeRepo:    cfg.NodeRepo,
 		NatsClient:  cfg.NatsClient,
 		RequestRepo: cfg.RequestRepo,
+		FormRepo:    cfg.FormRepo,
 	}
 }
 
-// publishWorkflowToJira gửi dữ liệu workflow đến Jira và trả về phản hồi
-func (s *NatsService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx, nodes []requests.Node, stories []requests.Story, connections []requests.Connection, projectKey string, sprintId int32) (natsModel.WorkflowSyncResponse, error) {
-	slog.Info("Starting Jira synchronization", "projectKey", projectKey, "sprintId", sprintId)
-	slog.Info("Processing stories", "len stories", len(stories), "len nodes", len(nodes), "len connections", len(connections))
-	slog.Info("Processing stories", "stories", stories)
-	slog.Info("Processing nodes", "nodes", nodes)
-	slog.Info("Processing connections", "connections", connections)
+// PublishWorkflowToJira gửi dữ liệu workflow đến Jira và trả về phản hồi
+func (s *NatsService) PublishWorkflowToJira(ctx context.Context, tx *sql.Tx, nodes []requests.Node, stories []requests.Story, connections []requests.Connection, projectKey string, sprintId int32) (natsModel.WorkflowSyncResponse, error) {
+	slog.Debug("Starting Jira synchronization", "projectKey", projectKey, "sprintId", sprintId)
+	slog.Debug("Processing stories", "len stories", len(stories), "len nodes", len(nodes), "len connections", len(connections))
+	slog.Debug("Processing stories", "stories", stories)
+	slog.Debug("Processing nodes", "nodes", nodes)
+	slog.Debug("Processing connections", "connections", connections)
 
 	// First, ensure story assignees have feature_leader role
-	if err := s.assignFeatureLeaderRoles(stories, projectKey); err != nil {
+	if err := s.AssignFeatureLeaderRoles(stories, projectKey); err != nil {
 		return natsModel.WorkflowSyncResponse{}, fmt.Errorf("failed to assign feature leader roles: %w", err)
 	}
 
@@ -56,17 +58,18 @@ func (s *NatsService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx, nod
 
 	// Process Stories
 	for _, story := range stories {
-		slog.Info("Processing story",
+		slog.Debug("Processing story",
 			"id", story.Node.Id,
 			"title", story.Title,
 			"jiraKey", story.Node.JiraKey)
 
 		issue := natsModel.WorkflowSyncIssue{
-			NodeId:     story.Node.Id,
-			Type:       "Story",
-			Title:      story.Title,
-			AssigneeId: &story.Node.Data.Assignee.Id,
-			Action:     "create",
+			NodeId:        story.Node.Id,
+			Type:          "Story",
+			Title:         story.Title,
+			AssigneeId:    &story.Node.Data.Assignee.Id,
+			EstimatePoint: story.Node.Data.EstimatePoint,
+			Action:        "create",
 		}
 
 		if story.Node.JiraKey != nil {
@@ -79,7 +82,7 @@ func (s *NatsService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx, nod
 
 	// Process Tasks and Bugs
 	for _, node := range nodes {
-		slog.Info("Processing node details",
+		slog.Debug("Processing node details",
 			"id", node.Id,
 			"type", node.Type,
 			"title", node.Data.Title,
@@ -88,13 +91,13 @@ func (s *NatsService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx, nod
 			"parentId", node.ParentId)
 
 		if node.Type != string(constants.NodeTypeTask) && node.Type != string(constants.NodeTypeBug) {
-			slog.Info("Skipping node - not a task or bug",
+			slog.Debug("Skipping node - not a task or bug",
 				"id", node.Id,
 				"type", node.Type)
 			continue
 		}
 
-		slog.Info("Processing node",
+		slog.Debug("Processing node",
 			"id", node.Id,
 			"type", node.Type,
 			"title", node.Data.Title,
@@ -126,7 +129,7 @@ func (s *NatsService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx, nod
 		toNode := findNodeByIdFromRequest(nodes, stories, conn.To)
 
 		if fromNode == nil || toNode == nil {
-			slog.Info("Skipping connection - node not found",
+			slog.Debug("Skipping connection - node not found",
 				"fromId", conn.From,
 				"toId", conn.To)
 			continue
@@ -178,7 +181,7 @@ func (s *NatsService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx, nod
 			continue
 		}
 
-		slog.Info("Creating parent-child connection",
+		slog.Debug("Creating parent-child connection",
 			"parent", parentNode.Data.Title,
 			"child", node.Data.Title,
 			"parentType", parentNode.Type,
@@ -212,7 +215,7 @@ func (s *NatsService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx, nod
 
 			// Kiểm tra mối quan hệ giữa story và node
 			if node.ParentId == story.Node.Id {
-				slog.Info("Creating story-node connection",
+				slog.Debug("Creating story-node connection",
 					"story", story.Title,
 					"node", node.Data.Title)
 
@@ -229,7 +232,7 @@ func (s *NatsService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx, nod
 	}
 
 	// Send to NATS
-	slog.Info("Sending sync request to NATS", "request", syncRequest)
+	slog.Debug("Sending sync request to NATS", "request", syncRequest)
 	requestBytes, err := json.Marshal(syncRequest)
 	if err != nil {
 		return natsModel.WorkflowSyncResponse{}, fmt.Errorf("failed to marshal sync request: %w", err)
@@ -243,9 +246,6 @@ func (s *NatsService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx, nod
 	if err != nil {
 		return natsModel.WorkflowSyncResponse{}, fmt.Errorf("failed to sync with Jira: %w", err)
 	}
-
-	// Log raw response để debug
-	slog.Info("Received raw response from Jira sync service", "response", string(response.Data))
 
 	// Process response
 	var syncResponse natsModel.WorkflowSyncResponse
@@ -263,21 +263,22 @@ func (s *NatsService) publishWorkflowToJira(ctx context.Context, tx *sql.Tx, nod
 
 	// Update JiraKeys in database from nested structure
 	for _, issue := range syncResponse.Data.Data.Issues {
-		slog.Info("Updating JiraKey",
-			"nodeId", issue.NodeId,
-			"jiraKey", issue.JiraKey)
-
+		// Update JiraKey in Node table
 		if err := s.NodeRepo.UpdateJiraKey(ctx, tx, issue.NodeId, issue.JiraKey); err != nil {
+			return natsModel.WorkflowSyncResponse{}, fmt.Errorf("failed to update JiraKey: %w", err)
+		}
+
+		// Update JiraKey in FormData table
+		if err := s.FormRepo.UpdateFormFieldJiraKey(ctx, tx, issue.NodeId, issue.JiraKey); err != nil {
 			return natsModel.WorkflowSyncResponse{}, fmt.Errorf("failed to update JiraKey: %w", err)
 		}
 	}
 
-	slog.Info("Completed Jira synchronization", "projectKey", projectKey)
 	return syncResponse, nil
 }
 
 // New function to assign feature_leader roles to story assignees
-func (s *NatsService) assignFeatureLeaderRoles(stories []requests.Story, projectKey string) error {
+func (s *NatsService) AssignFeatureLeaderRoles(stories []requests.Story, projectKey string) error {
 	// Keep track of users we've already assigned the role to avoid duplicate requests
 	assignedUsers := make(map[int32]bool)
 
@@ -296,10 +297,6 @@ func (s *NatsService) assignFeatureLeaderRoles(stories []requests.Story, project
 			ProjectKey: projectKey,
 			RoleName:   constants.RoleFeatureLeader,
 		}
-
-		slog.Info("Assigning feature_leader role",
-			"userId", roleRequest.UserID,
-			"projectKey", roleRequest.ProjectKey)
 
 		// Convert to JSON
 		requestBytes, err := json.Marshal(roleRequest)
@@ -325,10 +322,6 @@ func (s *NatsService) assignFeatureLeaderRoles(stories []requests.Story, project
 			return fmt.Errorf("role assignment failed for user %d: %s",
 				story.Node.Data.Assignee.Id, roleResponse.Message)
 		}
-
-		slog.Info("Successfully assigned feature_leader role",
-			"userId", roleRequest.UserID,
-			"projectKey", roleRequest.ProjectKey)
 	}
 
 	return nil
@@ -365,24 +358,8 @@ func findNodeByIdFromRequest(nodes []requests.Node, stories []requests.Story, no
 	return nil
 }
 
-// publishWorkflowToGanttChart gửi dữ liệu workflow đến service tính toán Gantt Chart
-func (s *NatsService) publishWorkflowToGanttChart(ctx context.Context, tx *sql.Tx, nodes []requests.Node, stories []requests.Story, connections []requests.Connection, projectKey string, sprintId int32, workflowId int32) error {
-	slog.Info("Starting Gantt Chart calculation",
-		"projectKey", projectKey,
-		"sprintId", sprintId,
-		"workflowId", workflowId,
-		"nodes", len(nodes),
-		"stories", len(stories))
-
-	// Log chi tiết nodes IDs và JiraKeys từ request
-	for i, node := range nodes {
-		slog.Info(fmt.Sprintf("Request node #%d details", i),
-			"nodeId", node.Id,
-			"title", node.Data.Title,
-			"type", node.Type,
-			"jiraKey", node.JiraKey)
-	}
-
+// PublishWorkflowToGanttChart gửi dữ liệu workflow đến service tính toán Gantt Chart
+func (s *NatsService) PublishWorkflowToGanttChart(ctx context.Context, tx *sql.Tx, nodes []requests.Node, stories []requests.Story, connections []requests.Connection, projectKey string, sprintId int32, workflowId int32) error {
 	// Lấy thông tin từ database để so sánh
 	nodeMap := make(map[string]string) // map nodeId -> jiraKey
 
@@ -390,14 +367,12 @@ func (s *NatsService) publishWorkflowToGanttChart(ctx context.Context, tx *sql.T
 	for _, node := range nodes {
 		if node.JiraKey != nil {
 			nodeMap[node.Id] = *node.JiraKey
-			slog.Info("Using JiraKey from request", "nodeId", node.Id, "jiraKey", node.JiraKey)
 		}
 	}
 
 	for _, story := range stories {
 		if story.Node.JiraKey != nil {
 			nodeMap[story.Node.Id] = *story.Node.JiraKey
-			slog.Info("Using JiraKey from request story", "nodeId", story.Node.Id, "jiraKey", story.Node.JiraKey)
 		}
 	}
 
@@ -417,14 +392,6 @@ func (s *NatsService) publishWorkflowToGanttChart(ctx context.Context, tx *sql.T
 		if dbJiraKey, exists := nodeMap[story.Node.Id]; exists && dbJiraKey != "" {
 			jiraKey = &dbJiraKey
 		}
-
-		slog.Info("Processing story for Gantt Chart",
-			"id", story.Node.Id,
-			"title", story.Title,
-			"type", "STORY",
-			"requestJiraKey", story.Node.JiraKey,
-			"dbJiraKey", nodeMap[story.Node.Id],
-			"finalJiraKey", jiraKey)
 
 		issue := natsModel.GanttChartJiraIssue{
 			NodeId:  story.Node.Id,
@@ -448,14 +415,6 @@ func (s *NatsService) publishWorkflowToGanttChart(ctx context.Context, tx *sql.T
 		if dbJiraKey, exists := nodeMap[node.Id]; exists && dbJiraKey != "" {
 			jiraKey = &dbJiraKey
 		}
-
-		slog.Info("Processing node for Gantt Chart",
-			"id", node.Id,
-			"title", node.Data.Title,
-			"type", node.Type,
-			"requestJiraKey", node.JiraKey,
-			"dbJiraKey", nodeMap[node.Id],
-			"finalJiraKey", jiraKey)
 
 		// Cảnh báo nếu không có JiraKey
 		if jiraKey == nil {
@@ -591,7 +550,6 @@ func (s *NatsService) publishWorkflowToGanttChart(ctx context.Context, tx *sql.T
 	}
 
 	// Gửi request đến NATS
-	slog.Info("Sending Gantt Chart calculation request to NATS", "request", ganttRequest)
 	requestBytes, err := json.Marshal(ganttRequest)
 	if err != nil {
 		return fmt.Errorf("failed to marshal Gantt Chart request: %w", err)
@@ -601,9 +559,6 @@ func (s *NatsService) publishWorkflowToGanttChart(ctx context.Context, tx *sql.T
 	if err != nil {
 		return fmt.Errorf("failed to calculate Gantt Chart: %w", err)
 	}
-
-	// Log raw response để debug
-	slog.Info("Received raw response from Gantt Chart service", "response", string(response.Data))
 
 	// Xử lý response có cấu trúc lồng ghép
 	var ganttResponse natsModel.GanttChartCalculationResponse
@@ -618,15 +573,6 @@ func (s *NatsService) publishWorkflowToGanttChart(ctx context.Context, tx *sql.T
 			"outerSuccess", ganttResponse.Success,
 			"innerSuccess", ganttResponse.Data.Success)
 		return fmt.Errorf("gantt Chart calculation failed")
-	}
-
-	// Log cụ thể các node được cập nhật
-	slog.Info("Issues returned from Gantt Chart service", "count", len(ganttResponse.Data.Data.Issues))
-	for i, issue := range ganttResponse.Data.Data.Issues {
-		slog.Info(fmt.Sprintf("Issue #%d details", i),
-			"nodeId", issue.NodeId,
-			"plannedStart", issue.PlannedStartTime,
-			"plannedEnd", issue.PlannedEndTime)
 	}
 
 	// Cập nhật PlannedStartTime và PlannedEndTime vào database
@@ -655,13 +601,10 @@ func (s *NatsService) publishWorkflowToGanttChart(ctx context.Context, tx *sql.T
 			return fmt.Errorf("failed to update node planned times: %w", err)
 		}
 
-		// Log thành công sau khi đã lưu
-		slog.Info("Successfully updated planned times for nodes", "count", len(nodeUpdates))
 	} else {
 		slog.Warn("No planned times received from Gantt Chart service")
 	}
 
-	slog.Info("Completed Gantt Chart calculation", "projectKey", projectKey)
 	return nil
 }
 
@@ -687,7 +630,6 @@ func (s *NatsService) SyncNodeStatusToJira(ctx context.Context, tx *sql.Tx, node
 	}
 
 	// Send to NATS
-	slog.Info("Sending node status update to Jira", "nodeId", node.ID, "jiraKey", node.JiraKey, "status", node.Status)
 	requestBytes, err := json.Marshal(syncRequest)
 	if err != nil {
 		return fmt.Errorf("failed to marshal sync request: %w", err)
@@ -712,22 +654,19 @@ func (s *NatsService) SyncNodeStatusToJira(ctx context.Context, tx *sql.Tx, node
 		return fmt.Errorf("jira synchronization failed")
 	}
 
-	slog.Info("Successfully synced node status to Jira", "nodeId", node.ID, "jiraKey", node.JiraKey)
 	return nil
 }
 
-// publishWorkflowEditToJira sends workflow edit data to Jira and returns the response
-func (s *NatsService) publishWorkflowEditToJira(ctx context.Context, tx *sql.Tx,
+// PublishWorkflowEditToJira sends workflow edit data to Jira and returns the response
+func (s *NatsService) PublishWorkflowEditToJira(ctx context.Context, tx *sql.Tx,
+	requestId int32,
 	nodes []requests.Node, origNodes []model.Nodes,
 	stories []requests.Story,
 	connections []requests.Connection, origConnections []model.Connections,
 	projectKey string, sprintId *int32) (natsModel.WorkflowEditResponse, error) {
 
-	slog.Info("Starting Jira edit synchronization", "projectKey", projectKey, "sprintId", sprintId)
-	slog.Info("Processing edit", "len stories", len(stories), "len nodes", len(nodes), "len connections", len(connections))
-
 	// First, ensure story assignees have feature_leader role
-	if err := s.assignFeatureLeaderRoles(stories, projectKey); err != nil {
+	if err := s.AssignFeatureLeaderRoles(stories, projectKey); err != nil {
 		return natsModel.WorkflowEditResponse{}, fmt.Errorf("failed to assign feature leader roles: %w", err)
 	}
 
@@ -739,6 +678,12 @@ func (s *NatsService) publishWorkflowEditToJira(ctx context.Context, tx *sql.Tx,
 		Connections:         make([]natsModel.WorkflowEditConnection, 0),
 		ConnectionsToRemove: make([]natsModel.WorkflowEditConnection, 0),
 		NodeMappings:        make([]natsModel.NodeJiraMapping, 0),
+	}
+
+	// Check if request is story
+	storyNode, err := s.checkRequestIsStory(ctx, tx, requestId)
+	if err != nil {
+		slog.Error("failed to check request is story", "error", err)
 	}
 
 	// Create maps for original nodes for quick lookup
@@ -757,17 +702,13 @@ func (s *NatsService) publishWorkflowEditToJira(ctx context.Context, tx *sql.Tx,
 
 	// Process Stories
 	for _, story := range stories {
-		slog.Info("Processing story for edit",
-			"id", story.Node.Id,
-			"title", story.Title,
-			"jiraKey", story.Node.JiraKey)
-
 		issue := natsModel.WorkflowEditIssue{
-			NodeId:     story.Node.Id,
-			Type:       "Story",
-			Title:      story.Title,
-			AssigneeId: &story.Node.Data.Assignee.Id,
-			Action:     "create",
+			NodeId:        story.Node.Id,
+			Type:          "Story",
+			Title:         story.Title,
+			AssigneeId:    &story.Node.Data.Assignee.Id,
+			EstimatePoint: story.Node.Data.EstimatePoint,
+			Action:        "create",
 		}
 
 		// Check if story existed before
@@ -791,25 +732,17 @@ func (s *NatsService) publishWorkflowEditToJira(ctx context.Context, tx *sql.Tx,
 
 	// Process Tasks and Bugs
 	for _, node := range nodes {
-		slog.Info("Processing node for edit",
-			"id", node.Id,
-			"type", node.Type,
-			"title", node.Data.Title,
-			"jiraKey", node.JiraKey)
-
 		if node.Type != string(constants.NodeTypeTask) && node.Type != string(constants.NodeTypeBug) {
-			slog.Info("Skipping node - not a task or bug",
-				"id", node.Id,
-				"type", node.Type)
 			continue
 		}
 
 		issue := natsModel.WorkflowEditIssue{
-			NodeId:     node.Id,
-			Type:       node.Type,
-			Title:      node.Data.Title,
-			AssigneeId: &node.Data.Assignee.Id,
-			Action:     "create",
+			NodeId:        node.Id,
+			Type:          node.Type,
+			Title:         node.Data.Title,
+			AssigneeId:    &node.Data.Assignee.Id,
+			EstimatePoint: node.Data.EstimatePoint,
+			Action:        "create",
 		}
 
 		// Check if node existed before
@@ -835,15 +768,49 @@ func (s *NatsService) publishWorkflowEditToJira(ctx context.Context, tx *sql.Tx,
 	newConnectionsMap := make(map[string]bool)
 	oldConnectionsMap := make(map[string]bool)
 
+	// Xử lý nếu request hiện tại là một story
+	if storyNode != nil {
+		// Tìm tất cả các nodes thuộc về request này
+		requestNodes, err := s.NodeRepo.FindAllNodeByRequestIdTx(ctx, tx, requestId)
+		if err != nil {
+			slog.Error("Failed to find nodes in request", "requestId", requestId, "error", err)
+			// Không return lỗi, chỉ log và tiếp tục xử lý
+		} else {
+			// Duyệt qua tất cả nodes trong request để tìm task và bug
+			for _, node := range requestNodes {
+				// Chỉ xử lý nodes có type là task hoặc bug
+				if node.Type == string(constants.NodeTypeTask) || node.Type == string(constants.NodeTypeBug) {
+					// Tạo connection key để tránh duplicates
+					connectionKey := fmt.Sprintf("%s-%s-%s", storyNode.ID, node.ID, "contains")
+					if !newConnectionsMap[connectionKey] {
+						// Tạo connection từ story đến task/bug này
+						connection := natsModel.WorkflowEditConnection{
+							FromIssueKey: storyNode.ID,
+							ToIssueKey:   node.ID,
+							Type:         "contains", // Sử dụng type "contains" thay vì "relates to"
+						}
+
+						// Thêm connection vào danh sách
+						syncRequest.Connections = append(syncRequest.Connections, connection)
+						newConnectionsMap[connectionKey] = true
+
+						// Thêm mapping
+						syncRequest.NodeMappings = append(syncRequest.NodeMappings, natsModel.NodeJiraMapping{
+							NodeId:  storyNode.ID,
+							JiraKey: *storyNode.JiraKey,
+						})
+					}
+				}
+			}
+		}
+	}
+
 	// Process new connections
 	for _, conn := range connections {
 		fromNode := findNodeByIdFromRequest(nodes, stories, conn.From)
 		toNode := findNodeByIdFromRequest(nodes, stories, conn.To)
 
 		if fromNode == nil || toNode == nil {
-			slog.Info("Skipping connection - node not found",
-				"fromId", conn.From,
-				"toId", conn.To)
 			continue
 		}
 
@@ -941,7 +908,7 @@ func (s *NatsService) publishWorkflowEditToJira(ctx context.Context, tx *sql.Tx,
 	}
 
 	// Send to NATS
-	slog.Info("Sending workflow edit request to NATS",
+	slog.Debug("Sending workflow edit request to NATS",
 		"issues", len(syncRequest.Issues),
 		"connections", len(syncRequest.Connections),
 		"connectionsToRemove", len(syncRequest.ConnectionsToRemove),
@@ -973,10 +940,6 @@ func (s *NatsService) publishWorkflowEditToJira(ctx context.Context, tx *sql.Tx,
 
 	// Update JiraKeys in database from response
 	for _, issue := range syncResponse.Data.Data.Issues {
-		slog.Info("Updating JiraKey from edit response",
-			"nodeId", issue.NodeId,
-			"jiraKey", issue.JiraKey)
-
 		if err := s.NodeRepo.UpdateJiraKey(ctx, tx, issue.NodeId, issue.JiraKey); err != nil {
 			return natsModel.WorkflowEditResponse{}, fmt.Errorf("failed to update JiraKey: %w", err)
 		}
@@ -984,9 +947,7 @@ func (s *NatsService) publishWorkflowEditToJira(ctx context.Context, tx *sql.Tx,
 
 	// Also process the node mappings from the response
 	if len(syncResponse.Data.Data.NodeMappings) > 0 {
-		slog.Info("Processing node mappings from response", "count", len(syncResponse.Data.Data.NodeMappings))
 		for _, mapping := range syncResponse.Data.Data.NodeMappings {
-			slog.Info("Mapping from response", "nodeId", mapping.NodeId, "jiraKey", mapping.JiraKey)
 			if err := s.NodeRepo.UpdateJiraKey(ctx, tx, mapping.NodeId, mapping.JiraKey); err != nil {
 				slog.Error("Failed to update node mapping", "error", err, "nodeId", mapping.NodeId)
 				// Continue processing other mappings
@@ -994,6 +955,73 @@ func (s *NatsService) publishWorkflowEditToJira(ctx context.Context, tx *sql.Tx,
 		}
 	}
 
-	slog.Info("Completed Jira edit synchronization", "projectKey", projectKey)
 	return syncResponse, nil
+}
+
+func (s *NatsService) SyncJiraWhenReassignNode(ctx context.Context, tx *sql.Tx, node model.Nodes) error {
+	// Nếu node không có Jira key thì không cần đồng bộ
+	if node.JiraKey == nil {
+		return nil
+	}
+
+	// Kiểm tra AssigneeID mới
+	if node.AssigneeID == nil {
+		return fmt.Errorf("missing assignee ID in node")
+	}
+
+	// Lấy thông tin người dùng mới
+	newUserId := *node.AssigneeID
+
+	// Giả sử chúng ta không biết người dùng cũ, mặc định là 0
+	// Trong tương lai nếu cần, chúng ta có thể cải tiến để truyền oldUserId từ nơi gọi
+	var oldUserId int32 = 0
+
+	// Tạo request để gửi đến Jira
+	syncRequest := natsModel.JiraIssueReassignRequest{
+		JiraKey:   *node.JiraKey,
+		NodeId:    node.ID,
+		OldUserId: oldUserId,
+		NewUserId: newUserId,
+	}
+
+	// Chuyển đổi request sang JSON
+	requestBytes, err := json.Marshal(syncRequest)
+	if err != nil {
+		return fmt.Errorf("failed to marshal reassignment request: %w", err)
+	}
+
+	// Gửi request đến NATS
+	response, err := s.NatsClient.Request(constants.NatsTopicJiraIssueReassignRequest, requestBytes, 30*time.Second)
+	if err != nil {
+		return fmt.Errorf("failed to send reassignment request to Jira: %w", err)
+	}
+
+	// Xử lý response
+	var syncResponse natsModel.JiraIssueReassignResponse
+	if err := json.Unmarshal(response.Data, &syncResponse); err != nil {
+		return fmt.Errorf("failed to unmarshal Jira reassignment response: %w", err)
+	}
+
+	// Kiểm tra kết quả
+	if !syncResponse.Success {
+		errorMsg := "unknown error"
+		if syncResponse.ErrorMessage != nil {
+			errorMsg = *syncResponse.ErrorMessage
+		}
+		slog.Error("Jira reassignment failed",
+			"nodeId", node.ID,
+			"jiraKey", *node.JiraKey,
+			"error", errorMsg)
+		return fmt.Errorf("jira reassignment failed: %s", errorMsg)
+	}
+
+	return nil
+}
+
+func (s *NatsService) checkRequestIsStory(ctx context.Context, tx *sql.Tx, requestId int32) (*model.Nodes, error) {
+	resultNode, err := s.NodeRepo.FindOneNodeBySubRequestID(ctx, tx, requestId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get request: %w", err)
+	}
+	return &resultNode, nil
 }

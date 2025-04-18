@@ -1,10 +1,11 @@
 package constants
 
 const (
-	NatsTopicRoleAssignmentRequest = "role.assign.request"
-	NatsTopicWorkflowSyncRequest   = "workflow.sync.request"
-	NatsTopicNodeStatusSyncRequest = "node.status.sync.request"
-	NatsTopicWorkflowEditRequest   = "workflow.edit.request"
+	NatsTopicRoleAssignmentRequest    = "role.assign.request"
+	NatsTopicWorkflowSyncRequest      = "workflow.sync.request"
+	NatsTopicNodeStatusSyncRequest    = "node.status.sync.request"
+	NatsTopicWorkflowEditRequest      = "workflow.edit.request"
+	NatsTopicJiraIssueReassignRequest = "jira.issue.reassign.request"
 
 	// Gantt Chart calculation
 	NatsTopicGanttChartCalculationRequest  = "ganttchart.calculation.request"

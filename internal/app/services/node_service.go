@@ -697,6 +697,14 @@ func (s *NodeService) ReassignNode(ctx context.Context, nodeId string, userId in
 		return err
 	}
 
+	// Check if node has Jira Key, then send update to Jira
+	if node.JiraKey != nil {
+		err := s.NatsService.SyncJiraWhenReassignNode(ctx, tx, node)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

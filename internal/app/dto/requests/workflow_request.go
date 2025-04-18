@@ -51,7 +51,7 @@ type NodeDataEditorContent struct {
 type NodeData struct {
 	Type          string
 	Title         string
-	DueIn         int32
+	EndDate       *time.Time
 	Assignee      NodeDataAssignee
 	EndType       string
 	SubRequestID  *int32
