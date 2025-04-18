@@ -852,10 +852,6 @@ func (s *NodeService) SubmitNodeForm(ctx context.Context, userId int32, nodeId s
 			return fmt.Errorf("update node status to completed fail: %w", err)
 		}
 
-		// calculate request progress
-		if err := s.RequestService.UpdateCalculateRequestProgress(ctx, tx, node.RequestID); err != nil {
-			return fmt.Errorf("update calculate request progress fail: %w", err)
-		}
 	}
 
 	// Update Calculate Request Progress
@@ -905,6 +901,21 @@ func (s *NodeService) EditNodeForm(ctx context.Context, userId int32, nodeId str
 		return fmt.Errorf("create form field data fail: %w", err)
 	}
 
+	nodeForm, err := s.NodeRepo.FindOneNodeFormByNodeIdAndFormId(ctx, s.DB, nodeId, formDataId)
+	if err != nil {
+		return fmt.Errorf("find node form by node id and form id fail: %w", err)
+	}
+
+	// Update Node Form Is Submitted
+	nodeForm.SubmittedByUserID = &userId
+	now := time.Now().UTC().Add(7 * time.Hour)
+	nodeForm.SubmittedAt = &now
+	nodeForm.LastUpdateUserID = &userId
+	nodeForm.IsSubmitted = true
+	if err := s.NodeRepo.UpdateNodeForm(ctx, tx, nodeForm); err != nil {
+		return fmt.Errorf("update node form is submitted fail: %w", err)
+	}
+
 	node, err := s.NodeRepo.FindOneNodeByNodeIdTx(ctx, tx, nodeId)
 	if err != nil {
 		return fmt.Errorf("find node by node id fail: %w", err)
@@ -935,10 +946,6 @@ func (s *NodeService) EditNodeForm(ctx context.Context, userId int32, nodeId str
 			return fmt.Errorf("update node status to completed fail: %w", err)
 		}
 
-		// calculate request progress
-		if err := s.RequestService.UpdateCalculateRequestProgress(ctx, tx, node.RequestID); err != nil {
-			return fmt.Errorf("update calculate request progress fail: %w", err)
-		}
 	}
 
 	// Update Calculate Request Progress
