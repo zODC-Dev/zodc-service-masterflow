@@ -32,6 +32,7 @@ type RequestResponse struct {
 	CompletedAt  *time.Time            `json:"completedAt"`
 	CanceledAt   *time.Time            `json:"canceledAt"`
 	TerminatedAt *time.Time            `json:"terminatedAt"`
+	ProjectKey   *string               `json:"projectKey"`
 }
 
 type RequestDetailResponse struct {

@@ -208,7 +208,8 @@ func (r *RequestRepository) FindOneRequestByRequestId(ctx context.Context, db *s
 	).WHERE(
 		Requests.ID.EQ(postgres.Int32(requestId)),
 	).ORDER_BY(
-		Nodes.Key.DESC(),
+		Nodes.Level.ASC(),
+		NodeForms.Level.ASC(),
 	)
 
 	result := results.RequestDetail{}

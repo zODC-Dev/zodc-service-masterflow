@@ -28,6 +28,7 @@ type NodeDataFormAttached struct {
 	Permission                    string
 	IsOriginal                    bool
 	NodeFormApprovalOrRejectUsers []NodeDataFormAttachedApprovalOrRejectUsers
+	Level                         *int32
 }
 
 type NodeDataAssignee struct {
@@ -78,6 +79,8 @@ type Node struct {
 	ParentId     string
 	JiraKey      *string
 	LastSyncedAt *time.Time
+
+	Level *int32
 
 	Type string
 

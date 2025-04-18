@@ -141,6 +141,8 @@ func (s *WorkflowService) MapToWorkflowNodeResponse(node model.Nodes) (responses
 
 		StartedAt:   node.ActualStartTime,
 		CompletedAt: node.ActualEndTime,
+
+		Level: node.Level,
 	}
 
 	return nodeResponse, nil
@@ -356,6 +358,9 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			JiraKey: storyReq.Node.JiraKey,
 
 			JiraLinkURL: storyReq.Node.Data.JiraLinkUrl,
+
+			// Index
+			Level: storyReq.Node.Level,
 		}
 
 		if formSystemVersionId, exists := formSystemTagMap["TASK"]; exists {
@@ -434,6 +439,9 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 				JiraKey: storyNodeReq.JiraKey,
 
 				JiraLinkURL: storyNodeReq.Data.JiraLinkUrl,
+
+				//
+				Level: storyNodeReq.Level,
 			}
 
 			if storyNodeReq.ParentId != "" {
@@ -570,6 +578,9 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 			Subject: workflowNodeReq.Data.EditorContent.Subject,
 			Body:    workflowNodeReq.Data.EditorContent.Body,
+
+			// Index
+			Level: workflowNodeReq.Level,
 		}
 
 		if workflowNodeReq.Data.EditorContent.Cc != nil {
@@ -686,6 +697,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 				IsOriginal:               formAttached.IsOriginal,
 				TemplateID:               formAttached.FormTemplateId,
 				NodeID:                   workflowNodeReq.Id,
+				Level:                    formAttached.Level,
 			}
 			if formAttached.DataId != "" {
 				formAttachedModel.DataID = &formAttached.DataId
@@ -1066,6 +1078,7 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 				IsOriginal:                    nodeForm.IsOriginal,
 				FormTemplateId:                nodeForm.TemplateID,
 				NodeFormApprovalOrRejectUsers: approveUserIds,
+				Level:                         nodeForm.Level,
 			}
 			if nodeForm.DataID != nil {
 				formAttachedResponse.DataId = *nodeForm.DataID

@@ -16,6 +16,7 @@ type NodeForms struct {
 	CreatedAt                time.Time
 	UpdatedAt                time.Time
 	DeletedAt                *time.Time
+	Level                    *int32
 	Permission               string
 	Key                      string
 	OptionKey                *string

@@ -106,6 +106,11 @@ func (s *RequestService) FindAllRequestHandler(ctx context.Context, requestQuery
 			return paginatedResponse, err
 		}
 
+		// Project Key
+		if request.Workflow.ProjectKey != nil {
+			requestResponse.ProjectKey = request.Workflow.ProjectKey
+		}
+
 		// Parent Key
 		if request.ParentID != nil {
 			parentRequest, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, *request.ParentID)
