@@ -1199,6 +1199,10 @@ func (s *NodeService) GetNodeStoryByAssignee(ctx context.Context, userId int32) 
 		if err := utils.Mapper(story.Workflows, &workflowResponse); err != nil {
 			return nil, err
 		}
+		if story.SubRequestID != nil {
+			workflowResponse.RequestId = *story.SubRequestID
+		}
+
 		categoryResponse := responses.CategoryResponse{}
 		if err := utils.Mapper(story.Category, &categoryResponse); err != nil {
 			return nil, err

@@ -7,7 +7,7 @@ on:
       - dev
 env:
   SERVICE_NAME: zodc-service-masterflow
-  VERSION: 1.1.23
+  VERSION: 1.1.24
   REGISTRY_PROJECT: zodc
 
 jobs:
