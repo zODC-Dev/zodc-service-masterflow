@@ -413,7 +413,7 @@ func (r *NodeRepository) FindAllNodeStoryByAssigneeId(ctx context.Context, db *s
 		Categories.AllColumns,
 	).FROM(
 		Nodes.
-			LEFT_JOIN(Requests, Nodes.RequestID.EQ(Requests.ID)).
+			LEFT_JOIN(Requests, Nodes.SubRequestID.EQ(Requests.ID)).
 			LEFT_JOIN(WorkflowVersions, Requests.WorkflowVersionID.EQ(WorkflowVersions.ID)).
 			LEFT_JOIN(Workflows, WorkflowVersions.WorkflowID.EQ(Workflows.ID)).
 			LEFT_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)),
