@@ -3,7 +3,6 @@ package repositories
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -128,7 +127,6 @@ func (r *WorkflowRepository) FindAllWorkflowTemplates(ctx context.Context, db *s
 	result := []results.WorkflowTemplate{}
 
 	err := statement.QueryContext(ctx, db, &result)
-	fmt.Println(statement.DebugSql())
 
 	return result, err
 }

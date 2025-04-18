@@ -46,7 +46,8 @@ type ConnectionWithNode struct {
 
 type Request struct {
 	model.Requests
-	Nodes []model.Nodes
+	Nodes    []model.Nodes
+	Workflow model.Workflows
 }
 
 type Count struct {

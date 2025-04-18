@@ -25,13 +25,14 @@ type RequestResponse struct {
 	Title        string                `json:"title"`
 	Status       string                `json:"status"`
 	ParentKey    int32                 `json:"parentKey"`
-	Progress     int32                 `json:"progress"`
+	Progress     float32               `json:"progress"`
 	CurrentTasks []CurrentTaskResponse `json:"currentTasks,omitempty"`
 	SprintId     int32                 `json:"sprintId"`
 	StartedAt    *time.Time            `json:"startedAt"`
 	CompletedAt  *time.Time            `json:"completedAt"`
 	CanceledAt   *time.Time            `json:"canceledAt"`
 	TerminatedAt *time.Time            `json:"terminatedAt"`
+	ProjectKey   *string               `json:"projectKey"`
 }
 
 type RequestDetailResponse struct {
@@ -51,7 +52,8 @@ type RequestTaskResponse struct {
 	RequestID        int32          `json:"requestId"`
 	RequestTitle     string         `json:"requestTitle"`
 	RequestProgress  float32        `json:"requestProgress"`
-	ProjectKey       string         `json:"projectKey"`
+	ProjectKey       *string        `json:"projectKey"`
+	JiraLinkUrl      *string        `json:"jiraLinkUrl"`
 	Assignee         types.Assignee `json:"assignee"`
 	Status           string         `json:"status"`
 	PlannedStartTime *time.Time     `json:"plannedStartTime"`
@@ -65,10 +67,13 @@ type RequestTaskResponse struct {
 }
 
 type RequestTaskCountResponse struct {
-	OverdueCount   int32 `json:"overdueCount"`
-	TotalCount     int32 `json:"totalCount"`
-	CompletedCount int32 `json:"completedCount"`
-	TodoCount      int32 `json:"todoCount"`
+	OverdueCount    int32 `json:"overdueCount"`
+	TotalCount      int32 `json:"totalCount"`
+	CompletedCount  int32 `json:"completedCount"`
+	TodoCount       int32 `json:"todoCount"`
+	InProgressCount int32 `json:"inProgressCount"`
+	TodayCount      int32 `json:"todayCount"`
+	InComingCount   int32 `json:"inComingCount"`
 }
 
 type RequestOverviewResponse struct {
@@ -94,6 +99,7 @@ type RequestCompletedFormDataResponse struct {
 }
 
 type RequestCompletedFormInputResponse struct {
+	DataId      *string                                `json:"dataId"`
 	Key         string                                 `json:"key"`
 	Type        string                                 `json:"type"`
 	SubmittedAt time.Time                              `json:"submittedAt"`

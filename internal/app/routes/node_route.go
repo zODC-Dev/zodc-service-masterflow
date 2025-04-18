@@ -41,16 +41,19 @@ func NodeRoute(group *echo.Group, db *sql.DB) {
 
 	formService := services.NewFormService(db, formRepo, natsClient)
 
+	notificationService := services.NewNotificationService(natsClient)
+
 	nodeService := services.NewNodeService(services.NodeService{
-		NodeRepo:       nodeRepo,
-		ConnectionRepo: connectionRepo,
-		RequestRepo:    requestRepo,
-		DB:             db,
-		FormRepo:       formRepo,
-		NatsClient:     natsClient,
-		NatsService:    natsService,
-		RequestService: requestService,
-		FormService:    formService,
+		NodeRepo:            nodeRepo,
+		ConnectionRepo:      connectionRepo,
+		RequestRepo:         requestRepo,
+		DB:                  db,
+		FormRepo:            formRepo,
+		NatsClient:          natsClient,
+		NatsService:         natsService,
+		RequestService:      requestService,
+		FormService:         formService,
+		NotificationService: notificationService,
 	})
 
 	workflowService := services.NewWorkflowService(services.WorkflowService{
@@ -81,6 +84,8 @@ func NodeRoute(group *echo.Group, db *sql.DB) {
 		nodeRoute.POST("/:id/reassign/:userId", nodeController.ReassignNode)
 
 		nodeRoute.POST("/:id/forms/:formId/submit", nodeController.SubmitNodeForm)
+		nodeRoute.PUT("/:id/forms/:formDataId/edit", nodeController.EditNodeForm)
+
 		nodeRoute.POST("/:id/forms/:formId/approve", nodeController.ApproveNodeForm)
 		nodeRoute.POST("/:id/forms/:formId/reject", nodeController.RejectNodeForm)
 

@@ -40,18 +40,21 @@ func WorkflowRoute(group *echo.Group, db *sql.DB) {
 		FormRepo:    formRepo,
 	})
 
+	notificationService := services.NewNotificationService(natsClient)
+
 	workflowService := services.NewWorkflowService(services.WorkflowService{
-		DB:             db,
-		WorkflowRepo:   workflowRepo,
-		FormRepo:       formRepo,
-		CategoryRepo:   categoryRepo,
-		UserAPI:        userApi,
-		RequestRepo:    requestRepo,
-		ConnectionRepo: connectionRepo,
-		NodeRepo:       nodeRepo,
-		NodeService:    nodeService,
-		NatsClient:     natsClient,
-		NatsService:    natsService,
+		DB:                  db,
+		WorkflowRepo:        workflowRepo,
+		FormRepo:            formRepo,
+		CategoryRepo:        categoryRepo,
+		UserAPI:             userApi,
+		RequestRepo:         requestRepo,
+		ConnectionRepo:      connectionRepo,
+		NodeRepo:            nodeRepo,
+		NodeService:         nodeService,
+		NatsClient:          natsClient,
+		NatsService:         natsService,
+		NotificationService: notificationService,
 	})
 
 	nodeService.WorkflowService = workflowService

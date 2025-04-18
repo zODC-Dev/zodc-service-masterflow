@@ -80,6 +80,9 @@ CREATE TABLE nodes (
     width NUMERIC NOT NULL,
     height NUMERIC NOT NULL,
 
+    -- Index,
+    level INT,
+
     key SERIAL NOT NULL,
     jira_key TEXT,
 
@@ -157,6 +160,9 @@ CREATE TABLE node_forms (
     created_at TIMESTAMP DEFAULT now () NOT NULL,
     updated_at TIMESTAMP DEFAULT now () NOT NULL,
     deleted_at TIMESTAMP,
+
+    -- Index,
+    level INT,
 
     permission TEXT NOT NULL,
     key TEXT NOT NULL, -- FE GENERATE UUID

@@ -176,6 +176,18 @@ func (r *FormRepository) CreateFormFieldDatas(ctx context.Context, tx *sql.Tx, f
 	return err
 }
 
+func (r *FormRepository) RemoveAllFormFieldDataByFormDataId(ctx context.Context, tx *sql.Tx, formDataId string) error {
+	FormFieldData := table.FormFieldData
+
+	statement := FormFieldData.DELETE().WHERE(
+		FormFieldData.FormDataID.EQ(postgres.String(formDataId)),
+	)
+
+	_, err := statement.ExecContext(ctx, tx)
+
+	return err
+}
+
 func (r *FormRepository) FindOneFormTemplateByFormTemplateId(ctx context.Context, db *sql.DB, formTemplateId int32) (results.FormResult, error) {
 	FormTemplates := table.FormTemplates
 	FormTemplateVersions := table.FormTemplateVersions

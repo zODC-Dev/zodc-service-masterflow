@@ -22,32 +22,34 @@ import (
 )
 
 type NodeService struct {
-	DB              *sql.DB
-	NodeRepo        *repositories.NodeRepository
-	ConnectionRepo  *repositories.ConnectionRepository
-	RequestRepo     *repositories.RequestRepository
-	WorkflowService *WorkflowService
-	NatsService     *NatsService
-	NatsClient      *nats.NATSClient
-	FormRepo        *repositories.FormRepository
-	FormService     *FormService
-	UserAPI         *externals.UserAPI
-	RequestService  *RequestService
+	DB                  *sql.DB
+	NodeRepo            *repositories.NodeRepository
+	ConnectionRepo      *repositories.ConnectionRepository
+	RequestRepo         *repositories.RequestRepository
+	WorkflowService     *WorkflowService
+	NatsService         *NatsService
+	NatsClient          *nats.NATSClient
+	FormRepo            *repositories.FormRepository
+	FormService         *FormService
+	UserAPI             *externals.UserAPI
+	RequestService      *RequestService
+	NotificationService *NotificationService
 }
 
 func NewNodeService(cfg NodeService) *NodeService {
 	nodeService := NodeService{
-		DB:              cfg.DB,
-		NodeRepo:        cfg.NodeRepo,
-		ConnectionRepo:  cfg.ConnectionRepo,
-		RequestRepo:     cfg.RequestRepo,
-		WorkflowService: cfg.WorkflowService,
-		NatsService:     cfg.NatsService,
-		NatsClient:      cfg.NatsClient,
-		FormRepo:        cfg.FormRepo,
-		FormService:     cfg.FormService,
-		UserAPI:         cfg.UserAPI,
-		RequestService:  cfg.RequestService,
+		DB:                  cfg.DB,
+		NodeRepo:            cfg.NodeRepo,
+		ConnectionRepo:      cfg.ConnectionRepo,
+		RequestRepo:         cfg.RequestRepo,
+		WorkflowService:     cfg.WorkflowService,
+		NatsService:         cfg.NatsService,
+		NatsClient:          cfg.NatsClient,
+		FormRepo:            cfg.FormRepo,
+		FormService:         cfg.FormService,
+		UserAPI:             cfg.UserAPI,
+		RequestService:      cfg.RequestService,
+		NotificationService: cfg.NotificationService,
 	}
 	return &nodeService
 }
@@ -86,7 +88,7 @@ func (s *NodeService) CheckIfAllNodeFormIsApprovedOrRejected(ctx context.Context
 
 func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nodeId string, isTrue bool, userId int32) error {
 	// Update Node Form
-	node, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
+	node, err := s.NodeRepo.FindOneNodeByNodeIdTx(ctx, tx, nodeId)
 	if err != nil {
 		return err
 	}
@@ -330,8 +332,26 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 					return err
 				}
 
+				// Notify
+				users, err := s.UserAPI.FindUsersByUserIds([]int32{*node.AssigneeID})
+				if err != nil {
+					return err
+				}
+
+				notification := types.Notification{
+					ToUserIds: []string{strconv.Itoa(int(users.Data[0].ID))},
+					Subject:   "You Have New Task Available Today",
+					Body:      fmt.Sprintf("%s is ready to start.", node.Title),
+				}
+				s.NotificationService.SendNotification(ctx, notification)
+
 			}
 		}
+	}
+
+	// Calculate Request Process
+	if err := s.RequestService.UpdateCalculateRequestProgress(ctx, tx, node.RequestID); err != nil {
+		return fmt.Errorf("update calculate request progress fail: %w", err)
 	}
 
 	return nil
@@ -628,7 +648,7 @@ func (s *NodeService) GetNodeJiraForm(ctx context.Context, nodeId string) (respo
 	return response, nil
 }
 
-func (s *NodeService) ReassignNode(ctx context.Context, nodeId string, userId int32) error {
+func (s *NodeService) ReassignNode(ctx context.Context, nodeId string, userId int32, userIdReq int32) error {
 	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
@@ -648,6 +668,30 @@ func (s *NodeService) ReassignNode(ctx context.Context, nodeId string, userId in
 	if err := s.NodeRepo.UpdateNode(ctx, tx, node); err != nil {
 		return err
 	}
+
+	// Notify
+	users, err := s.UserAPI.FindUsersByUserIds([]int32{userId, userIdReq})
+	if err != nil {
+		return err
+	}
+
+	userMap := make(map[int32]types.Assignee)
+	for _, user := range users.Data {
+		userMap[user.ID] = types.Assignee{
+			Id:           user.ID,
+			Name:         user.Name,
+			Email:        user.Email,
+			AvatarUrl:    user.AvatarUrl,
+			IsSystemUser: user.IsSystemUser,
+		}
+	}
+
+	notification := types.Notification{
+		ToUserIds: []string{strconv.Itoa(int(userId))},
+		Subject:   fmt.Sprintf("New task assigned: %s", node.Title),
+		Body:      fmt.Sprintf("You have been assigned a new task by %s.", userMap[userIdReq].Name),
+	}
+	s.NotificationService.SendNotification(ctx, notification)
 
 	if err := tx.Commit(); err != nil {
 		return err
@@ -696,11 +740,6 @@ func (s *NodeService) ApproveNode(ctx context.Context, userId int32, nodeId stri
 		return fmt.Errorf("logic for condition node fail: %w", err)
 	}
 
-	//
-	if err := s.RequestService.UpdateCalculateRequestProgress(ctx, tx, node.RequestID); err != nil {
-		return fmt.Errorf("update calculate request progress fail: %w", err)
-	}
-
 	// Commit
 	if err := tx.Commit(); err != nil {
 		return err
@@ -737,11 +776,6 @@ func (s *NodeService) RejectNode(ctx context.Context, userId int32, nodeId strin
 	err = s.LogicForConditionNode(ctx, tx, nodeId, false, userId)
 	if err != nil {
 		return fmt.Errorf("logic for condition node fail: %w", err)
-	}
-
-	//
-	if err := s.RequestService.UpdateCalculateRequestProgress(ctx, tx, node.RequestID); err != nil {
-		return fmt.Errorf("update calculate request progress fail: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -803,7 +837,7 @@ func (s *NodeService) SubmitNodeForm(ctx context.Context, userId int32, nodeId s
 
 	isCompletedNode := true
 	for _, nodeForm := range node.NodeForms {
-		if !nodeForm.IsSubmitted && nodeForm.Permission == string(constants.NodeFormPermissionInput) {
+		if !nodeForm.IsSubmitted && (nodeForm.Permission == string(constants.NodeFormPermissionInput) || nodeForm.Permission == string(constants.NodeFormPermissionEdit)) {
 			isCompletedNode = false
 			break
 		}
@@ -826,10 +860,100 @@ func (s *NodeService) SubmitNodeForm(ctx context.Context, userId int32, nodeId s
 			return fmt.Errorf("update node status to completed fail: %w", err)
 		}
 
-		// calculate request progress
-		if err := s.RequestService.UpdateCalculateRequestProgress(ctx, tx, node.RequestID); err != nil {
-			return fmt.Errorf("update calculate request progress fail: %w", err)
+	}
+
+	// Update Calculate Request Progress
+	if err := s.RequestService.UpdateCalculateRequestProgress(ctx, tx, node.RequestID); err != nil {
+		return fmt.Errorf("update calculate request progress fail: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit fail: %w", err)
+	}
+
+	return nil
+}
+
+func (s *NodeService) EditNodeForm(ctx context.Context, userId int32, nodeId string, formDataId string, req *[]requests.SubmitNodeFormRequest) error {
+	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Remove All Form Field Data
+	if err := s.FormRepo.RemoveAllFormFieldDataByFormDataId(ctx, tx, formDataId); err != nil {
+		return fmt.Errorf("remove all form field data by form data id fail: %w", err)
+	}
+
+	// Find Form Data
+	formData, err := s.FormRepo.FindFormDataById(ctx, s.DB, formDataId)
+	if err != nil {
+		return fmt.Errorf("find node form by node id and form id fail: %w", err)
+	}
+
+	fieldMap := map[string]int32{}
+	for _, formField := range formData.FormTemplateFields {
+		fieldMap[formField.FieldID] = formField.ID
+	}
+
+	formFieldData := []model.FormFieldData{}
+	for _, formField := range *req {
+		formFieldData = append(formFieldData, model.FormFieldData{
+			FormTemplateFieldID: fieldMap[formField.FieldId],
+			Value:               formField.Value,
+			FormDataID:          formDataId,
+		})
+	}
+	if err := s.FormRepo.CreateFormFieldDatas(ctx, tx, formFieldData); err != nil {
+		return fmt.Errorf("create form field data fail: %w", err)
+	}
+
+	nodeForm, err := s.NodeRepo.FindOneNodeFormByNodeIdAndFormId(ctx, s.DB, nodeId, formDataId)
+	if err != nil {
+		return fmt.Errorf("find node form by node id and form id fail: %w", err)
+	}
+
+	// Update Node Form Is Submitted
+	nodeForm.SubmittedByUserID = &userId
+	now := time.Now().UTC().Add(7 * time.Hour)
+	nodeForm.SubmittedAt = &now
+	nodeForm.LastUpdateUserID = &userId
+	nodeForm.IsSubmitted = true
+	if err := s.NodeRepo.UpdateNodeForm(ctx, tx, nodeForm); err != nil {
+		return fmt.Errorf("update node form is submitted fail: %w", err)
+	}
+
+	node, err := s.NodeRepo.FindOneNodeByNodeIdTx(ctx, tx, nodeId)
+	if err != nil {
+		return fmt.Errorf("find node by node id fail: %w", err)
+	}
+
+	isCompletedNode := true
+	for _, nodeForm := range node.NodeForms {
+		if !nodeForm.IsSubmitted && (nodeForm.Permission == string(constants.NodeFormPermissionInput) || nodeForm.Permission == string(constants.NodeFormPermissionEdit)) {
+			isCompletedNode = false
+			break
 		}
+	}
+
+	// Update Node To Completed
+	if isCompletedNode {
+		if err := s.CompleteNodeHandler(ctx, nodeId, userId, true); err != nil {
+			return fmt.Errorf("complete node handler fail: %w", err)
+		}
+
+		nodeModel := model.Nodes{}
+		utils.Mapper(node, &nodeModel)
+		nodeModel.Status = string(constants.NodeStatusCompleted)
+
+		actualEndTime := time.Now().UTC().Add(7 * time.Hour)
+		nodeModel.ActualEndTime = &actualEndTime
+
+		if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
+			return fmt.Errorf("update node status to completed fail: %w", err)
+		}
+
 	}
 
 	// Update Calculate Request Progress
@@ -1003,11 +1127,14 @@ func (s *NodeService) GetNodeTaskDetail(ctx context.Context, nodeId string) (res
 			IsCurrent:        node.IsCurrent,
 			IsApproved:       node.IsApproved,
 			IsRejected:       node.IsRejected,
+			ProjectKey:       request.Workflow.ProjectKey,
+			JiraLinkUrl:      node.JiraLinkURL,
 		},
 		RequestRequestBy: mapUser(&request.UserID),
 		IsApproval:       node.IsApproved,
 		UpdatedAt:        node.UpdatedAt,
 		JiraLinkURL:      node.JiraLinkURL,
+		ProjectKey:       request.Workflow.ProjectKey,
 	}
 
 	if parentNode != nil {

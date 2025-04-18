@@ -106,6 +106,11 @@ func (s *RequestService) FindAllRequestHandler(ctx context.Context, requestQuery
 			return paginatedResponse, err
 		}
 
+		// Project Key
+		if request.Workflow.ProjectKey != nil {
+			requestResponse.ProjectKey = request.Workflow.ProjectKey
+		}
+
 		// Parent Key
 		if request.ParentID != nil {
 			parentRequest, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, *request.ParentID)
@@ -431,6 +436,8 @@ func (s *RequestService) GetRequestTasksHandler(ctx context.Context, requestId i
 			Assignee:         assignees[*node.AssigneeID],
 			IsApproved:       node.IsApproved,
 			IsRejected:       node.IsRejected,
+			ProjectKey:       request.Workflow.ProjectKey,
+			JiraLinkUrl:      node.JiraLinkURL,
 		}
 
 		// Task Key
@@ -477,28 +484,6 @@ func (s *RequestService) GetRequestTasksByProjectHandler(ctx context.Context, re
 			if node.Status == string(constants.NodeStatusTodo) {
 				total--
 			}
-			// subRequest, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, *node.SubRequestID)
-			// if err != nil {
-			// 	return paginatedResponse, err
-			// }
-
-			// for _, subNode := range subRequest.Nodes {
-			// 	if subNode.Type == string(constants.NodeTypeStart) || subNode.Type == string(constants.NodeTypeEnd) {
-			// 		continue
-			// 	}
-			// 	// Only unique userIds
-			// 	if _, exists := existingUserIds[*subNode.AssigneeID]; !exists {
-			// 		existingUserIds[*subNode.AssigneeID] = true
-			// 		userIds = append(userIds, *subNode.AssigneeID)
-			// 	}
-
-			// 	// Append node
-			// 	subNodeModel := results.NodeResult{}
-			// 	if err := utils.Mapper(subNode, &subNodeModel); err != nil {
-			// 		return paginatedResponse, err
-			// 	}
-			// 	nodes = append(nodes, subNodeModel)
-			// }
 		} else {
 			// Only unique userIds
 			if _, exists := existingUserIds[*node.AssigneeID]; !exists {
@@ -552,10 +537,8 @@ func (s *RequestService) GetRequestTasksByProjectHandler(ctx context.Context, re
 			RequestID:        node.RequestID,
 			IsApproved:       node.IsApproved,
 			IsRejected:       node.IsRejected,
-		}
-
-		if node.Workflows.ProjectKey != nil {
-			requestTask.ProjectKey = *node.Workflows.ProjectKey
+			ProjectKey:       node.Workflows.ProjectKey,
+			JiraLinkUrl:      node.JiraLinkURL,
 		}
 
 		if node.JiraKey != nil {
@@ -605,8 +588,21 @@ func (s *RequestService) GetRequestTaskCount(ctx context.Context, userId int32, 
 	if err != nil {
 		return taskCountResponse, err
 	}
+	taskCountResponse.InProgressCount = int32(inProcessCount)
 
 	taskCountResponse.TotalCount = taskCountResponse.CompletedCount + taskCountResponse.OverdueCount + taskCountResponse.TodoCount + int32(inProcessCount)
+
+	todayCount, err := s.RequestRepo.CountRequestTaskByStatusAndUserIdAndQueryParams(ctx, s.DB, userId, constants.NodeStatusToday, queryParams)
+	if err != nil {
+		return taskCountResponse, err
+	}
+	taskCountResponse.TodayCount = int32(todayCount)
+
+	inComingCount, err := s.RequestRepo.CountRequestTaskByStatusAndUserIdAndQueryParams(ctx, s.DB, userId, constants.NodeStatusInComing, queryParams)
+	if err != nil {
+		return taskCountResponse, err
+	}
+	taskCountResponse.InComingCount = int32(inComingCount)
 
 	return taskCountResponse, nil
 }
@@ -920,7 +916,7 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 
 	if request.Workflow.Type == string(constants.WorkflowTypeProject) {
 		for _, node := range request.Nodes {
-			if node.Type == string(constants.NodeTypeTask) {
+			if node.Type == string(constants.NodeTypeTask) || node.Type == string(constants.NodeTypeStory) {
 				formData, err := s.NodeRepo.FindOneFormDataByNodeId(ctx, s.DB, node.ID)
 				if err != nil {
 					return paginatedResponse, err
@@ -958,7 +954,7 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 					}
 				}
 
-				formTemplate, err := s.FormService.FindOneFormTemplateDetailByFormTemplateId(ctx, *node.FormTemplateID)
+				formTemplate, err := s.FormService.FindOneFormTemplateDetailByFormTemplateId(ctx, constants.FormTemplateIDJiraSystemForm)
 				if err != nil {
 					return paginatedResponse, err
 				}
@@ -971,6 +967,7 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 					Template:    formTemplate,
 					Submitter:   assignee,
 					LastUpdate:  assignee,
+					DataId:      node.FormDataID,
 				}
 
 				if node.JiraKey != nil {
@@ -980,6 +977,78 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 				}
 
 				requestCompletedFormResponse = append(requestCompletedFormResponse, requestCompletedFormRes)
+			}
+
+			if node.Type == string(constants.NodeTypeSubWorkflow) || node.Type == string(constants.NodeTypeStory) {
+				subRequest, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, *node.SubRequestID)
+				if err != nil {
+					return paginatedResponse, err
+				}
+
+				for _, subNode := range subRequest.Nodes {
+					if subNode.Type == string(constants.NodeTypeTask) || subNode.Type == string(constants.NodeTypeStory) {
+						formData, err := s.NodeRepo.FindOneFormDataByNodeId(ctx, s.DB, subNode.ID)
+						if err != nil {
+							return paginatedResponse, err
+						}
+
+						total = len(formData)
+
+						users, err := s.UserAPI.FindUsersByUserIds([]int32{*subNode.AssigneeID})
+						if err != nil {
+							return paginatedResponse, err
+						}
+
+						assignee := types.Assignee{}
+						if err := utils.Mapper(users.Data[0], &assignee); err != nil {
+							return paginatedResponse, err
+						}
+
+						formTemplateSystem, err := s.FormRepo.FindOneFormTemplateByFormTemplateId(ctx, s.DB, constants.FormTemplateIDJiraSystemForm)
+						if err != nil {
+							return paginatedResponse, err
+						}
+
+						formFieldMap := make(map[int32]string)
+						for _, formTemplateField := range formTemplateSystem.Fields {
+							formFieldMap[formTemplateField.ID] = formTemplateField.FieldID
+						}
+
+						formDataResponse := []responses.RequestCompletedFormDataResponse{}
+						for _, form := range formData {
+							for _, formFieldData := range form.FormFieldData {
+								formDataResponse = append(formDataResponse, responses.RequestCompletedFormDataResponse{
+									FieldID: formFieldMap[formFieldData.FormTemplateFieldID],
+									Value:   formFieldData.Value,
+								})
+							}
+						}
+
+						formTemplate, err := s.FormService.FindOneFormTemplateDetailByFormTemplateId(ctx, constants.FormTemplateIDJiraSystemForm)
+						if err != nil {
+							return paginatedResponse, err
+						}
+
+						requestCompletedFormRes := responses.RequestCompletedFormInputResponse{
+							SubmittedAt: subNode.UpdatedAt,
+							Type:        subNode.Type,
+							FormData:    formDataResponse,
+							Approval:    []responses.RequestCompletedFormApprovalResponse{},
+							Template:    formTemplate,
+							Submitter:   assignee,
+							LastUpdate:  assignee,
+							DataId:      subNode.FormDataID,
+						}
+
+						if subNode.JiraKey != nil {
+							requestCompletedFormRes.Key = *subNode.JiraKey
+						} else {
+							requestCompletedFormRes.Key = strconv.Itoa(int(subNode.Key))
+						}
+
+						requestCompletedFormResponse = append(requestCompletedFormResponse, requestCompletedFormRes)
+					}
+				}
 			}
 		}
 	} else {
@@ -1089,6 +1158,8 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 			}
 			requestCompletedFormRes.Template = formTemplate
 
+			requestCompletedFormRes.DataId = nodeForm.DataID
+
 			requestCompletedFormResponse = append(requestCompletedFormResponse, requestCompletedFormRes)
 		}
 
@@ -1177,7 +1248,7 @@ func (s *RequestService) GetRequestFileManagerHandler(ctx context.Context, reque
 	return paginatedResponse, nil
 }
 
-func (s *RequestService) GetRequestCompletedFormApprovalHandler(ctx context.Context, requestId int32) ([]responses.RequestCompletedFormApprovalOverviewResponse, error) {
+func (s *RequestService) GetRequestCompletedFormApprovalHandler(ctx context.Context, requestId int32, dataId string) ([]responses.RequestCompletedFormApprovalOverviewResponse, error) {
 	requestCompletedFormApprovalResponse := []responses.RequestCompletedFormApprovalOverviewResponse{}
 
 	request, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, requestId)
@@ -1189,7 +1260,7 @@ func (s *RequestService) GetRequestCompletedFormApprovalHandler(ctx context.Cont
 	existUserIds := make(map[int32]bool)
 
 	for _, node := range request.Nodes {
-		if node.Type == string(constants.NodeTypeApproval) {
+		if node.AssigneeID != nil && !existUserIds[*node.AssigneeID] {
 			userIds = append(userIds, *node.AssigneeID)
 			existUserIds[*node.AssigneeID] = true
 		}
@@ -1220,16 +1291,24 @@ func (s *RequestService) GetRequestCompletedFormApprovalHandler(ctx context.Cont
 		return assignee
 	}
 
-	requestCompletedFormApprovalRes := responses.RequestCompletedFormApprovalOverviewResponse{}
 	for _, node := range request.Nodes {
-		if node.Type == string(constants.NodeTypeApproval) {
-			requestCompletedFormApprovalRes.Key = node.Key
-			requestCompletedFormApprovalRes.TaskTitle = node.Title
-			requestCompletedFormApprovalRes.IsApproved = node.IsApproved
-			requestCompletedFormApprovalRes.IsRejected = node.IsRejected
-			requestCompletedFormApprovalRes.Assignee = mapUser(node.AssigneeID)
+		isApproveNodeInlcudeNodeFormDataId := false
 
-			requestCompletedFormApprovalResponse = append(requestCompletedFormApprovalResponse, requestCompletedFormApprovalRes)
+		for _, nodeForm := range node.NodeForms {
+			if nodeForm.Permission == string(constants.NodeFormPermissionView) && nodeForm.DataID != nil && *nodeForm.DataID == dataId {
+				isApproveNodeInlcudeNodeFormDataId = true
+				break
+			}
+		}
+
+		if isApproveNodeInlcudeNodeFormDataId {
+			requestCompletedFormApprovalResponse = append(requestCompletedFormApprovalResponse, responses.RequestCompletedFormApprovalOverviewResponse{
+				Key:        node.Key,
+				TaskTitle:  node.Title,
+				IsApproved: node.IsApproved,
+				IsRejected: node.IsRejected,
+				Assignee:   mapUser(node.AssigneeID),
+			})
 		}
 	}
 

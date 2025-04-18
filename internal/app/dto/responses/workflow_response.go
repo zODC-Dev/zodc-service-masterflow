@@ -61,6 +61,7 @@ type NodeFormResponse struct {
 	Permission                    string                                  `json:"permission"`
 	IsOriginal                    bool                                    `json:"isOriginal"`
 	NodeFormApprovalOrRejectUsers []NodeFormApprovalOrRejectUsersResponse `json:"nodeFormApprovalOrRejectUsers"`
+	Level                         *int32                                  `json:"level"`
 }
 
 type NodeFormDataResponse struct {
@@ -88,6 +89,8 @@ type NodeResponse struct {
 	ParentId *string `json:"parentId"`
 
 	Form []NodeFormDataResponse `json:"form"`
+
+	Level *int32 `json:"level"`
 }
 
 type ConnectionResponse struct {

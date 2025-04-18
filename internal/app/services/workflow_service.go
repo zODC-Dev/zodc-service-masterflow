@@ -23,32 +23,34 @@ import (
 )
 
 type WorkflowService struct {
-	DB             *sql.DB
-	WorkflowRepo   *repositories.WorkflowRepository
-	FormRepo       *repositories.FormRepository
-	CategoryRepo   *repositories.CategoryRepository
-	UserAPI        *externals.UserAPI
-	RequestRepo    *repositories.RequestRepository
-	ConnectionRepo *repositories.ConnectionRepository
-	NodeRepo       *repositories.NodeRepository
-	NodeService    *NodeService
-	NatsClient     *nats.NATSClient
-	NatsService    *NatsService
+	DB                  *sql.DB
+	WorkflowRepo        *repositories.WorkflowRepository
+	FormRepo            *repositories.FormRepository
+	CategoryRepo        *repositories.CategoryRepository
+	UserAPI             *externals.UserAPI
+	RequestRepo         *repositories.RequestRepository
+	ConnectionRepo      *repositories.ConnectionRepository
+	NodeRepo            *repositories.NodeRepository
+	NodeService         *NodeService
+	NatsClient          *nats.NATSClient
+	NatsService         *NatsService
+	NotificationService *NotificationService
 }
 
 func NewWorkflowService(cfg WorkflowService) *WorkflowService {
 	workflowService := WorkflowService{
-		DB:             cfg.DB,
-		WorkflowRepo:   cfg.WorkflowRepo,
-		FormRepo:       cfg.FormRepo,
-		CategoryRepo:   cfg.CategoryRepo,
-		UserAPI:        cfg.UserAPI,
-		RequestRepo:    cfg.RequestRepo,
-		ConnectionRepo: cfg.ConnectionRepo,
-		NodeRepo:       cfg.NodeRepo,
-		NodeService:    cfg.NodeService,
-		NatsClient:     cfg.NatsClient,
-		NatsService:    cfg.NatsService,
+		DB:                  cfg.DB,
+		WorkflowRepo:        cfg.WorkflowRepo,
+		FormRepo:            cfg.FormRepo,
+		CategoryRepo:        cfg.CategoryRepo,
+		UserAPI:             cfg.UserAPI,
+		RequestRepo:         cfg.RequestRepo,
+		ConnectionRepo:      cfg.ConnectionRepo,
+		NodeRepo:            cfg.NodeRepo,
+		NodeService:         cfg.NodeService,
+		NatsClient:          cfg.NatsClient,
+		NatsService:         cfg.NatsService,
+		NotificationService: cfg.NotificationService,
 	}
 	return &workflowService
 }
@@ -139,6 +141,8 @@ func (s *WorkflowService) MapToWorkflowNodeResponse(node model.Nodes) (responses
 
 		StartedAt:   node.ActualStartTime,
 		CompletedAt: node.ActualEndTime,
+
+		Level: node.Level,
 	}
 
 	return nodeResponse, nil
@@ -244,26 +248,6 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 				s.RunWorkflow(ctx, tx, *nodeModel.SubRequestID)
 			}
 
-			// Send notification
-			if request.Nodes[i].AssigneeID != nil {
-				notification := types.Notification{
-					ToUserIds: []string{strconv.Itoa(int(*request.Nodes[i].AssigneeID))},
-					Subject:   "New task assigned",
-					Body:      fmt.Sprintf("New task assigned: %s – You have been assigned a new task by %d.", request.Nodes[i].Title, request.UserID),
-				}
-
-				notificationBytes, err := json.Marshal(notification)
-				if err != nil {
-					return fmt.Errorf("marshal notification failed: %w", err)
-				}
-
-				err = s.NatsClient.Publish("notifications", notificationBytes)
-				if err != nil {
-					return fmt.Errorf("publish notification failed: %w", err)
-				}
-
-			}
-
 		}
 	}
 
@@ -281,20 +265,13 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 	}
 
 	// Send notification
-	notification := types.Notification{
+	err = s.NotificationService.SendNotification(ctx, types.Notification{
 		ToUserIds: userIdsStr,
 		Subject:   "Workflow Started",
 		Body:      fmt.Sprintf("Workflow started with request ID: %d", requestId),
-	}
-
-	notificationBytes, err := json.Marshal(notification)
+	})
 	if err != nil {
-		return fmt.Errorf("marshal notification failed: %w", err)
-	}
-
-	err = s.NatsClient.Publish("notifications", notificationBytes)
-	if err != nil {
-		return fmt.Errorf("publish notification failed: %w", err)
+		return fmt.Errorf("send notification fail: %w", err)
 	}
 
 	return nil
@@ -383,6 +360,8 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			JiraLinkURL: storyReq.Node.Data.JiraLinkUrl,
 
 			PlannedEndTime: storyReq.Node.Data.EndDate,
+			// Index
+			Level: storyReq.Node.Level,
 		}
 
 		if formSystemVersionId, exists := formSystemTagMap["TASK"]; exists {
@@ -463,6 +442,8 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 				JiraLinkURL: storyNodeReq.Data.JiraLinkUrl,
 
 				PlannedEndTime: storyNodeReq.Data.EndDate,
+				//
+				Level: storyNodeReq.Level,
 			}
 
 			if storyNodeReq.ParentId != "" {
@@ -601,6 +582,9 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 			Subject: workflowNodeReq.Data.EditorContent.Subject,
 			Body:    workflowNodeReq.Data.EditorContent.Body,
+
+			// Index
+			Level: workflowNodeReq.Level,
 		}
 
 		if workflowNodeReq.Data.EditorContent.Cc != nil {
@@ -717,6 +701,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 				IsOriginal:               formAttached.IsOriginal,
 				TemplateID:               formAttached.FormTemplateId,
 				NodeID:                   workflowNodeReq.Id,
+				Level:                    formAttached.Level,
 			}
 			if formAttached.DataId != "" {
 				formAttachedModel.DataID = &formAttached.DataId
@@ -1106,6 +1091,7 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 				IsOriginal:                    nodeForm.IsOriginal,
 				FormTemplateId:                nodeForm.TemplateID,
 				NodeFormApprovalOrRejectUsers: approveUserIds,
+				Level:                         nodeForm.Level,
 			}
 			if nodeForm.DataID != nil {
 				formAttachedResponse.DataId = *nodeForm.DataID

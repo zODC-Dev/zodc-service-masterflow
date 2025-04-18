@@ -29,6 +29,10 @@ const (
 	NodeStatusTodo       NodeStatus = "TO_DO"
 	NodeStatusInProgress NodeStatus = "IN_PROGRESS"
 	NodeStatusOverDue    NodeStatus = "OVER_DUE"
+
+	// Not In DB
+	NodeStatusToday    NodeStatus = "TODAY"
+	NodeStatusInComing NodeStatus = "IN_COMING"
 )
 
 type RequestStatus string
