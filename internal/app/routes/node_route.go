@@ -28,6 +28,7 @@ func NodeRoute(group *echo.Group, db *sql.DB) {
 		NatsClient:  natsClient,
 		NodeRepo:    nodeRepo,
 		RequestRepo: requestRepo,
+		FormRepo:    formRepo,
 	})
 
 	requestService := services.NewRequestService(services.RequestService{

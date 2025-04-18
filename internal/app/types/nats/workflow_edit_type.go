@@ -2,12 +2,13 @@ package nats
 
 // WorkflowEditIssue represents an issue to be created or updated during workflow edit
 type WorkflowEditIssue struct {
-	NodeId     string `json:"node_id"`
-	Type       string `json:"type"` // "Story", "Task", "Bug", etc.
-	Title      string `json:"title"`
-	AssigneeId *int32 `json:"assignee_id,omitempty"`
-	JiraKey    string `json:"jira_key,omitempty"`
-	Action     string `json:"action"` // "create" or "update"
+	NodeId        string   `json:"node_id"`
+	Type          string   `json:"type"` // "Story", "Task", "Bug", etc.
+	Title         string   `json:"title"`
+	AssigneeId    *int32   `json:"assignee_id,omitempty"`
+	JiraKey       string   `json:"jira_key,omitempty"`
+	EstimatePoint *float32 `json:"estimate_point,omitempty"`
+	Action        string   `json:"action"` // "create" or "update"
 }
 
 // WorkflowEditConnection represents a connection between issues

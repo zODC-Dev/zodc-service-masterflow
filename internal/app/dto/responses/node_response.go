@@ -37,7 +37,7 @@ type TaskDetail struct {
 	IsApproval       bool           `json:"isApproval"`
 
 	SprintId      *int          `json:"sprintId"`
-	EstimatePoint *int          `json:"estimatePoint"`
+	EstimatePoint *float32      `json:"estimatePoint"`
 	Parent        *TaskRelated  `json:"parent"`
 	Related       []TaskRelated `json:"related"`
 

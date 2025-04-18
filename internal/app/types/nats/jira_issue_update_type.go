@@ -8,7 +8,7 @@ type JiraIssueUpdateMessage struct {
 	Description   string    `json:"description"`
 	AssigneeEmail string    `json:"assigneeEmail"`
 	AssigneeId    *string   `json:"assigneeId"`
-	EstimatePoint *float64  `json:"estimatePoint"`
+	EstimatePoint *float32  `json:"estimatePoint"`
 	Status        string    `json:"status"`
 	UpdatedAt     time.Time `json:"updatedAt"`
 	OldStatus     *string   `json:"oldStatus"`

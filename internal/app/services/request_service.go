@@ -858,11 +858,10 @@ func (s *RequestService) UpdateRequestHandler(ctx context.Context, requestId int
 		return fmt.Errorf("create nodes connections stories fail: %w", err)
 	}
 
+	// ================================ SYNC WITH JIRA ================================
 	// Sync with Jira if this is a project workflow with project key
 	if originalRequest.Workflow.Type == string(constants.WorkflowTypeProject) && originalRequest.Workflow.ProjectKey != nil {
 		// Get the NatsService from WorkflowService
-		// slog.Info("originalRequest", "originalRequest", originalRequest)
-		// slog.Info("Syncing with Jira", "projectKey", *originalRequest.Workflow.ProjectKey, "sprintId", *originalRequest.SprintID)
 
 		// Need to convert the original nodes and connections to the proper types
 		var modelNodes []model.Nodes
@@ -889,13 +888,15 @@ func (s *RequestService) UpdateRequestHandler(ctx context.Context, requestId int
 		}
 
 		// Sync the updated workflow with Jira using edit mode
-		_, err := s.NatsService.publishWorkflowEditToJira(ctx, tx, finalNodes, modelNodes, req.Stories,
+		_, err := s.NatsService.PublishWorkflowEditToJira(ctx, tx, requestId, finalNodes, modelNodes, req.Stories,
 			finalConnections, modelConnections, *originalRequest.Workflow.ProjectKey, originalRequest.SprintID)
 		if err != nil {
 			// Log the error but continue - we don't want to fail the update if Jira sync fails
 			slog.Error("Failed to sync workflow edit with Jira", "error", err)
 		}
 	}
+
+	// ================================ END SYNC WITH JIRA ================================
 
 	//Commit
 	if err := tx.Commit(); err != nil {

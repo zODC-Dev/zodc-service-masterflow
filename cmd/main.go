@@ -84,6 +84,7 @@ func main() {
 			NatsClient:  natsClient,
 			NodeRepo:    nodeRepo,
 			RequestRepo: requestRepo,
+			FormRepo:    formRepo,
 		})
 
 		// Initialize the NodeService with all dependencies
