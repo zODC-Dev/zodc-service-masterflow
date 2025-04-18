@@ -245,8 +245,6 @@ func (r *FormRepository) UpdateFormFieldJiraKey(ctx context.Context, tx *sql.Tx,
 	FormFieldData := table.FormFieldData
 	FormTemplateFields := table.FormTemplateFields
 
-	slog.Debug("Bắt đầu cập nhật JiraKey trong form field data", "nodeId", nodeId, "jiraKey", jiraKey)
-
 	// 2. Lấy formDataId từ nodeId
 	formDataQuery := postgres.SELECT(
 		Nodes.FormDataID,
@@ -294,10 +292,7 @@ func (r *FormRepository) UpdateFormFieldJiraKey(ctx context.Context, tx *sql.Tx,
 		return fmt.Errorf("không thể tìm field có fieldId='key': %w", err)
 	}
 
-	slog.Info("Kết quả tìm field có fieldId='key'", "formDataId", formDataId, "count", len(keyFields))
-
 	if len(keyFields) == 0 {
-		slog.Info("Không tìm thấy field có fieldId='key', sẽ không cập nhật", "formDataId", formDataId)
 		return nil
 	}
 
@@ -316,17 +311,11 @@ func (r *FormRepository) UpdateFormFieldJiraKey(ctx context.Context, tx *sql.Tx,
 		SET(postgres.String(jiraKey)).
 		WHERE(FormFieldData.ID.IN(subQuery))
 
-	slog.Debug("Cập nhật jiraKey", "formDataId", formDataId, "jiraKey", jiraKey)
-
-	result, err := statement.ExecContext(ctx, tx)
+	_, err := statement.ExecContext(ctx, tx)
 	if err != nil {
 		slog.Error("Lỗi khi cập nhật jiraKey", "formDataId", formDataId, "error", err)
 		return fmt.Errorf("không thể cập nhật jiraKey trong form field data: %w", err)
 	}
-
-	// Kiểm tra số lượng row bị ảnh hưởng
-	rowsAffected, _ := result.RowsAffected()
-	slog.Debug("Cập nhật jiraKey thành công", "formDataId", formDataId, "rowsAffected", rowsAffected)
 
 	return nil
 }

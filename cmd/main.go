@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 
 	"github.com/labstack/echo/v4"
@@ -35,9 +36,7 @@ import (
 // @name Authorization
 // @description Type "Bearer" followed by a space and JWT token.
 func main() {
-	// Create context for services
 	ctx := context.Background()
-
 	e := echo.New()
 	{
 		// e.Use(middleware.Logger())
@@ -52,6 +51,25 @@ func main() {
 	//Database Setup
 	database := db.ConnectDatabase()
 
+	//Nats Setup
+	natsSubscriber := setupNats(ctx, database)
+	// Đảm bảo cleanup khi chương trình kết thúc
+	if natsSubscriber != nil {
+		defer func() {
+			ctx := context.Background()
+			if err := natsSubscriber.Shutdown(ctx); err != nil {
+				slog.Error("Error shutting down NATS subscriber service", "error", err)
+			}
+		}()
+	}
+
+	//Route Setup
+	routes.RegisterRoutes(e, database)
+
+	slog.Error(e.Start(configs.Env.SERVER_ADDRESS).Error())
+}
+
+func setupNats(ctx context.Context, database *sql.DB) *services.NatsSubscriberService {
 	// Initialize repositories
 	nodeRepo := repositories.NewNodeRepository()
 	requestRepo := repositories.NewRequestRepository()
@@ -62,65 +80,55 @@ func main() {
 	natsClient, err := nats.NewNATSClient(natsConfig)
 	if err != nil {
 		slog.Error("Failed to create NATS client", "error", err)
-	} else {
-		// Initialize and start NATS subscriber service
-		natsSubscriberService := services.NewNatsSubscriberService(
-			natsClient,
-			database,
-			nodeRepo,
-			requestRepo,
-			nil, // We will create a proper NodeService below and set it
-		)
-
-		// Initialize other required dependencies for NodeService
-		connectionRepo := repositories.NewConnectionRepository()
-		formRepo := repositories.NewFormRepository()
-
-		// Set up UserAPI if needed for NodeService
-		userApi := externals.NewUserAPI()
-
-		// Create NatsService needed for NodeService
-		natsService := services.NewNatsService(services.NatsService{
-			NatsClient:  natsClient,
-			NodeRepo:    nodeRepo,
-			RequestRepo: requestRepo,
-			FormRepo:    formRepo,
-		})
-
-		// Initialize the NodeService with all dependencies
-		nodeService := services.NewNodeService(services.NodeService{
-			DB:             database,
-			NodeRepo:       nodeRepo,
-			ConnectionRepo: connectionRepo,
-			RequestRepo:    requestRepo,
-			FormRepo:       formRepo,
-			NatsClient:     natsClient,
-			NatsService:    natsService,
-			UserAPI:        userApi,
-		})
-
-		// Now set the NodeService in the NatsSubscriberService
-		natsSubscriberService.NodeService = nodeService
-
-		// Start the subscriber service in a goroutine
-		go func() {
-			if err := natsSubscriberService.Start(ctx); err != nil {
-				slog.Error("Failed to start NATS subscriber service", "error", err)
-			}
-		}()
-
-		// Ensure graceful shutdown
-		defer func() {
-			if err := natsSubscriberService.Shutdown(ctx); err != nil {
-				slog.Error("Error shutting down NATS subscriber service", "error", err)
-			}
-		}()
-
-		slog.Info("NATS subscriber service started")
+		return nil
 	}
 
-	//Route Setup
-	routes.RegisterRoutes(e, database)
+	// Initialize and start NATS subscriber service
+	natsSubscriberService := services.NewNatsSubscriberService(
+		natsClient,
+		database,
+		nodeRepo,
+		requestRepo,
+		nil, // We will create a proper NodeService below and set it
+	)
 
-	slog.Error(e.Start(configs.Env.SERVER_ADDRESS).Error())
+	// Initialize other required dependencies for NodeService
+	connectionRepo := repositories.NewConnectionRepository()
+	formRepo := repositories.NewFormRepository()
+
+	// Set up UserAPI if needed for NodeService
+	userApi := externals.NewUserAPI()
+
+	// Create NatsService needed for NodeService
+	natsService := services.NewNatsService(services.NatsService{
+		NatsClient:  natsClient,
+		NodeRepo:    nodeRepo,
+		RequestRepo: requestRepo,
+		FormRepo:    formRepo,
+	})
+
+	// Initialize the NodeService with all dependencies
+	nodeService := services.NewNodeService(services.NodeService{
+		DB:             database,
+		NodeRepo:       nodeRepo,
+		ConnectionRepo: connectionRepo,
+		RequestRepo:    requestRepo,
+		FormRepo:       formRepo,
+		NatsClient:     natsClient,
+		NatsService:    natsService,
+		UserAPI:        userApi,
+	})
+
+	// Now set the NodeService in the NatsSubscriberService
+	natsSubscriberService.NodeService = nodeService
+
+	// Start the subscriber service in a goroutine
+	go func() {
+		if err := natsSubscriberService.Start(ctx); err != nil {
+			slog.Error("Failed to start NATS subscriber service", "error", err)
+		}
+	}()
+
+	slog.Info("NATS subscriber service started")
+	return natsSubscriberService
 }

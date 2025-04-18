@@ -842,7 +842,6 @@ func (s *WorkflowService) CreateWorkflowHandler(ctx context.Context, req *reques
 		jiraKeyMap := make(map[string]string)
 
 		// Luôn đồng bộ với Jira để thiết lập mối quan hệ giữa các tasks
-		slog.Info("Synchronizing with Jira before Gantt Chart calculation")
 		jiraResponse, err := s.NatsService.PublishWorkflowToJira(ctx, tx, reqClone.Nodes, reqClone.Stories, reqClone.Connections, reqClone.ProjectKey, *reqClone.SprintId)
 		if err != nil {
 			slog.Error("Failed to sync with Jira", "error", err)
@@ -851,7 +850,6 @@ func (s *WorkflowService) CreateWorkflowHandler(ctx context.Context, req *reques
 			// Cập nhật jiraKeyMap từ response
 			for _, issue := range jiraResponse.Data.Data.Issues {
 				jiraKeyMap[issue.NodeId] = issue.JiraKey
-				slog.Info("JiraKey mapping from Jira response", "nodeId", issue.NodeId, "jiraKey", issue.JiraKey)
 
 				// Thêm bước cập nhật JiraKey trong form field data
 				if err := s.FormRepo.UpdateFormFieldJiraKey(ctx, tx, issue.NodeId, issue.JiraKey); err != nil {
@@ -871,7 +869,6 @@ func (s *WorkflowService) CreateWorkflowHandler(ctx context.Context, req *reques
 			// Ưu tiên JiraKey từ Jira response
 			if jiraKey, exists := jiraKeyMap[node.Id]; exists && jiraKey != "" {
 				updatedNode.JiraKey = &jiraKey
-				slog.Info("Node JiraKey updated for Gantt Chart", "nodeId", node.Id, "jiraKey", jiraKey)
 			}
 			updatedNodes[i] = updatedNode
 		}
@@ -883,7 +880,6 @@ func (s *WorkflowService) CreateWorkflowHandler(ctx context.Context, req *reques
 			// Ưu tiên JiraKey từ Jira response
 			if jiraKey, exists := jiraKeyMap[story.Node.Id]; exists && jiraKey != "" {
 				updatedStory.Node.JiraKey = &jiraKey
-				slog.Info("Story JiraKey updated for Gantt Chart", "nodeId", story.Node.Id, "jiraKey", jiraKey)
 			}
 			updatedStories[i] = updatedStory
 		}
@@ -1294,9 +1290,6 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 		// Tạo bản đồ NodeId -> JiraKey để theo dõi các JiraKey
 		jiraKeyMap := make(map[string]string)
 
-		// Luôn đồng bộ với Jira để thiết lập mối quan hệ giữa các tasks
-		slog.Info("Synchronizing with Jira before Gantt Chart calculation")
-
 		if s.NatsService == nil {
 			slog.Error("Nats service is nil")
 			return 0, fmt.Errorf("nats service is nil")
@@ -1310,7 +1303,6 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 			// Cập nhật jiraKeyMap từ response
 			for _, issue := range jiraResponse.Data.Data.Issues {
 				jiraKeyMap[issue.NodeId] = issue.JiraKey
-				slog.Info("JiraKey mapping from Jira response", "nodeId", issue.NodeId, "jiraKey", issue.JiraKey)
 
 				// Thêm bước cập nhật JiraKey trong form field data
 				if err := s.FormRepo.UpdateFormFieldJiraKey(ctx, tx, issue.NodeId, issue.JiraKey); err != nil {
@@ -1330,7 +1322,6 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 			// Ưu tiên JiraKey từ Jira response
 			if jiraKey, exists := jiraKeyMap[node.Id]; exists && jiraKey != "" {
 				updatedNode.JiraKey = &jiraKey
-				slog.Info("Node JiraKey updated for Gantt Chart", "nodeId", node.Id, "jiraKey", jiraKey)
 			}
 			updatedNodes[i] = updatedNode
 		}
@@ -1342,7 +1333,6 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 			// Ưu tiên JiraKey từ Jira response
 			if jiraKey, exists := jiraKeyMap[story.Node.Id]; exists && jiraKey != "" {
 				updatedStory.Node.JiraKey = &jiraKey
-				slog.Info("Story JiraKey updated for Gantt Chart", "nodeId", story.Node.Id, "jiraKey", jiraKey)
 			}
 			updatedStories[i] = updatedStory
 		}

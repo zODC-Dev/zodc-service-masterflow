@@ -117,14 +117,6 @@ func (s *NatsSubscriberService) handleJiraIssueUpdate(tx *sql.Tx, data []byte) e
 		return fmt.Errorf("failed to unmarshal Jira issue update message: %w", err)
 	}
 
-	slog.Info("Processing Jira issue update",
-		"jiraKey", message.JiraKey,
-		"summary", message.Summary,
-		"status", message.Status,
-		"oldStatus", message.OldStatus,
-		"assignee", message.AssigneeEmail,
-		"sprintId", message.SprintId)
-
 	// Validation
 	if message.JiraKey == "" {
 		return fmt.Errorf("missing required field: jiraKey")
@@ -217,18 +209,12 @@ func (s *NatsSubscriberService) handleJiraIssueUpdate(tx *sql.Tx, data []byte) e
 
 	// Combine all parameters
 	allParams := append(baseParams, updateParams...)
-	slog.Info("All parameters", "params", allParams)
-
-	slog.Info("Final update query", "query", finalUpdateQuery)
 
 	// Execute the update for all nodes with this Jira key
-	nodeUpdateResult, err := tx.ExecContext(context.Background(), finalUpdateQuery, allParams...)
+	_, err := tx.ExecContext(context.Background(), finalUpdateQuery, allParams...)
 	if err != nil {
 		return fmt.Errorf("failed to update nodes: %w", err)
 	}
-
-	rowsAffected, _ := nodeUpdateResult.RowsAffected()
-	slog.Info("Updated nodes data", "jiraKey", message.JiraKey, "rowsAffected", rowsAffected)
 
 	// Step 2: Update form data for all corresponding forms
 	formUpdateQuery := `
@@ -263,7 +249,7 @@ func (s *NatsSubscriberService) handleJiraIssueUpdate(tx *sql.Tx, data []byte) e
 	`
 
 	// Execute the update for form data
-	formResult, err := tx.ExecContext(
+	_, err = tx.ExecContext(
 		context.Background(),
 		formUpdateQuery,
 		message.Summary,       // $1 - Summary field
@@ -274,9 +260,6 @@ func (s *NatsSubscriberService) handleJiraIssueUpdate(tx *sql.Tx, data []byte) e
 	if err != nil {
 		return fmt.Errorf("failed to update form field data: %w", err)
 	}
-
-	formRowsAffected, _ := formResult.RowsAffected()
-	slog.Info("Form field data updated", "jiraKey", message.JiraKey, "rowsAffected", formRowsAffected)
 
 	// Step 3: Find active node for workflow state transition
 	if message.SprintId != nil && message.OldStatus != nil {
@@ -293,25 +276,13 @@ func (s *NatsSubscriberService) handleJiraIssueUpdate(tx *sql.Tx, data []byte) e
 		err := tx.QueryRowContext(context.Background(), findActiveNodeQuery, *message.SprintId, message.JiraKey).Scan(&activeNodeId)
 
 		if err != nil {
-			if err == sql.ErrNoRows {
-				slog.Info("No active node found for the given sprint and Jira key",
-					"jiraKey", message.JiraKey,
-					"sprintId", *message.SprintId)
-			} else {
-				slog.Error("Error finding active node", "error", err)
-			}
+			slog.Error("Error finding active node", "error", err)
 		} else {
-			slog.Info("Found active node", "nodeId", activeNodeId)
 
 			// Step 4: Apply workflow state transition based on status change
 			if message.OldStatus != nil && message.Status != "" {
 				// Use mapped system status values for state transition logic
 				if oldSystemStatus != nil && systemStatus != "" {
-					slog.Info("Processing workflow state transition",
-						"oldStatus", *oldSystemStatus,
-						"newStatus", systemStatus,
-						"nodeId", activeNodeId)
-
 					// From Todo to In Progress -> Start Node
 					if *oldSystemStatus == string(constants.NodeStatusTodo) && systemStatus == string(constants.NodeStatusInProgress) {
 						// Use NodeService to start the node - this will be handled in a separate transaction
@@ -319,8 +290,6 @@ func (s *NatsSubscriberService) handleJiraIssueUpdate(tx *sql.Tx, data []byte) e
 						if err := s.NodeService.StartNodeHandler(ctx, activeNodeId); err != nil {
 							slog.Error("Failed to start node", "nodeId", activeNodeId, "error", err)
 							// Continue execution even if node start fails
-						} else {
-							slog.Info("Node started successfully", "nodeId", activeNodeId)
 						}
 					} else if *oldSystemStatus == string(constants.NodeStatusInProgress) && systemStatus == string(constants.NodeStatusCompleted) {
 						// Use NodeService to complete the node - this will be handled in a separate transaction
@@ -337,21 +306,11 @@ func (s *NatsSubscriberService) handleJiraIssueUpdate(tx *sql.Tx, data []byte) e
 						if err := s.NodeService.CompleteNodeHandler(ctx, activeNodeId, systemUserId, false); err != nil {
 							slog.Error("Failed to complete node", "nodeId", activeNodeId, "error", err)
 							// Continue execution even if node completion fails
-						} else {
-							slog.Info("Node completed successfully", "nodeId", activeNodeId)
 						}
-					} else {
-						slog.Info("No workflow state transition needed",
-							"oldStatus", *oldSystemStatus,
-							"newStatus", systemStatus)
 					}
 				}
 			}
 		}
-	} else {
-		slog.Info("Skipping workflow state transition - missing sprint ID or old status",
-			"sprintId", message.SprintId,
-			"oldStatus", message.OldStatus)
 	}
 
 	// Optionally, also update the estimate point in form data if provided
@@ -375,7 +334,7 @@ func (s *NatsSubscriberService) handleJiraIssueUpdate(tx *sql.Tx, data []byte) e
 			)
 		`
 
-		estimatePointResult, err := tx.ExecContext(
+		_, err = tx.ExecContext(
 			context.Background(),
 			estimatePointQuery,
 			fmt.Sprintf("%f", *message.EstimatePoint), // Convert to string
@@ -383,9 +342,6 @@ func (s *NatsSubscriberService) handleJiraIssueUpdate(tx *sql.Tx, data []byte) e
 		)
 		if err != nil {
 			slog.Warn("Failed to update estimate point", "error", err)
-		} else {
-			epRowsAffected, _ := estimatePointResult.RowsAffected()
-			slog.Info("Estimate point updated", "jiraKey", message.JiraKey, "rowsAffected", epRowsAffected)
 		}
 	}
 
