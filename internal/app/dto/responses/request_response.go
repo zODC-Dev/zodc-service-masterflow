@@ -25,7 +25,7 @@ type RequestResponse struct {
 	Title        string                `json:"title"`
 	Status       string                `json:"status"`
 	ParentKey    int32                 `json:"parentKey"`
-	Progress     int32                 `json:"progress"`
+	Progress     float32               `json:"progress"`
 	CurrentTasks []CurrentTaskResponse `json:"currentTasks,omitempty"`
 	SprintId     int32                 `json:"sprintId"`
 	StartedAt    *time.Time            `json:"startedAt"`

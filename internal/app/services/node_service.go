@@ -732,32 +732,6 @@ func (s *NodeService) ApproveNode(ctx context.Context, userId int32, nodeId stri
 		return fmt.Errorf("logic for condition node fail: %w", err)
 	}
 
-	request, err := s.RequestRepo.FindOneRequestByRequestIdTx(ctx, tx, node.RequestID)
-	if err != nil {
-		return fmt.Errorf("find request by node id fail: %w", err)
-	}
-
-	isRequestCompleted := false
-	for _, node := range request.Nodes {
-		if node.Type == string(constants.NodeTypeEnd) && node.Status == string(constants.NodeStatusCompleted) {
-			isRequestCompleted = true
-			break
-		}
-	}
-
-	if isRequestCompleted {
-		request.Progress = 100
-		requestModel := model.Requests{}
-		utils.Mapper(request, &requestModel)
-		if err := s.RequestRepo.UpdateRequest(ctx, tx, requestModel); err != nil {
-			return fmt.Errorf("update request progress fail: %w", err)
-		}
-	} else {
-		if err := s.RequestService.UpdateCalculateRequestProgress(ctx, tx, node.RequestID); err != nil {
-			return fmt.Errorf("update calculate request progress fail: %w", err)
-		}
-	}
-
 	// Commit
 	if err := tx.Commit(); err != nil {
 		return err
@@ -794,32 +768,6 @@ func (s *NodeService) RejectNode(ctx context.Context, userId int32, nodeId strin
 	err = s.LogicForConditionNode(ctx, tx, nodeId, false, userId)
 	if err != nil {
 		return fmt.Errorf("logic for condition node fail: %w", err)
-	}
-
-	request, err := s.RequestRepo.FindOneRequestByRequestIdTx(ctx, tx, node.RequestID)
-	if err != nil {
-		return fmt.Errorf("find request by node id fail: %w", err)
-	}
-
-	isRequestCompleted := false
-	for _, node := range request.Nodes {
-		if node.Type == string(constants.NodeTypeEnd) && node.Status == string(constants.NodeStatusCompleted) {
-			isRequestCompleted = true
-			break
-		}
-	}
-
-	if isRequestCompleted {
-		request.Progress = 100
-		requestModel := model.Requests{}
-		utils.Mapper(request, &requestModel)
-		if err := s.RequestRepo.UpdateRequest(ctx, tx, requestModel); err != nil {
-			return fmt.Errorf("update request progress fail: %w", err)
-		}
-	} else {
-		if err := s.RequestService.UpdateCalculateRequestProgress(ctx, tx, node.RequestID); err != nil {
-			return fmt.Errorf("update calculate request progress fail: %w", err)
-		}
 	}
 
 	if err := tx.Commit(); err != nil {
