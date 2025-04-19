@@ -359,7 +359,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 			JiraLinkURL: storyReq.Node.Data.JiraLinkUrl,
 
-			PlannedEndTime: storyReq.Node.Data.EndDate,
+			PlannedEndTime: setTimeToEndOfWorkday(storyReq.Node.Data.EndDate),
 			// Index
 			Level: storyReq.Node.Level,
 		}
@@ -441,7 +441,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 				JiraLinkURL: storyNodeReq.Data.JiraLinkUrl,
 
-				PlannedEndTime: storyNodeReq.Data.EndDate,
+				PlannedEndTime: setTimeToEndOfWorkday(storyNodeReq.Data.EndDate),
 				//
 				Level: storyNodeReq.Level,
 			}
@@ -578,7 +578,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 			JiraKey: workflowNodeReq.JiraKey,
 
-			PlannedEndTime: workflowNodeReq.Data.EndDate,
+			PlannedEndTime: setTimeToEndOfWorkday(workflowNodeReq.Data.EndDate),
 
 			Subject: workflowNodeReq.Data.EditorContent.Subject,
 			Body:    workflowNodeReq.Data.EditorContent.Body,
@@ -1522,4 +1522,26 @@ func (s *WorkflowService) ArchiveWorkflowHandler(ctx context.Context, workflowId
 	}
 
 	return nil
+}
+
+// setTimeToEndOfWorkday sets the time part of a date to 17:30 (end of workday)
+// while preserving the date part
+func setTimeToEndOfWorkday(t *time.Time) *time.Time {
+	if t == nil {
+		return nil
+	}
+
+	// Create new time with same date but time set to 17:30
+	newTime := time.Date(
+		t.Year(),
+		t.Month(),
+		t.Day(),
+		17, // Hour: 17
+		30, // Minute: 30
+		0,  // Second: 0
+		0,  // Nanosecond: 0
+		t.Location(),
+	)
+
+	return &newTime
 }
