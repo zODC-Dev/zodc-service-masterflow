@@ -367,6 +367,7 @@ func (r *RequestRepository) CountRequestTaskByStatusAndUserIdAndQueryParams(ctx 
 		Nodes.Type.NOT_EQ(postgres.String(string(constants.NodeTypeStart))),
 		Nodes.Type.NOT_EQ(postgres.String(string(constants.NodeTypeEnd))),
 		Nodes.Type.NOT_EQ(postgres.String(string(constants.NodeTypeStory))),
+		Requests.Progress.NOT_EQ(postgres.Float(100)),
 	}
 
 	if queryparams.ProjectKey != "" {
@@ -467,6 +468,7 @@ func (r *RequestRepository) FindAllTasksByProject(ctx context.Context, db *sql.D
 		Requests.IsTemplate.EQ(postgres.Bool(false)),
 		Nodes.Type.NOT_EQ(postgres.String(string(constants.NodeTypeStart))),
 		Nodes.Type.NOT_EQ(postgres.String(string(constants.NodeTypeEnd))),
+		Requests.Progress.NOT_EQ(postgres.Float(100)),
 	}
 
 	if queryparams.ProjectKey != "" {

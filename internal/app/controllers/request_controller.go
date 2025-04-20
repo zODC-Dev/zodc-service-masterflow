@@ -514,7 +514,7 @@ func (c *RequestController) GetRequestCompletedFormApproval(e echo.Context) erro
 		return e.JSON(http.StatusBadRequest, fmt.Sprintf("Invalid request ID: %s", requestId))
 	}
 
-	dataId := e.QueryParam("dataId")
+	dataId := e.Param("dataId")
 	if dataId == "" {
 		return e.JSON(http.StatusBadRequest, "Data ID is required")
 	}

@@ -201,12 +201,39 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 					requestModel := model.Requests{}
 					utils.Mapper(request, &requestModel)
 
+					// Notify
+					userIds := []string{}
+					existingUserIds := map[string]bool{}
+					for _, node := range request.Nodes {
+						if node.AssigneeID != nil {
+							if !existingUserIds[strconv.Itoa(int(*node.AssigneeID))] {
+								userIds = append(userIds, strconv.Itoa(int(*node.AssigneeID)))
+								existingUserIds[strconv.Itoa(int(*node.AssigneeID))] = true
+							}
+						}
+					}
+
 					if *node.EndType == string(constants.NodeEndTypeTerminate) {
 						requestModel.Status = string(constants.RequestStatusTerminated)
 						requestModel.TerminatedAt = &now
+
+						// Notify
+						notification := types.Notification{
+							ToUserIds: userIds,
+							Subject:   "Request Terminated",
+							Body:      fmt.Sprintf("The request “%s” has been terminated and will no longer proceed.", request.Title),
+						}
+						s.NotificationService.SendNotification(ctx, notification)
 					} else {
 						requestModel.Status = string(constants.RequestStatusCompleted)
 						requestModel.CompletedAt = &now
+
+						notification := types.Notification{
+							ToUserIds: userIds,
+							Subject:   "Request completed",
+							Body:      fmt.Sprintf("The request “%s” has been completed.", request.Title),
+						}
+						s.NotificationService.SendNotification(ctx, notification)
 					}
 
 					requestModel.Progress = 100
@@ -1135,6 +1162,7 @@ func (s *NodeService) GetNodeTaskDetail(ctx context.Context, nodeId string) (res
 		UpdatedAt:        node.UpdatedAt,
 		JiraLinkURL:      node.JiraLinkURL,
 		ProjectKey:       request.Workflow.ProjectKey,
+		SprintId:         request.SprintID,
 	}
 
 	if parentNode != nil {
@@ -1155,6 +1183,9 @@ func (s *NodeService) GetNodeTaskDetail(ctx context.Context, nodeId string) (res
 	for _, nodeTaskRelated := range nodeTaskRelateds {
 
 		if nodeTaskRelated.Type == string(constants.NodeTypeStart) || nodeTaskRelated.Type == string(constants.NodeTypeEnd) {
+			continue
+		}
+		if nodeTaskRelated.ID == node.ID {
 			continue
 		}
 

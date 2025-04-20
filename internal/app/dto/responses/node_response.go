@@ -36,7 +36,7 @@ type TaskDetail struct {
 	RequestRequestBy types.Assignee `json:"requestRequestBy"`
 	IsApproval       bool           `json:"isApproval"`
 
-	SprintId      *int          `json:"sprintId"`
+	SprintId      *int32        `json:"sprintId"`
 	EstimatePoint *float32      `json:"estimatePoint"`
 	Parent        *TaskRelated  `json:"parent"`
 	Related       []TaskRelated `json:"related"`
