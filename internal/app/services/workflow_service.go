@@ -1431,6 +1431,20 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 		}
 	}
 
+	// Notify Start Workflow
+	userIds := []string{}
+	existingUserIds := make(map[string]bool)
+	for _, node := range req.Nodes {
+		if node.Data.Assignee.Id != 0 {
+			if !existingUserIds[strconv.Itoa(int(node.Data.Assignee.Id))] {
+				userIds = append(userIds, strconv.Itoa(int(node.Data.Assignee.Id)))
+				existingUserIds[strconv.Itoa(int(node.Data.Assignee.Id))] = true
+			}
+		}
+	}
+
+	s.NotificationService.NotifyStartWorkflow(ctx, req.Title, userIds)
+
 	if err := tx.Commit(); err != nil {
 		return 0, fmt.Errorf("commit fail: %w", err)
 	}

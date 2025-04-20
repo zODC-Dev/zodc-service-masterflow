@@ -41,7 +41,7 @@ func NodeRoute(group *echo.Group, db *sql.DB) {
 
 	formService := services.NewFormService(db, formRepo, natsClient)
 
-	notificationService := services.NewNotificationService(natsClient)
+	notificationService := services.NewNotificationService(natsClient, userApi)
 
 	nodeService := services.NewNodeService(services.NodeService{
 		NodeRepo:            nodeRepo,

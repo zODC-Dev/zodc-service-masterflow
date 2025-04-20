@@ -218,22 +218,12 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 						requestModel.TerminatedAt = &now
 
 						// Notify
-						notification := types.Notification{
-							ToUserIds: userIds,
-							Subject:   "Request Terminated",
-							Body:      fmt.Sprintf("The request “%s” has been terminated and will no longer proceed.", request.Title),
-						}
-						s.NotificationService.SendNotification(ctx, notification)
+						s.NotificationService.NotifyRequestTerminated(ctx, request.Title, userIds)
 					} else {
 						requestModel.Status = string(constants.RequestStatusCompleted)
 						requestModel.CompletedAt = &now
 
-						notification := types.Notification{
-							ToUserIds: userIds,
-							Subject:   "Request completed",
-							Body:      fmt.Sprintf("The request “%s” has been completed.", request.Title),
-						}
-						s.NotificationService.SendNotification(ctx, notification)
+						s.NotificationService.NotifyRequestCompleted(ctx, request.Title, userIds)
 					}
 
 					requestModel.Progress = 100
@@ -365,12 +355,7 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 					return err
 				}
 
-				notification := types.Notification{
-					ToUserIds: []string{strconv.Itoa(int(users.Data[0].ID))},
-					Subject:   "You Have New Task Available Today",
-					Body:      fmt.Sprintf("%s is ready to start.", node.Title),
-				}
-				s.NotificationService.SendNotification(ctx, notification)
+				s.NotificationService.NotifyTaskAvailable(ctx, node.Title, users.Data[0].ID)
 
 			}
 		}
@@ -484,6 +469,14 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 		}
 
 		if isUpdateNodeStatus {
+
+			// If Node is Approval Node
+			if connectionsToNode[i].Node.Type == string(constants.NodeTypeApproval) {
+				if connectionsToNode[i].Node.AssigneeID != nil {
+					s.NotificationService.NotifyNodeApproveNeeded(ctx, nodeResult.Request.Title, *connectionsToNode[i].Node.AssigneeID)
+				}
+			}
+
 			// If Node is End Node
 			if connectionsToNode[i].Node.Type == string(constants.NodeTypeEnd) {
 				// Update end node to completed
@@ -498,13 +491,35 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 					return err
 				}
 
+				requestDetail, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, request.ID)
+				if err != nil {
+					return err
+				}
+
+				userIds := []string{}
+				existingUserIds := map[string]bool{}
+				for _, node := range requestDetail.Nodes {
+					if node.AssigneeID != nil {
+						if !existingUserIds[strconv.Itoa(int(*node.AssigneeID))] {
+							userIds = append(userIds, strconv.Itoa(int(*node.AssigneeID)))
+							existingUserIds[strconv.Itoa(int(*node.AssigneeID))] = true
+						}
+					}
+				}
+
 				if node.EndType != nil && *node.EndType == string(constants.NodeEndTypeTerminate) {
 					request.Status = string(constants.RequestStatusTerminated)
 					request.TerminatedAt = &now
 
+					// Notify
+					s.NotificationService.NotifyRequestTerminated(ctx, request.Title, userIds)
+
 				} else {
 					request.Status = string(constants.RequestStatusCompleted)
 					request.CompletedAt = &now
+
+					// Notify
+					s.NotificationService.NotifyRequestCompleted(ctx, request.Title, userIds)
 				}
 
 				request.Progress = 100
@@ -545,16 +560,7 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 	}
 
 	// send notification
-	notification := types.Notification{
-		ToUserIds: []string{strconv.Itoa(int(userId))},
-		Subject:   "Task completed",
-		Body:      fmt.Sprintf("Task completed: %s – %d has marked this task as done.", node.Title, userId),
-	}
-	notificationBytes, err := json.Marshal(notification)
-	if err != nil {
-		return fmt.Errorf("marshal notification failed: %w", err)
-	}
-	s.NatsClient.Publish("notifications", notificationBytes)
+	s.NotificationService.NotifyTaskCompleted(ctx, node.Title, userId)
 
 	// Calculate Request Process
 	if err := s.RequestService.UpdateCalculateRequestProgress(ctx, tx, node.RequestID); err != nil {
