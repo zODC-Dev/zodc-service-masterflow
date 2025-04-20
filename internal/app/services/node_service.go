@@ -226,6 +226,7 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 						s.NotificationService.NotifyRequestCompleted(ctx, request.Title, userIds)
 					}
 
+					requestModel.CompletedAt = &now
 					requestModel.Progress = 100
 
 					if err := s.RequestRepo.UpdateRequest(ctx, tx, requestModel); err != nil {
@@ -481,6 +482,8 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 			if connectionsToNode[i].Node.Type == string(constants.NodeTypeEnd) {
 				// Update end node to completed
 				connectionsToNode[i].Node.Status = string(constants.NodeStatusCompleted)
+				connectionsToNode[i].Node.ActualEndTime = &now
+				connectionsToNode[i].Node.ActualStartTime = &now
 				if err := s.NodeRepo.UpdateNode(ctx, tx, connectionsToNode[i].Node); err != nil {
 					return err
 				}
