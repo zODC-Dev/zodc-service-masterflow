@@ -30,12 +30,13 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 		Requests.AllColumns,
 	).FROM(
 		Requests.
+			LEFT_JOIN(Nodes, Requests.ID.EQ(Nodes.RequestID)).
 			LEFT_JOIN(WorkflowVerions, Requests.WorkflowVersionID.EQ(WorkflowVerions.ID)).
 			LEFT_JOIN(Workflows, WorkflowVerions.WorkflowID.EQ(Workflows.ID)),
 	).LIMIT(int64(requestQueryParam.PageSize)).OFFSET(int64(requestQueryParam.Page - 1))
 
 	rRequestsConditions := []postgres.BoolExpression{
-		Requests.UserID.EQ(postgres.Int32(userId)),
+		Requests.UserID.EQ(postgres.Int32(userId)).OR(Nodes.AssigneeID.EQ(postgres.Int32(userId))),
 		Requests.IsTemplate.EQ(postgres.Bool(false)),
 	}
 

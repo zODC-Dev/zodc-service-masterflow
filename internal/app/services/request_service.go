@@ -1062,6 +1062,10 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 		existUserIds := make(map[int32]bool)
 
 		for _, nodeForm := range nodeForms {
+			if nodeForm.Permission != string(constants.NodeFormPermissionInput) {
+				continue
+			}
+
 			if nodeForm.SubmittedByUserID != nil && !existUserIds[*nodeForm.SubmittedByUserID] {
 				userIds = append(userIds, *nodeForm.SubmittedByUserID)
 				existUserIds[*nodeForm.SubmittedByUserID] = true
