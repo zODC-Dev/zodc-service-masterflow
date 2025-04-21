@@ -849,7 +849,7 @@ func (s *RequestService) UpdateRequestHandler(ctx context.Context, requestId int
 
 	// Create the new structure using the combined nodes and connections
 	// Pass the originalRequest.WorkflowVersionID, not the potentially different one from the fetched subRequest
-	err = s.WorkflowService.CreateNodesConnectionsStories(ctx, tx, &nodesConnectionsStories, requestId, originalRequest.Workflow.ProjectKey, userId, false)
+	err = s.WorkflowService.CreateNodesConnectionsStories(ctx, tx, &nodesConnectionsStories, requestId, originalRequest.Workflow.ProjectKey, userId, originalRequest.SprintID, false)
 	if err != nil {
 		return fmt.Errorf("create nodes connections stories fail: %w", err)
 	}
