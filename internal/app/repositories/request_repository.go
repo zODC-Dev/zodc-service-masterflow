@@ -451,6 +451,7 @@ func (r *RequestRepository) FindAllTasksByProject(ctx context.Context, db *sql.D
 	statement := postgres.SELECT(
 		Nodes.AllColumns,
 		Requests.AllColumns,
+		Workflows.AllColumns,
 	).FROM(
 		Nodes.
 			INNER_JOIN(
