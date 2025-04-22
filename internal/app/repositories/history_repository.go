@@ -21,7 +21,7 @@ func (r *HistoryRepository) CreateHistory(ctx context.Context, tx *sql.Tx, histo
 
 	columns := Histories.AllColumns.Except(Histories.ID, Histories.CreatedAt, Histories.UpdatedAt, Histories.DeletedAt)
 
-	statement := Histories.INSERT(columns).MODEL(history)
+	statement := Histories.INSERT(columns).MODEL(history).RETURNING(Histories.ID)
 
 	err := statement.QueryContext(ctx, tx, &history)
 
