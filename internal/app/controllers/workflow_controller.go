@@ -184,3 +184,38 @@ func (c *WorkflowController) ArchiveWorkflow(e echo.Context) error {
 	})
 
 }
+
+// UpdateWorkflow godoc
+// @Summary      Update a workflow
+// @Description  Updates a workflow definition based on the provided request details. Requires user authentication.
+// @Tags         Workflows
+// @Accept       json
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        id path int true "Workflow ID"
+// @Param        workflow body requests.UpdateWorkflow true "Update Workflow Request"
+// @Success      200 {object} map[string]string "message: Workflow updated successfully"
+// @Failure      500 {object} string "Error message for invalid ID or internal server error"
+// @Router       /workflows/{id} [put]
+func (c *WorkflowController) UpdateWorkflow(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	workflowId, err := strconv.Atoi(e.Param("id"))
+	if err != nil {
+		return e.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	req := new(requests.UpdateWorkflow)
+	if err := e.Bind(req); err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	err = c.workflowService.UpdateWorkflowHandler(ctx, req, int32(workflowId))
+	if err != nil {
+		return e.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, map[string]string{
+		"message": "Workflow updated successfully",
+	})
+}

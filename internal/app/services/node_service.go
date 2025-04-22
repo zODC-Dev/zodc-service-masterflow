@@ -34,6 +34,7 @@ type NodeService struct {
 	UserAPI             *externals.UserAPI
 	RequestService      *RequestService
 	NotificationService *NotificationService
+	HistoryService      *HistoryService
 }
 
 func NewNodeService(cfg NodeService) *NodeService {
@@ -50,6 +51,7 @@ func NewNodeService(cfg NodeService) *NodeService {
 		UserAPI:             cfg.UserAPI,
 		RequestService:      cfg.RequestService,
 		NotificationService: cfg.NotificationService,
+		HistoryService:      cfg.HistoryService,
 	}
 	return &nodeService
 }
@@ -371,7 +373,7 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 }
 
 // handler
-func (s *NodeService) StartNodeHandler(ctx context.Context, nodeId string) error {
+func (s *NodeService) StartNodeHandler(ctx context.Context, userId int32, nodeId string) error {
 	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return fmt.Errorf("start node handler fail: %w", err)
@@ -405,6 +407,13 @@ func (s *NodeService) StartNodeHandler(ctx context.Context, nodeId string) error
 	//Commit
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit fail: %w", err)
+	}
+
+	// History
+	oldStatus := string(constants.NodeStatusTodo)
+	err = s.HistoryService.HistoryChangeNodeStatus(ctx, userId, node.RequestID, nodeId, &oldStatus, string(constants.NodeStatusInProgress))
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -580,6 +589,13 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 		return fmt.Errorf("commit fail: %w", err)
 	}
 
+	// History
+	oldStatus := string(constants.NodeStatusInProgress)
+	err = s.HistoryService.HistoryChangeNodeStatus(ctx, userId, node.RequestID, nodeId, &oldStatus, string(constants.NodeStatusCompleted))
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -696,6 +712,9 @@ func (s *NodeService) ReassignNode(ctx context.Context, nodeId string, userId in
 		return err
 	}
 
+	// Old Assignee
+	oldAssigneeId := nodeResult.AssigneeID
+
 	node := model.Nodes{}
 	utils.Mapper(nodeResult, &node)
 
@@ -741,6 +760,12 @@ func (s *NodeService) ReassignNode(ctx context.Context, nodeId string, userId in
 		}
 	}
 
+	// History
+	err = s.HistoryService.HistoryChangeNodeAssignee(ctx, userId, node.RequestID, nodeId, oldAssigneeId, userIdReq)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -781,6 +806,12 @@ func (s *NodeService) ApproveNode(ctx context.Context, userId int32, nodeId stri
 		return err
 	}
 
+	// History
+	err = s.HistoryService.HistoryApproveOrRejectNode(ctx, userId, node.RequestID, nodeId, nil, "APPROVED")
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -816,6 +847,11 @@ func (s *NodeService) RejectNode(ctx context.Context, userId int32, nodeId strin
 
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit fail: %w", err)
+	}
+
+	err = s.HistoryService.HistoryApproveOrRejectNode(ctx, userId, node.RequestID, nodeId, nil, "REJECTED")
+	if err != nil {
+		return err
 	}
 
 	return nil

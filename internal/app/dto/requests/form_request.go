@@ -10,6 +10,7 @@ type FormTemplateFieldsCreate struct {
 	FieldName       string
 	FieldType       string
 	Required        bool
+	Readonly        bool
 	AdvancedOptions *json.RawMessage
 	ColNum          int32
 	FormID          int32
@@ -24,4 +25,14 @@ type FormTemplateCreate struct {
 	Description string
 	Decoration  string
 	FormFields  [][]FormTemplateFieldsCreate `json:"formFields"`
+}
+
+type FormTemplateUpdate struct {
+	FileName    string
+	Title       string
+	CategoryID  *int32
+	TemplateID  *int32
+	DataSheet   *json.RawMessage
+	Description string
+	Decoration  string
 }

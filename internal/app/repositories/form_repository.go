@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
+	"time"
 
 	"github.com/go-jet/jet/v2/postgres"
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
@@ -318,4 +319,18 @@ func (r *FormRepository) UpdateFormFieldJiraKey(ctx context.Context, tx *sql.Tx,
 	}
 
 	return nil
+}
+
+func (r *FormRepository) UpdateFormTemplate(ctx context.Context, tx *sql.Tx, formTemplate model.FormTemplates) error {
+	FormTemplates := table.FormTemplates
+
+	formTemplate.UpdatedAt = time.Now()
+
+	columns := FormTemplates.AllColumns.Except(FormTemplates.ID, FormTemplates.CreatedAt, FormTemplates.DeletedAt, FormTemplates.CurrentVersion)
+
+	statement := FormTemplates.UPDATE(columns).MODEL(formTemplate).WHERE(FormTemplates.ID.EQ(postgres.Int32(formTemplate.ID)))
+
+	_, err := statement.ExecContext(ctx, tx)
+
+	return err
 }

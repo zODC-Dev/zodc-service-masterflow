@@ -59,8 +59,10 @@ func (c *NodeController) CompleteNode(e echo.Context) error {
 func (c *NodeController) StartNode(e echo.Context) error {
 	ctx := e.Request().Context()
 
+	userId, _ := middlewares.GetUserID(e)
+
 	nodeId := e.Param("id")
-	if err := c.nodeService.StartNodeHandler(ctx, nodeId); err != nil {
+	if err := c.nodeService.StartNodeHandler(ctx, int32(userId), nodeId); err != nil {
 		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 

@@ -128,3 +128,30 @@ func (c *FormController) FindOneFormTemplateDetailByFormTemplateId(e echo.Contex
 	return e.JSON(http.StatusOK, formTemplateDetails)
 
 }
+
+func (c *FormController) UpdateFormTemplate(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	formTemplateId := e.Param("formTemplateId")
+	if formTemplateId == "" {
+		return e.JSON(http.StatusBadRequest, "Form template ID is required")
+	}
+
+	formTemplateIdInt, err := strconv.Atoi(formTemplateId)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, "Form template ID is not a valid integer")
+	}
+
+	req := new(requests.FormTemplateUpdate)
+	if err := e.Bind(req); err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	if err := c.formService.UpdateFormTemplate(ctx, req, int32(formTemplateIdInt)); err != nil {
+		return e.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, map[string]string{
+		"message": "Form template updated successfully",
+	})
+}

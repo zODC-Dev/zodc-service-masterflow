@@ -243,3 +243,52 @@ func (s *FormService) FindOneFormTemplateDetailByFormTemplateId(ctx context.Cont
 
 	return formTemplateDetails, nil
 }
+
+func (s *FormService) UpdateFormTemplate(ctx context.Context, req *requests.FormTemplateUpdate, formTemplateId int32) error {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	formTemplate, err := s.formRepo.FindOneFormTemplateByFormTemplateId(ctx, s.db, formTemplateId)
+	if err != nil {
+		return err
+	}
+
+	if req.FileName != "" {
+		formTemplate.FileName = req.FileName
+	}
+
+	if req.Title != "" {
+		formTemplate.Title = req.Title
+	}
+
+	if req.CategoryID != nil {
+		formTemplate.CategoryID = req.CategoryID
+	}
+
+	if req.TemplateID != nil {
+		formTemplate.TemplateID = req.TemplateID
+	}
+
+	if req.DataSheet != nil {
+		datasheet := string(*req.DataSheet)
+		formTemplate.DataSheet = &datasheet
+	}
+
+	formTemplateModel := model.FormTemplates{}
+	if err := utils.Mapper(formTemplate, &formTemplateModel); err != nil {
+		return fmt.Errorf("mapping form template failed: %w", err)
+	}
+
+	if err := s.formRepo.UpdateFormTemplate(ctx, tx, formTemplateModel); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}

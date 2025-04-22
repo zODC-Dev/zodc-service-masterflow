@@ -19,6 +19,7 @@ type FormTemplateFields struct {
 	AdvancedOptions       *string
 	ColNum                int32
 	Required              bool
+	Readonly              bool
 	Category              string
 	Title                 string
 	Icon                  string

@@ -287,7 +287,13 @@ func (s *NatsSubscriberService) handleJiraIssueUpdate(tx *sql.Tx, data []byte) e
 					if *oldSystemStatus == string(constants.NodeStatusTodo) && systemStatus == string(constants.NodeStatusInProgress) {
 						// Use NodeService to start the node - this will be handled in a separate transaction
 						ctx := context.Background()
-						if err := s.NodeService.StartNodeHandler(ctx, activeNodeId); err != nil {
+
+						// GET ASSIGNEE ID
+						assigneeId := 0
+						if message.AssigneeId != nil {
+							assigneeId, _ = strconv.Atoi(*message.AssigneeId)
+						}
+						if err := s.NodeService.StartNodeHandler(ctx, int32(assigneeId), activeNodeId); err != nil {
 							slog.Error("Failed to start node", "nodeId", activeNodeId, "error", err)
 							// Continue execution even if node start fails
 						}

@@ -1561,3 +1561,49 @@ func setTimeToEndOfWorkday(t *time.Time) *time.Time {
 
 	return &newTime
 }
+
+func (s *WorkflowService) UpdateWorkflowHandler(ctx context.Context, req *requests.UpdateWorkflow, workflowId int32) error {
+	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{
+		Isolation: sql.LevelReadCommitted,
+	})
+	if err != nil {
+		return fmt.Errorf("begin tx fail: %w", err)
+	}
+	defer tx.Rollback()
+
+	workflow, err := s.WorkflowRepo.FindOneWorkflowByWorkflowId(ctx, s.DB, workflowId)
+	if err != nil {
+		return fmt.Errorf("find workflow fail: %w", err)
+	}
+
+	if req.Decoration != "" {
+		workflow.Decoration = req.Decoration
+	}
+	if req.Description != "" {
+		workflow.Description = req.Description
+	}
+	if req.Title != "" {
+		workflow.Title = req.Title
+	}
+	if req.Type != "" {
+		workflow.Type = req.Type
+	}
+	if req.CategoryId != 0 {
+		workflow.CategoryID = req.CategoryId
+	}
+
+	workflowModel := model.Workflows{}
+	if err := utils.Mapper(workflow, &workflowModel); err != nil {
+		return fmt.Errorf("map workflow fail: %w", err)
+	}
+
+	if err := s.WorkflowRepo.UpdateWorkflow(ctx, tx, workflowModel); err != nil {
+		return fmt.Errorf("update workflow fail: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit fail: %w", err)
+	}
+
+	return nil
+}

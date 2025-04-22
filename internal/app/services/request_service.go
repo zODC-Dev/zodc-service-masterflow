@@ -30,6 +30,7 @@ type RequestService struct {
 	NodeService     *NodeService
 	FormService     *FormService
 	FormRepo        *repositories.FormRepository
+	HistoryRepo     *repositories.HistoryRepository
 }
 
 func NewRequestService(cfg RequestService) *RequestService {
@@ -44,6 +45,7 @@ func NewRequestService(cfg RequestService) *RequestService {
 		NodeService:     cfg.NodeService,
 		FormService:     cfg.FormService,
 		FormRepo:        cfg.FormRepo,
+		HistoryRepo:     cfg.HistoryRepo,
 	}
 }
 
@@ -1317,4 +1319,125 @@ func (s *RequestService) GetRequestCompletedFormApprovalHandler(ctx context.Cont
 	}
 
 	return requestCompletedFormApprovalResponse, nil
+}
+
+func (s *RequestService) FindAllHistoryByRequestId(ctx context.Context, requestId int32) ([]responses.HistoryResponse, error) {
+
+	historiesResponse := []responses.HistoryResponse{}
+
+	histories, err := s.HistoryRepo.FindAllHistoryByRequestId(ctx, s.DB, requestId)
+	if err != nil {
+		return historiesResponse, err
+	}
+
+	userIds := []int32{}
+	existingUserIds := make(map[int32]bool)
+	for _, history := range histories {
+		if history.UserID != nil {
+			if !existingUserIds[*history.UserID] {
+				existingUserIds[*history.UserID] = true
+				userIds = append(userIds, *history.UserID)
+			}
+		}
+
+		if history.TypeAction == constants.HistoryTypeAssignee {
+			if history.FromValue != nil {
+				fromValueInt32, err := strconv.Atoi(*history.FromValue)
+				if err != nil {
+					return nil, err
+				}
+				if !existingUserIds[int32(fromValueInt32)] {
+					existingUserIds[int32(fromValueInt32)] = true
+					userIds = append(userIds, int32(fromValueInt32))
+				}
+			}
+
+			toValueInt32, err := strconv.Atoi(history.ToValue)
+			if err != nil {
+				return nil, err
+			}
+			if !existingUserIds[int32(toValueInt32)] {
+				existingUserIds[int32(toValueInt32)] = true
+				userIds = append(userIds, int32(toValueInt32))
+			}
+		}
+	}
+
+	userApiMap := map[int32]results.UserApiDataResult{}
+	if len(userIds) > 0 {
+		assigneeResult, err := s.UserAPI.FindUsersByUserIds(userIds)
+		if err != nil {
+			return historiesResponse, err
+		}
+		for _, userApi := range assigneeResult.Data {
+			userApiMap[userApi.ID] = userApi
+		}
+	}
+
+	mapUser := func(id *int32) types.Assignee {
+		assignee := types.Assignee{}
+		if id != nil {
+			if user, ok := userApiMap[*id]; ok {
+				assignee.Id = user.ID
+				assignee.Name = user.Name
+				assignee.Email = user.Email
+				assignee.AvatarUrl = user.AvatarUrl
+				assignee.IsSystemUser = user.IsSystemUser
+			}
+		}
+		return assignee
+	}
+
+	for _, history := range histories {
+
+		historyNodeResponse := responses.HistoryNodeResponse{
+			ID:    history.Node.ID,
+			Title: history.Node.Title,
+		}
+
+		if history.Node.JiraKey != nil {
+			historyNodeResponse.Key = *history.Node.JiraKey
+		} else {
+			historyNodeResponse.Key = strconv.Itoa(int(history.Node.Key))
+		}
+
+		historyResponse := responses.HistoryResponse{
+			ID:        history.ID,
+			CreatedAt: history.CreatedAt,
+			Assignee:  mapUser(history.UserID),
+			Node:      historyNodeResponse,
+		}
+
+		if history.TypeAction == constants.HistoryTypeAssignee {
+			if history.FromValue != nil {
+				fromValueInt, err := strconv.Atoi(*history.FromValue)
+				if err != nil {
+					return nil, err
+				}
+				fromValueInt32 := int32(fromValueInt)
+
+				historyResponse.From = mapUser(&fromValueInt32)
+			}
+
+			toValueInt, err := strconv.Atoi(history.ToValue)
+			if err != nil {
+				return nil, err
+			}
+			toValueInt32 := int32(toValueInt)
+
+			historyResponse.To = mapUser(&toValueInt32)
+
+		} else if history.TypeAction == constants.HistoryTypeStatus {
+
+			historyResponse.From = history.FromValue
+			historyResponse.To = history.ToValue
+		} else if history.TypeAction == constants.HistoryTypeApproveReject {
+			historyResponse.From = history.FromValue
+			historyResponse.To = history.ToValue
+		}
+
+		historiesResponse = append(historiesResponse, historyResponse)
+	}
+
+	return historiesResponse, nil
 }

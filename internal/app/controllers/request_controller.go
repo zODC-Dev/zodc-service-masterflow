@@ -526,3 +526,32 @@ func (c *RequestController) GetRequestCompletedFormApproval(e echo.Context) erro
 
 	return e.JSON(http.StatusOK, requestCompletedFormApprovalResponse)
 }
+
+// FindAllHistoryByRequestId godoc
+// @Summary      Find all history by request id
+// @Description  Find all history by request id
+// @Tags         History
+// @Accept       json
+// @Produce      json
+// @Param        requestId path int true "Request ID"
+// @Success      200 {object} []responses.HistoryResponse "History"
+// @Failure      400 {object} map[string]string "Bad Request"
+// @Failure      500 {object} map[string]string "Internal Server Error"
+// @Router       /history/{requestId} [get]
+func (c *RequestController) FindAllHistoryByRequestId(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	requestId := e.Param("requestId")
+
+	requestIdInt, err := strconv.Atoi(requestId)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	history, err := c.requestService.FindAllHistoryByRequestId(ctx, int32(requestIdInt))
+	if err != nil {
+		return e.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, history)
+}

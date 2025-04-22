@@ -24,6 +24,7 @@ type formTemplateFieldsTable struct {
 	AdvancedOptions       postgres.ColumnString
 	ColNum                postgres.ColumnInteger
 	Required              postgres.ColumnBool
+	Readonly              postgres.ColumnBool
 	Category              postgres.ColumnString
 	Title                 postgres.ColumnString
 	Icon                  postgres.ColumnString
@@ -78,6 +79,7 @@ func newFormTemplateFieldsTableImpl(schemaName, tableName, alias string) formTem
 		AdvancedOptionsColumn       = postgres.StringColumn("advanced_options")
 		ColNumColumn                = postgres.IntegerColumn("col_num")
 		RequiredColumn              = postgres.BoolColumn("required")
+		ReadonlyColumn              = postgres.BoolColumn("readonly")
 		CategoryColumn              = postgres.StringColumn("category")
 		TitleColumn                 = postgres.StringColumn("title")
 		IconColumn                  = postgres.StringColumn("icon")
@@ -85,8 +87,8 @@ func newFormTemplateFieldsTableImpl(schemaName, tableName, alias string) formTem
 		FieldTypeColumn             = postgres.StringColumn("field_type")
 		FieldNameColumn             = postgres.StringColumn("field_name")
 		FormTemplateVersionIDColumn = postgres.IntegerColumn("form_template_version_id")
-		allColumns                  = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, AdvancedOptionsColumn, ColNumColumn, RequiredColumn, CategoryColumn, TitleColumn, IconColumn, FieldIDColumn, FieldTypeColumn, FieldNameColumn, FormTemplateVersionIDColumn}
-		mutableColumns              = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, AdvancedOptionsColumn, ColNumColumn, RequiredColumn, CategoryColumn, TitleColumn, IconColumn, FieldIDColumn, FieldTypeColumn, FieldNameColumn, FormTemplateVersionIDColumn}
+		allColumns                  = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, AdvancedOptionsColumn, ColNumColumn, RequiredColumn, ReadonlyColumn, CategoryColumn, TitleColumn, IconColumn, FieldIDColumn, FieldTypeColumn, FieldNameColumn, FormTemplateVersionIDColumn}
+		mutableColumns              = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, AdvancedOptionsColumn, ColNumColumn, RequiredColumn, ReadonlyColumn, CategoryColumn, TitleColumn, IconColumn, FieldIDColumn, FieldTypeColumn, FieldNameColumn, FormTemplateVersionIDColumn}
 	)
 
 	return formTemplateFieldsTable{
@@ -100,6 +102,7 @@ func newFormTemplateFieldsTableImpl(schemaName, tableName, alias string) formTem
 		AdvancedOptions:       AdvancedOptionsColumn,
 		ColNum:                ColNumColumn,
 		Required:              RequiredColumn,
+		Readonly:              ReadonlyColumn,
 		Category:              CategoryColumn,
 		Title:                 TitleColumn,
 		Icon:                  IconColumn,

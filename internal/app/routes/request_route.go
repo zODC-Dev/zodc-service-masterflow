@@ -18,6 +18,8 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 	categoryRepo := repositories.NewCategoryRepository()
 	connectionRepo := repositories.NewConnectionRepository()
 	nodeRepo := repositories.NewNodeRepository()
+	historyRepo := repositories.NewHistoryRepository()
+
 	nodeService := services.NewNodeService(services.NodeService{
 		DB:       db,
 		NodeRepo: nodeRepo,
@@ -61,6 +63,7 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 		NodeService:     nodeService,
 		FormService:     formService,
 		FormRepo:        formRepo,
+		HistoryRepo:     historyRepo,
 	})
 
 	requestController := controllers.NewRequestController(requestService)
@@ -86,6 +89,8 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 		requestRoute.GET("/:id/completed-form/:dataId", requestController.GetRequestCompletedFormApproval)
 
 		requestRoute.GET("/:id/file-manager", requestController.GetRequestFileManager)
+
+		requestRoute.GET("/:id/history", requestController.FindAllHistoryByRequestId)
 
 	}
 

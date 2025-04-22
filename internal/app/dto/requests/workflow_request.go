@@ -128,3 +128,12 @@ type StartWorkflow struct {
 
 	NodesConnectionsStories
 }
+
+type UpdateWorkflow struct {
+	Decoration  string
+	Description string
+	Title       string
+	Type        string
+	CategoryId  int32
+	ProjectKey  string
+}

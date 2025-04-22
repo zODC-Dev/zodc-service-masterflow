@@ -40,7 +40,8 @@ CREATE TABLE form_template_fields (
 
     advanced_options JSONB,
     col_num INT NOT NULL,
-    required BOOLEAN NOT NULL,
+    required BOOLEAN NOT NULL DEFAULT false,
+    readonly BOOLEAN NOT NULL DEFAULT false,
     category TEXT NOT NULL,
     title TEXT NOT NULL,
     icon TEXT NOT NULL,

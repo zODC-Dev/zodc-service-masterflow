@@ -18,6 +18,7 @@ func UseSchema(schema string) {
 	FormTemplateVersions = FormTemplateVersions.FromSchema(schema)
 	FormTemplates = FormTemplates.FromSchema(schema)
 	GooseDbVersion = GooseDbVersion.FromSchema(schema)
+	Histories = Histories.FromSchema(schema)
 	NodeConditionDestinations = NodeConditionDestinations.FromSchema(schema)
 	NodeFormApproveOrRejectUsers = NodeFormApproveOrRejectUsers.FromSchema(schema)
 	NodeForms = NodeForms.FromSchema(schema)

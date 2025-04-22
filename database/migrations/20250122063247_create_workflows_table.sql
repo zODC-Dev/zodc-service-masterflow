@@ -46,7 +46,7 @@ CREATE TABLE requests (
 
     last_update_user_id INT NOT NULL,
 
-    status TEXT NOT NULL, -- TO_DO, IN_PROCESS , COMPLETED, CANCELED, TERMINATED
+    status TEXT NOT NULL CHECK (status IN ('TO_DO', 'IN_PROGRESS', 'COMPLETED', 'CANCELED', 'TERMINATED')),
     title TEXT NOT NULL,
 
     is_template BOOLEAN NOT NULL DEFAULT FALSE,
@@ -93,8 +93,8 @@ CREATE TABLE nodes (
 
     sub_request_id INT REFERENCES requests (id) ON DELETE CASCADE,    
     
-    type TEXT NOT NULL, -- start, end, bug, task, approve, sub_workflow, story, input, noti, group, condition
-    status TEXT NOT NULL, -- TO_DO, IN_PROCESSING, COMPLETED, OVERDUE
+    type TEXT NOT NULL CHECK (type IN ('START', 'END', 'BUG', 'TASK', 'APPROVAL', 'SUB_WORKFLOW', 'STORY', 'INPUT', 'NOTIFICATION', 'CONDITION')),
+    status TEXT NOT NULL CHECK (status IN ('TO_DO', 'IN_PROGRESS', 'COMPLETED', 'OVER_DUE')),
 
     is_current BOOLEAN NOT NULL DEFAULT false,
 
@@ -119,7 +119,7 @@ CREATE TABLE nodes (
     is_rejected BOOLEAN NOT NULL DEFAULT false,
 
     -- end node
-    end_type TEXT,
+    end_type TEXT CHECK (end_type IN ('COMPLETE', 'TERMINATE', null)),
 
     -- task node
     task_assigned_requester BOOLEAN NOT NULL DEFAULT false,

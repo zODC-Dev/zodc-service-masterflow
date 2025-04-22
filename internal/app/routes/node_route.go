@@ -19,18 +19,21 @@ func NodeRoute(group *echo.Group, db *sql.DB) {
 	requestRepo := repositories.NewRequestRepository()
 	connectionRepo := repositories.NewConnectionRepository()
 	nodeRepo := repositories.NewNodeRepository()
+	historyRepo := repositories.NewHistoryRepository()
+
+	// Nats
 	natsClient := nats.GetNATSClient()
 
 	// Apis
 	userApi := externals.NewUserAPI()
 
+	// Services
 	natsService := services.NewNatsService(services.NatsService{
 		NatsClient:  natsClient,
 		NodeRepo:    nodeRepo,
 		RequestRepo: requestRepo,
 		FormRepo:    formRepo,
 	})
-
 	requestService := services.NewRequestService(services.RequestService{
 		RequestRepo:    requestRepo,
 		DB:             db,
@@ -38,10 +41,9 @@ func NodeRoute(group *echo.Group, db *sql.DB) {
 		NodeRepo:       nodeRepo,
 		ConnectionRepo: connectionRepo,
 	})
-
 	formService := services.NewFormService(db, formRepo, natsClient)
-
 	notificationService := services.NewNotificationService(natsClient, userApi)
+	historyService := services.NewHistoryService(db, historyRepo, userApi)
 
 	nodeService := services.NewNodeService(services.NodeService{
 		NodeRepo:            nodeRepo,
@@ -54,6 +56,7 @@ func NodeRoute(group *echo.Group, db *sql.DB) {
 		RequestService:      requestService,
 		FormService:         formService,
 		NotificationService: notificationService,
+		HistoryService:      historyService,
 	})
 
 	workflowService := services.NewWorkflowService(services.WorkflowService{

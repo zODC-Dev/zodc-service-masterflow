@@ -23,6 +23,8 @@ func FormRoute(group *echo.Group, db *sql.DB) {
 		formRoute.GET("/templates/all", formController.FindAllFormTemplate)
 		formRoute.GET("/templates/:formTemplateId/fields", formController.FindAllFormTemplateFieldsByFormTemplateId)
 
+		formRoute.PUT("/templates/:formTemplateId", formController.UpdateFormTemplate)
+
 		formRoute.GET("/templates/:formTemplateId/detail", formController.FindOneFormTemplateDetailByFormTemplateId)
 	}
 }
