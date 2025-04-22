@@ -67,7 +67,7 @@ func WorkflowRoute(group *echo.Group, db *sql.DB) {
 		workflowRoute.POST("/create", workflowController.CreateWorkflow)
 
 		workflowRoute.GET("/:id", workflowController.FindOneWorkflowDetail)
-		workflowRoute.PUT("/:id", workflowController.UpdateWorkflow)
+		workflowRoute.PUT("/:id/edit", workflowController.UpdateWorkflow)
 
 		workflowRoute.POST("/start", workflowController.StartWorkflow)
 		workflowRoute.PUT("/:id/archive", workflowController.ArchiveWorkflow)
