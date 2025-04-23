@@ -869,7 +869,7 @@ func (s *NodeService) ApproveNode(ctx context.Context, userId int32, nodeId stri
 	}
 
 	// History
-	err = s.HistoryService.HistoryApproveOrRejectNode(ctx, userId, node.RequestID, nodeId, nil, "APPROVED")
+	err = s.HistoryService.HistoryApproveNode(ctx, userId, node.RequestID, nodeId)
 	if err != nil {
 		return err
 	}
@@ -911,7 +911,7 @@ func (s *NodeService) RejectNode(ctx context.Context, userId int32, nodeId strin
 		return fmt.Errorf("commit fail: %w", err)
 	}
 
-	err = s.HistoryService.HistoryApproveOrRejectNode(ctx, userId, node.RequestID, nodeId, nil, "REJECTED")
+	err = s.HistoryService.HistoryRejectNode(ctx, userId, node.RequestID, nodeId)
 	if err != nil {
 		return err
 	}

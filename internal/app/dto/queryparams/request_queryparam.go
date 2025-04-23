@@ -24,3 +24,10 @@ type RequestTaskCount struct {
 	Type         string
 	ProjectKey   string
 }
+
+type RequestMidSprintReportQueryParam struct {
+	StartTime  string
+	EndTime    string
+	SprintId   string
+	ProjectKey string
+}

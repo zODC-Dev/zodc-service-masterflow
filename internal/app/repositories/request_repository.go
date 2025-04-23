@@ -763,7 +763,7 @@ func (r *RequestRepository) FindAllRequestFileManagerByRequestId(ctx context.Con
 
 }
 
-func (r *RequestRepository) FindAllTasksByMidSprintReport(ctx context.Context, db *sql.DB, startTime time.Time, endTime time.Time) ([]results.Request, error) {
+func (r *RequestRepository) FindAllTasksByMidSprintReport(ctx context.Context, db *sql.DB, queryParams queryparams.RequestMidSprintReportQueryParam) ([]results.Request, error) {
 	Requests := table.Requests
 	Nodes := table.Nodes
 	WorkflowVersions := table.WorkflowVersions
@@ -784,12 +784,43 @@ func (r *RequestRepository) FindAllTasksByMidSprintReport(ctx context.Context, d
 			LEFT_JOIN(
 				Workflows, WorkflowVersions.WorkflowID.EQ(Workflows.ID),
 			),
-	).WHERE(
-		Workflows.Type.EQ(postgres.String(string(constants.WorkflowTypeProject))).
-			AND(
-				Workflows.CreatedAt.BETWEEN(postgres.TimestampT(startTime), postgres.TimestampT(endTime)),
-			),
 	)
+
+	conditions := []postgres.BoolExpression{
+		Workflows.Type.EQ(postgres.String(string(constants.WorkflowTypeProject))),
+	}
+
+	if queryParams.SprintId != "" {
+		sprintIdInt, err := strconv.Atoi(queryParams.SprintId)
+		if err != nil {
+			return nil, err
+		}
+		conditions = append(conditions, Requests.SprintID.EQ(postgres.Int32(int32(sprintIdInt))))
+	}
+
+	if queryParams.StartTime != "" {
+		startTime, err := time.Parse(time.RFC3339, queryParams.StartTime)
+		if err != nil {
+			return nil, err
+		}
+		conditions = append(conditions, Workflows.CreatedAt.GT_EQ(postgres.TimestampT(startTime)))
+	}
+
+	if queryParams.EndTime != "" {
+		endTime, err := time.Parse(time.RFC3339, queryParams.EndTime)
+		if err != nil {
+			return nil, err
+		}
+		conditions = append(conditions, Workflows.CreatedAt.LT_EQ(postgres.TimestampT(endTime)))
+	}
+
+	if queryParams.ProjectKey != "" {
+		conditions = append(conditions, Workflows.ProjectKey.EQ(postgres.String(queryParams.ProjectKey)))
+	}
+
+	if len(conditions) > 0 {
+		statement = statement.WHERE(postgres.AND(conditions...))
+	}
 
 	result := []results.Request{}
 	err := statement.QueryContext(ctx, db, &result)

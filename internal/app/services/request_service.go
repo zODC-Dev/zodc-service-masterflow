@@ -32,6 +32,7 @@ type RequestService struct {
 	FormService     *FormService
 	FormRepo        *repositories.FormRepository
 	HistoryRepo     *repositories.HistoryRepository
+	HistoryService  *HistoryService
 }
 
 func NewRequestService(cfg RequestService) *RequestService {
@@ -47,6 +48,7 @@ func NewRequestService(cfg RequestService) *RequestService {
 		FormService:     cfg.FormService,
 		FormRepo:        cfg.FormRepo,
 		HistoryRepo:     cfg.HistoryRepo,
+		HistoryService:  cfg.HistoryService,
 	}
 }
 
@@ -897,6 +899,19 @@ func (s *RequestService) UpdateRequestHandler(ctx context.Context, requestId int
 
 	// ================================ END SYNC WITH JIRA ================================
 
+	// history
+	if originalRequest.Status == string(constants.RequestStatusInProgress) {
+		for _, node := range originalRequest.Nodes {
+			if node.Type == string(constants.NodeTypeStart) {
+				err = s.HistoryService.HistoryEditRequest(ctx, requestId, node.ID)
+				if err != nil {
+					return fmt.Errorf("history edit request fail: %w", err)
+				}
+				break
+			}
+		}
+	}
+
 	//Commit
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit fail: %w", err)
@@ -1442,7 +1457,7 @@ func (s *RequestService) FindAllHistoryByRequestId(ctx context.Context, requestI
 			historyResponse.From = history.FromValue
 			historyResponse.To = history.ToValue
 
-		} else if history.TypeAction == constants.HistoryTypeApproveReject {
+		} else if history.TypeAction == constants.HistoryTypeApprove || history.TypeAction == constants.HistoryTypeReject {
 			historyResponse.From = history.FromValue
 			historyResponse.To = history.ToValue
 		} else if history.TypeAction == constants.HistoryTypeNewTask {
@@ -1460,10 +1475,10 @@ func (s *RequestService) FindAllHistoryByRequestId(ctx context.Context, requestI
 	return historiesResponse, nil
 }
 
-func (s *RequestService) ReportMidSprintTasks(ctx context.Context, startTime time.Time, endTime time.Time) ([]responses.RequestTaskResponse, error) {
+func (s *RequestService) ReportMidSprintTasks(ctx context.Context, queryParams queryparams.RequestMidSprintReportQueryParam) ([]responses.RequestTaskResponse, error) {
 	requestTasksResponse := []responses.RequestTaskResponse{}
 
-	requests, err := s.RequestRepo.FindAllTasksByMidSprintReport(ctx, s.DB, startTime, endTime)
+	requests, err := s.RequestRepo.FindAllTasksByMidSprintReport(ctx, s.DB, queryParams)
 	if err != nil {
 		return nil, err
 	}

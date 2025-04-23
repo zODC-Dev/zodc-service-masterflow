@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
@@ -570,22 +569,17 @@ func (c *RequestController) ReportMidSprintTasks(e echo.Context) error {
 
 	startTime := e.QueryParam("startTime")
 	endTime := e.QueryParam("endTime")
+	sprintId := e.QueryParam("sprintId")
+	projectKey := e.QueryParam("projectKey")
 
-	if startTime == "" || endTime == "" {
-		return e.JSON(http.StatusBadRequest, "Start time and end time are required")
+	queryParams := queryparams.RequestMidSprintReportQueryParam{
+		StartTime:  startTime,
+		EndTime:    endTime,
+		SprintId:   sprintId,
+		ProjectKey: projectKey,
 	}
 
-	startTimeInt, err := strconv.Atoi(startTime)
-	if err != nil {
-		return e.JSON(http.StatusBadRequest, err.Error())
-	}
-
-	endTimeInt, err := strconv.Atoi(endTime)
-	if err != nil {
-		return e.JSON(http.StatusBadRequest, err.Error())
-	}
-
-	requestTasksResponse, err := c.requestService.ReportMidSprintTasks(ctx, time.Unix(int64(startTimeInt), 0), time.Unix(int64(endTimeInt), 0))
+	requestTasksResponse, err := c.requestService.ReportMidSprintTasks(ctx, queryParams)
 	if err != nil {
 		return e.JSON(http.StatusInternalServerError, err.Error())
 	}

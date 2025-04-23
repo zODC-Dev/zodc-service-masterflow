@@ -53,7 +53,7 @@ func (s *HistoryService) HistoryChangeNodeStatus(ctx context.Context, userId int
 	return nil
 }
 
-func (s *HistoryService) HistoryApproveOrRejectNode(ctx context.Context, userId int32, requestId int32, nodeId string, fromStatus *string, toStatus string) error {
+func (s *HistoryService) HistoryApproveNode(ctx context.Context, userId int32, requestId int32, nodeId string) error {
 	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
@@ -64,9 +64,37 @@ func (s *HistoryService) HistoryApproveOrRejectNode(ctx context.Context, userId 
 		UserID:     &userId,
 		RequestID:  requestId,
 		NodeID:     nodeId,
-		TypeAction: constants.HistoryTypeApproveReject,
-		ToValue:    &toStatus,
-		FromValue:  fromStatus,
+		TypeAction: constants.HistoryTypeApprove,
+		ToValue:    nil,
+		FromValue:  nil,
+	}
+
+	err = s.HistoryRepo.CreateHistory(ctx, tx, history)
+	if err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *HistoryService) HistoryRejectNode(ctx context.Context, userId int32, requestId int32, nodeId string) error {
+	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	history := model.Histories{
+		UserID:     &userId,
+		RequestID:  requestId,
+		NodeID:     nodeId,
+		TypeAction: constants.HistoryTypeReject,
+		ToValue:    nil,
+		FromValue:  nil,
 	}
 
 	err = s.HistoryRepo.CreateHistory(ctx, tx, history)
@@ -186,6 +214,34 @@ func (s *HistoryService) HistoryEndRequest(ctx context.Context, requestId int32,
 		RequestID:  requestId,
 		NodeID:     nodeId,
 		TypeAction: constants.HistoryTypeEndRequest,
+		FromValue:  nil,
+		ToValue:    nil,
+	}
+
+	err = s.HistoryRepo.CreateHistory(ctx, tx, history)
+	if err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *HistoryService) HistoryEditRequest(ctx context.Context, requestId int32, nodeId string) error {
+	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	history := model.Histories{
+		UserID:     nil,
+		RequestID:  requestId,
+		NodeID:     nodeId,
+		TypeAction: constants.HistoryTypeEditRequest,
 		FromValue:  nil,
 		ToValue:    nil,
 	}

@@ -51,6 +51,7 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 	})
 
 	formService := services.NewFormService(db, formRepo, natsClient)
+	historyService := services.NewHistoryService(db, historyRepo, userApi)
 
 	requestService := services.NewRequestService(services.RequestService{
 		DB:              db,
@@ -64,6 +65,7 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 		FormService:     formService,
 		FormRepo:        formRepo,
 		HistoryRepo:     historyRepo,
+		HistoryService:  historyService,
 	})
 
 	requestController := controllers.NewRequestController(requestService)
