@@ -92,6 +92,8 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 
 		requestRoute.GET("/:id/history", requestController.FindAllHistoryByRequestId)
 
+		requestRoute.GET("/report/mid-sprint-tasks", requestController.ReportMidSprintTasks)
+
 	}
 
 }

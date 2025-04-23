@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
@@ -554,4 +555,40 @@ func (c *RequestController) FindAllHistoryByRequestId(e echo.Context) error {
 	}
 
 	return e.JSON(http.StatusOK, history)
+}
+
+// ReportMidSprintTasks godoc
+// @Summary      Report mid sprint tasks
+// @Description  Report mid sprint tasks
+// @Tags         Requests
+// @Produce      json
+// @Success      200 {object} []responses.RequestTaskResponse "Request Task Response"
+// @Failure      500 {object} string "Error message for internal server error"
+// @Router       /requests/report/mid-sprint-tasks [get]
+func (c *RequestController) ReportMidSprintTasks(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	startTime := e.QueryParam("startTime")
+	endTime := e.QueryParam("endTime")
+
+	if startTime == "" || endTime == "" {
+		return e.JSON(http.StatusBadRequest, "Start time and end time are required")
+	}
+
+	startTimeInt, err := strconv.Atoi(startTime)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	endTimeInt, err := strconv.Atoi(endTime)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	requestTasksResponse, err := c.requestService.ReportMidSprintTasks(ctx, time.Unix(int64(startTimeInt), 0), time.Unix(int64(endTimeInt), 0))
+	if err != nil {
+		return e.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, requestTasksResponse)
 }

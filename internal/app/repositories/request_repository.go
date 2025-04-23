@@ -761,3 +761,37 @@ func (r *RequestRepository) FindAllRequestFileManagerByRequestId(ctx context.Con
 	return len(result), result, err
 
 }
+
+func (r *RequestRepository) FindAllTasksByMidSprintReport(ctx context.Context, db *sql.DB, startTime time.Time, endTime time.Time) ([]results.Request, error) {
+	Requests := table.Requests
+	Nodes := table.Nodes
+	WorkflowVersions := table.WorkflowVersions
+	Workflows := table.Workflows
+
+	statement := Requests.SELECT(
+		Requests.AllColumns,
+		Nodes.AllColumns,
+		Workflows.AllColumns,
+	).FROM(
+		Requests.
+			LEFT_JOIN(
+				Nodes, Requests.ID.EQ(Nodes.RequestID),
+			).
+			LEFT_JOIN(
+				WorkflowVersions, Requests.WorkflowVersionID.EQ(WorkflowVersions.ID),
+			).
+			LEFT_JOIN(
+				Workflows, WorkflowVersions.WorkflowID.EQ(Workflows.ID),
+			),
+	).WHERE(
+		Workflows.Type.EQ(postgres.String(string(constants.WorkflowTypeProject))).
+			AND(
+				Workflows.CreatedAt.BETWEEN(postgres.TimestampT(startTime), postgres.TimestampT(endTime)),
+			),
+	)
+
+	result := []results.Request{}
+	err := statement.QueryContext(ctx, db, &result)
+
+	return result, err
+}

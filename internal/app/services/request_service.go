@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
+	"time"
 
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/constants"
@@ -1457,4 +1458,78 @@ func (s *RequestService) FindAllHistoryByRequestId(ctx context.Context, requestI
 	}
 
 	return historiesResponse, nil
+}
+
+func (s *RequestService) ReportMidSprintTasks(ctx context.Context, startTime time.Time, endTime time.Time) ([]responses.RequestTaskResponse, error) {
+	requestTasksResponse := []responses.RequestTaskResponse{}
+
+	requests, err := s.RequestRepo.FindAllTasksByMidSprintReport(ctx, s.DB, startTime, endTime)
+	if err != nil {
+		return nil, err
+	}
+
+	userIds := []int32{}
+	existUserIds := make(map[int32]bool)
+	for _, request := range requests {
+		for _, node := range request.Nodes {
+			if node.AssigneeID != nil && !existUserIds[*node.AssigneeID] {
+				existUserIds[*node.AssigneeID] = true
+				userIds = append(userIds, *node.AssigneeID)
+			}
+		}
+	}
+
+	userApiMap := map[int32]results.UserApiDataResult{}
+	if len(userIds) > 0 {
+		assigneeResult, err := s.UserAPI.FindUsersByUserIds(userIds)
+		if err != nil {
+			return nil, err
+		}
+		for _, userApi := range assigneeResult.Data {
+			userApiMap[userApi.ID] = userApi
+		}
+	}
+
+	mapUser := func(id *int32) types.Assignee {
+		assignee := types.Assignee{}
+		if id != nil {
+			if user, ok := userApiMap[*id]; ok {
+				assignee.Id = user.ID
+				assignee.Name = user.Name
+				assignee.Email = user.Email
+				assignee.AvatarUrl = user.AvatarUrl
+				assignee.IsSystemUser = user.IsSystemUser
+			}
+		}
+		return assignee
+	}
+
+	for _, request := range requests {
+		for _, node := range request.Nodes {
+			taskRes := responses.RequestTaskResponse{
+				Id:               node.ID,
+				Title:            node.Title,
+				Status:           node.Status,
+				Type:             node.Type,
+				RequestID:        request.ID,
+				RequestTitle:     request.Title,
+				RequestProgress:  request.Progress,
+				ProjectKey:       request.Workflow.ProjectKey,
+				JiraLinkUrl:      node.JiraLinkURL,
+				Assignee:         mapUser(node.AssigneeID),
+				PlannedStartTime: node.PlannedStartTime,
+				PlannedEndTime:   node.PlannedEndTime,
+				ActualStartTime:  node.ActualStartTime,
+				ActualEndTime:    node.ActualEndTime,
+				EstimatePoint:    node.EstimatePoint,
+				IsCurrent:        node.IsCurrent,
+				IsApproved:       node.IsApproved,
+				IsRejected:       node.IsRejected,
+			}
+
+			requestTasksResponse = append(requestTasksResponse, taskRes)
+		}
+	}
+
+	return requestTasksResponse, nil
 }

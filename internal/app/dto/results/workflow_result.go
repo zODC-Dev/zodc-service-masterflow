@@ -44,21 +44,8 @@ type ConnectionWithNode struct {
 	Node model.Nodes
 }
 
-type Request struct {
-	model.Requests
-	Nodes    []model.Nodes
-	Workflow model.Workflows
-}
-
 type Count struct {
 	Count int64 `sql:"count"`
-}
-
-type RequestSubRequest struct {
-	model.Requests
-	Nodes            []model.Nodes
-	Workflows        model.Workflows
-	WorkflowVersions model.WorkflowVersions
 }
 
 type Workflow struct {
