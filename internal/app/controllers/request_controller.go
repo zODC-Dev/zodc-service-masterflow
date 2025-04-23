@@ -542,7 +542,7 @@ func (c *RequestController) GetRequestCompletedFormApproval(e echo.Context) erro
 func (c *RequestController) FindAllHistoryByRequestId(e echo.Context) error {
 	ctx := e.Request().Context()
 
-	requestId := e.Param("requestId")
+	requestId := e.Param("id")
 
 	requestIdInt, err := strconv.Atoi(requestId)
 	if err != nil {
