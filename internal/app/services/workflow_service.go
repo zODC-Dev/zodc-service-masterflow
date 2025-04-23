@@ -1508,19 +1508,19 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 
 	for _, tasks := range userTasks {
 		subject := fmt.Sprintf("[ZODC] You’ve Been Assigned to a New Request – “%s”", req.Title)
-		bodyTasks := fmt.Sprintf("<p>Hi %s,</p><br>", mapUser(&tasks[0].Data.Assignee.Id).Name)
-		bodyTasks += fmt.Sprintf("<p>You have been added as a participant in the request “%s”, which has just been started by the Product Owner.</p><br>", req.Title)
+		bodyTasks := fmt.Sprintf("<p>Hi %s,</p>", mapUser(&tasks[0].Data.Assignee.Id).Name)
+		bodyTasks += fmt.Sprintf("<p>You have been added as a participant in the request “%s”, which has just been started by the Product Owner.</p>", req.Title)
 		bodyTasks += "<p>Below is a list of tasks assigned to you in this request:</p><br>"
 
 		userId := int32(0)
 
 		for i, node := range tasks {
-			bodyTasks += fmt.Sprintf("<p>Task %d: %s</p>", i+1, node.Data.Title)
+			bodyTasks += fmt.Sprintf("<p> => Task %d: %s</p>", i+1, node.Data.Title)
 			userId = node.Data.Assignee.Id
 		}
 
-		bodyTasks += "<p>Please log in to the ZODC system to review the workflow, complete your input forms, and track task dependencies.</p><br>"
-		bodyTasks += "<p>If you have any questions regarding this request, feel free to contact the PO or check the request details in ZODC.</p><br>"
+		bodyTasks += "<br><p>Please log in to the ZODC system to review the workflow, complete your input forms, and track task dependencies.</p"
+		bodyTasks += "<p>If you have any questions regarding this request, feel free to contact the PO or check the request details in ZODC.</p>"
 		bodyTasks += "<p>Best regards,<br>ZODC System</p>"
 
 		s.NotificationService.NotifyStartRequestWithDetail(ctx, userId, subject, bodyTasks)
