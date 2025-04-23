@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"sort"
-	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -253,29 +252,6 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 			}
 
 		}
-	}
-
-	// Notification
-	uniqueUsers := make(map[int32]struct{})
-	for _, node := range request.Nodes {
-		if node.AssigneeID != nil {
-			uniqueUsers[*node.AssigneeID] = struct{}{}
-		}
-	}
-
-	userIdsStr := make([]string, 0, len(uniqueUsers))
-	for id := range uniqueUsers {
-		userIdsStr = append(userIdsStr, strconv.Itoa(int(id)))
-	}
-
-	// Send notification
-	err = s.NotificationService.SendNotification(ctx, types.Notification{
-		ToUserIds: userIdsStr,
-		Subject:   "Workflow Started",
-		Body:      fmt.Sprintf("Workflow started with request ID: %d", requestId),
-	})
-	if err != nil {
-		return fmt.Errorf("send notification fail: %w", err)
 	}
 
 	return nil
@@ -1532,20 +1508,20 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 
 	for _, tasks := range userTasks {
 		subject := fmt.Sprintf("[ZODC] You’ve Been Assigned to a New Request – “%s”", req.Title)
-		bodyTasks := fmt.Sprintf("Hi %s,", mapUser(&tasks[0].Data.Assignee.Id).Name) + "\n\n"
-		bodyTasks += fmt.Sprintf("You have been added as a participant in the request “%s”, which has just been started by the Product Owner.", req.Title) + "\n\n"
-		bodyTasks += "Below is a list of tasks assigned to you in this request:" + "\n\n"
+		bodyTasks := fmt.Sprintf("<p>Hi %s,</p><br>", mapUser(&tasks[0].Data.Assignee.Id).Name)
+		bodyTasks += fmt.Sprintf("<p>You have been added as a participant in the request “%s”, which has just been started by the Product Owner.</p><br>", req.Title)
+		bodyTasks += "<p>Below is a list of tasks assigned to you in this request:</p><br>"
 
 		userId := int32(0)
 
 		for i, node := range tasks {
-			bodyTasks += fmt.Sprintf("Task %d: %s\n", i+1, node.Data.Title) + "\n\n"
+			bodyTasks += fmt.Sprintf("<p>Task %d: %s</p>", i+1, node.Data.Title)
 			userId = node.Data.Assignee.Id
 		}
 
-		bodyTasks += "Please log in to the ZODC system to review the workflow, complete your input forms, and track task dependencies." + "\n\n"
-		bodyTasks += "If you have any questions regarding this request, feel free to contact the PO or check the request details in ZODC." + "\n\n"
-		bodyTasks += "Best regards,\nZODC System"
+		bodyTasks += "<p>Please log in to the ZODC system to review the workflow, complete your input forms, and track task dependencies.</p><br>"
+		bodyTasks += "<p>If you have any questions regarding this request, feel free to contact the PO or check the request details in ZODC.</p><br>"
+		bodyTasks += "<p>Best regards,<br>ZODC System</p>"
 
 		s.NotificationService.NotifyStartRequestWithDetail(ctx, userId, subject, bodyTasks)
 	}
