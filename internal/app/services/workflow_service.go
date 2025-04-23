@@ -588,6 +588,8 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 			// Index
 			Level: workflowNodeReq.Level,
+
+			IsSendForm: workflowNodeReq.Data.IsSendForm,
 		}
 
 		if workflowNodeReq.Data.EditorContent.Cc != nil {

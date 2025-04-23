@@ -14,6 +14,7 @@ type envConfig struct {
 	DB_DSN         string `env:"DB_DSN,required"`
 	REDIS_URL      string `env:"REDIS_URL,required"`
 	NATS_URL       string `env:"NATS_URL,required"`
+	FE_HOST        string `env:"FE_HOST,required"`
 }
 
 // Export global

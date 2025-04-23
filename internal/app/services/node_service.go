@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/configs"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/constants"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/requests"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/responses"
@@ -271,6 +272,24 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 					if node.Subject != nil {
 						notification.Subject = *node.Subject
 					}
+
+					// Is Send Form
+					if node.IsSendForm {
+						request, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, node.RequestID)
+						if err != nil {
+							return err
+						}
+
+						notification.Body += "\n\n\n"
+						for _, node := range request.Nodes {
+							for _, nodeForm := range node.NodeForms {
+								if nodeForm.IsApproved {
+									notification.Body += "\n" + configs.Env.FE_HOST + "/form-management/review/" + *nodeForm.DataID
+								}
+							}
+						}
+					}
+
 					notificationBytes, err := json.Marshal(notification)
 					if err != nil {
 						return fmt.Errorf("marshal notification failed: %w", err)
