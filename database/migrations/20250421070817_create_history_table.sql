@@ -5,7 +5,7 @@ CREATE TABLE histories (
     updated_at TIMESTAMP DEFAULT now() NOT NULL,
     deleted_at TIMESTAMP,
 
-    type_action TEXT NOT NULL CHECK (type_action IN ('STATUS', 'ASSIGNEE', 'APPROVE_REJECT', 'START_REQUEST', 'END_REQUEST', 'NEW_TASK')),
+    type_action TEXT NOT NULL CHECK (type_action IN ('STATUS', 'ASSIGNEE', 'APPROVE', 'REJECT', 'START_REQUEST', 'END_REQUEST', 'NEW_TASK')),
 
     user_id INT,
 
