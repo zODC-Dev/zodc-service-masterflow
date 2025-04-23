@@ -265,6 +265,8 @@ func (s *FormService) UpdateFormTemplate(ctx context.Context, req *requests.Form
 		TemplateID:     req.TemplateID,
 		Description:    req.Description,
 		Decoration:     req.Decoration,
+		Tag:            formTemplate.Tag,
+		Type:           formTemplate.Type,
 	}
 
 	if req.DataSheet != nil {
