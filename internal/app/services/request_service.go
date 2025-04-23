@@ -1533,3 +1533,32 @@ func (s *RequestService) ReportMidSprintTasks(ctx context.Context, startTime tim
 
 	return requestTasksResponse, nil
 }
+
+func (s *RequestService) CancelRequestHandler(ctx context.Context, requestId int32) error {
+	tx, err := s.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	request, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, requestId)
+	if err != nil {
+		return err
+	}
+
+	request.Status = string(constants.RequestStatusCanceled)
+	now := time.Now()
+	request.CanceledAt = &now
+
+	requestModel := model.Requests{}
+	utils.Mapper(request, &requestModel)
+	err = s.RequestRepo.UpdateRequest(ctx, tx, requestModel)
+	if err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}

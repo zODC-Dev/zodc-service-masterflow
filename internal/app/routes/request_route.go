@@ -94,6 +94,8 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 
 		requestRoute.GET("/report/mid-sprint-tasks", requestController.ReportMidSprintTasks)
 
+		requestRoute.PUT("/:id/cancel", requestController.CancelRequest)
+
 	}
 
 }

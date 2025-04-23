@@ -471,6 +471,7 @@ func (r *RequestRepository) FindAllTasksByProject(ctx context.Context, db *sql.D
 		Nodes.Type.NOT_EQ(postgres.String(string(constants.NodeTypeStart))),
 		Nodes.Type.NOT_EQ(postgres.String(string(constants.NodeTypeEnd))),
 		Requests.Progress.NOT_EQ(postgres.Float(100)),
+		Requests.Status.NOT_EQ(postgres.String(string(constants.RequestStatusCanceled))),
 	}
 
 	if queryparams.ProjectKey != "" {

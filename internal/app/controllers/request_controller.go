@@ -592,3 +592,30 @@ func (c *RequestController) ReportMidSprintTasks(e echo.Context) error {
 
 	return e.JSON(http.StatusOK, requestTasksResponse)
 }
+
+// CancelRequest godoc
+// @Summary      Cancel a request
+// @Description  Cancels a request identified by its ID.
+// @Tags         Requests
+// @Produce      json
+// @Param        id path int true "Request ID"
+// @Success      200 {object} string "Success message: Request canceled successfully: {id}"
+// @Failure      400 {object} string "Error message for invalid request ID"
+// @Failure      500 {object} string "Error message for internal server error"
+// @Router       /requests/{id}/cancel [put]
+func (c *RequestController) CancelRequest(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	requestId := e.Param("id")
+	requestIdInt, err := strconv.Atoi(requestId)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	err = c.requestService.CancelRequestHandler(ctx, int32(requestIdInt))
+	if err != nil {
+		return e.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, fmt.Sprintf("Request canceled successfully: %d", requestIdInt))
+}
