@@ -38,7 +38,7 @@ func (s *HistoryService) HistoryChangeNodeStatus(ctx context.Context, userId int
 		NodeID:     nodeId,
 		TypeAction: constants.HistoryTypeStatus,
 		FromValue:  fromStatus,
-		ToValue:    toStatus,
+		ToValue:    &toStatus,
 	}
 
 	err = s.HistoryRepo.CreateHistory(ctx, tx, history)
@@ -65,7 +65,7 @@ func (s *HistoryService) HistoryApproveOrRejectNode(ctx context.Context, userId 
 		RequestID:  requestId,
 		NodeID:     nodeId,
 		TypeAction: constants.HistoryTypeApproveReject,
-		ToValue:    toStatus,
+		ToValue:    &toStatus,
 		FromValue:  fromStatus,
 	}
 
@@ -102,7 +102,92 @@ func (s *HistoryService) HistoryChangeNodeAssignee(ctx context.Context, userId i
 		NodeID:     nodeId,
 		TypeAction: constants.HistoryTypeAssignee,
 		FromValue:  fromAssigneeIdStr,
-		ToValue:    toAssigneeIdStr,
+		ToValue:    &toAssigneeIdStr,
+	}
+
+	err = s.HistoryRepo.CreateHistory(ctx, tx, history)
+	if err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *HistoryService) HistoryNewTask(ctx context.Context, requestId int32, nodeId string, toUserId int32) error {
+	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	toUserIdStr := strconv.Itoa(int(toUserId))
+	history := model.Histories{
+		UserID:     nil,
+		RequestID:  requestId,
+		NodeID:     nodeId,
+		TypeAction: constants.HistoryTypeNewTask,
+		ToValue:    &toUserIdStr,
+		FromValue:  nil,
+	}
+
+	err = s.HistoryRepo.CreateHistory(ctx, tx, history)
+	if err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *HistoryService) HistoryStartRequest(ctx context.Context, requestId int32, nodeId string) error {
+	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	history := model.Histories{
+		UserID:     nil,
+		RequestID:  requestId,
+		NodeID:     nodeId,
+		TypeAction: constants.HistoryTypeStartRequest,
+		FromValue:  nil,
+		ToValue:    nil,
+	}
+
+	err = s.HistoryRepo.CreateHistory(ctx, tx, history)
+	if err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *HistoryService) HistoryEndRequest(ctx context.Context, requestId int32, nodeId string) error {
+	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	history := model.Histories{
+		UserID:     nil,
+		RequestID:  requestId,
+		NodeID:     nodeId,
+		TypeAction: constants.HistoryTypeEndRequest,
+		FromValue:  nil,
+		ToValue:    nil,
 	}
 
 	err = s.HistoryRepo.CreateHistory(ctx, tx, history)

@@ -292,3 +292,70 @@ func (s *FormService) UpdateFormTemplate(ctx context.Context, req *requests.Form
 
 	return nil
 }
+
+func (s *FormService) ConfigFormTemplate(ctx context.Context, formTemplateId int32, req *[][]requests.FormTemplateFieldsCreate) error {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	formTemplate, err := s.formRepo.FindOneFormTemplateByFormTemplateId(ctx, s.db, formTemplateId)
+	if err != nil {
+		return err
+	}
+
+	formTemplate.CurrentVersion++
+	formTemplateModel := model.FormTemplates{}
+	if err := utils.Mapper(formTemplate, &formTemplateModel); err != nil {
+		return fmt.Errorf("mapping form template failed: %w", err)
+	}
+	if err := s.formRepo.UpdateFormTemplate(ctx, tx, formTemplateModel); err != nil {
+		return err
+	}
+
+	formTemplateVersion := model.FormTemplateVersions{
+		Version:        formTemplate.CurrentVersion,
+		FormTemplateID: formTemplate.ID,
+	}
+	formTemplateVersion, err = s.formRepo.CreateFormTemplateVersion(ctx, tx, formTemplateVersion)
+	if err != nil {
+		return fmt.Errorf("create form template version failed: %w", err)
+	}
+
+	formTemplateFields := []model.FormTemplateFields{}
+	for i := range *req {
+		for j := range (*req)[i] {
+			formTemplateField := model.FormTemplateFields{}
+
+			if err := utils.Mapper((*req)[i][j], &formTemplateField); err != nil {
+				return fmt.Errorf("mapping form template field failed: %w", err)
+			}
+
+			// AdvancedOptions Mapping
+			if (*req)[i][j].AdvancedOptions != nil {
+				advancedOptions := string(*(*req)[i][j].AdvancedOptions)
+				formTemplateField.AdvancedOptions = &advancedOptions
+			}
+
+			//
+			formTemplateField.ColNum = int32(i)
+
+			//
+			formTemplateField.FormTemplateVersionID = formTemplateVersion.ID
+
+			//
+			formTemplateFields = append(formTemplateFields, formTemplateField)
+		}
+
+	}
+	if err := s.formRepo.CreateFormTemplateFields(ctx, tx, formTemplateFields); err != nil {
+		return fmt.Errorf("create form template field failed: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}

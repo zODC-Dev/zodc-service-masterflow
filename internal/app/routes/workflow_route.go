@@ -19,6 +19,9 @@ func WorkflowRoute(group *echo.Group, db *sql.DB) {
 	requestRepo := repositories.NewRequestRepository()
 	connectionRepo := repositories.NewConnectionRepository()
 	nodeRepo := repositories.NewNodeRepository()
+	historyRepo := repositories.NewHistoryRepository()
+
+	// Nats
 	natsClient := nats.GetNATSClient()
 
 	// Apis
@@ -41,6 +44,7 @@ func WorkflowRoute(group *echo.Group, db *sql.DB) {
 	})
 
 	notificationService := services.NewNotificationService(natsClient, userApi)
+	historyService := services.NewHistoryService(db, historyRepo, userApi)
 
 	workflowService := services.NewWorkflowService(services.WorkflowService{
 		DB:                  db,
@@ -55,6 +59,7 @@ func WorkflowRoute(group *echo.Group, db *sql.DB) {
 		NatsClient:          natsClient,
 		NatsService:         natsService,
 		NotificationService: notificationService,
+		HistoryService:      historyService,
 	})
 
 	nodeService.WorkflowService = workflowService

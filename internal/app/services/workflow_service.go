@@ -35,6 +35,7 @@ type WorkflowService struct {
 	NatsClient          *nats.NATSClient
 	NatsService         *NatsService
 	NotificationService *NotificationService
+	HistoryService      *HistoryService
 }
 
 func NewWorkflowService(cfg WorkflowService) *WorkflowService {
@@ -51,6 +52,7 @@ func NewWorkflowService(cfg WorkflowService) *WorkflowService {
 		NatsClient:          cfg.NatsClient,
 		NatsService:         cfg.NatsService,
 		NotificationService: cfg.NotificationService,
+		HistoryService:      cfg.HistoryService,
 	}
 	return &workflowService
 }
@@ -1449,6 +1451,16 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 
 	if err := tx.Commit(); err != nil {
 		return 0, fmt.Errorf("commit fail: %w", err)
+	}
+
+	for _, node := range req.Nodes {
+		if node.Type == string(constants.NodeTypeStart) {
+			err = s.HistoryService.HistoryStartRequest(ctx, newRequest.ID, node.Id)
+			if err != nil {
+				return 0, fmt.Errorf("history start request fail: %w", err)
+			}
+			break
+		}
 	}
 
 	return newRequest.ID, nil

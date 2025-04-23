@@ -21,5 +21,5 @@ type Histories struct {
 	RequestID  int32
 	NodeID     string
 	FromValue  *string
-	ToValue    string
+	ToValue    *string
 }

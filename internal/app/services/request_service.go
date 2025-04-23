@@ -1352,7 +1352,16 @@ func (s *RequestService) FindAllHistoryByRequestId(ctx context.Context, requestI
 				}
 			}
 
-			toValueInt32, err := strconv.Atoi(history.ToValue)
+			toValueInt32, err := strconv.Atoi(*history.ToValue)
+			if err != nil {
+				return nil, err
+			}
+			if !existingUserIds[int32(toValueInt32)] {
+				existingUserIds[int32(toValueInt32)] = true
+				userIds = append(userIds, int32(toValueInt32))
+			}
+		} else if history.TypeAction == constants.HistoryTypeNewTask {
+			toValueInt32, err := strconv.Atoi(*history.ToValue)
 			if err != nil {
 				return nil, err
 			}
@@ -1406,6 +1415,7 @@ func (s *RequestService) FindAllHistoryByRequestId(ctx context.Context, requestI
 			CreatedAt: history.CreatedAt,
 			Assignee:  mapUser(history.UserID),
 			Node:      historyNodeResponse,
+			Type:      history.TypeAction,
 		}
 
 		if history.TypeAction == constants.HistoryTypeAssignee {
@@ -1419,7 +1429,7 @@ func (s *RequestService) FindAllHistoryByRequestId(ctx context.Context, requestI
 				historyResponse.From = mapUser(&fromValueInt32)
 			}
 
-			toValueInt, err := strconv.Atoi(history.ToValue)
+			toValueInt, err := strconv.Atoi(*history.ToValue)
 			if err != nil {
 				return nil, err
 			}
@@ -1428,14 +1438,21 @@ func (s *RequestService) FindAllHistoryByRequestId(ctx context.Context, requestI
 			historyResponse.To = mapUser(&toValueInt32)
 
 		} else if history.TypeAction == constants.HistoryTypeStatus {
-
 			historyResponse.From = history.FromValue
 			historyResponse.To = history.ToValue
+
 		} else if history.TypeAction == constants.HistoryTypeApproveReject {
 			historyResponse.From = history.FromValue
 			historyResponse.To = history.ToValue
-		}
+		} else if history.TypeAction == constants.HistoryTypeNewTask {
+			toValueInt, err := strconv.Atoi(*history.ToValue)
+			if err != nil {
+				return nil, err
+			}
+			toValueInt32 := int32(toValueInt)
 
+			historyResponse.To = mapUser(&toValueInt32)
+		}
 		historiesResponse = append(historiesResponse, historyResponse)
 	}
 

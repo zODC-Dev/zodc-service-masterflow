@@ -358,7 +358,16 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 					return err
 				}
 
-				s.NotificationService.NotifyTaskAvailable(ctx, node.Title, users.Data[0].ID)
+				err = s.NotificationService.NotifyTaskAvailable(ctx, node.Title, users.Data[0].ID)
+				if err != nil {
+					return err
+				}
+
+				// History
+				err = s.HistoryService.HistoryNewTask(ctx, node.RequestID, node.ID, *node.AssigneeID)
+				if err != nil {
+					return err
+				}
 
 			}
 		}
@@ -524,14 +533,32 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 					request.TerminatedAt = &now
 
 					// Notify
-					s.NotificationService.NotifyRequestTerminated(ctx, request.Title, userIds)
+					err = s.NotificationService.NotifyRequestTerminated(ctx, request.Title, userIds)
+					if err != nil {
+						return err
+					}
+
+					// History
+					err = s.HistoryService.HistoryEndRequest(ctx, request.ID, node.ID)
+					if err != nil {
+						return err
+					}
 
 				} else {
 					request.Status = string(constants.RequestStatusCompleted)
 					request.CompletedAt = &now
 
 					// Notify
-					s.NotificationService.NotifyRequestCompleted(ctx, request.Title, userIds)
+					err = s.NotificationService.NotifyRequestCompleted(ctx, request.Title, userIds)
+					if err != nil {
+						return err
+					}
+
+					// History
+					err = s.HistoryService.HistoryEndRequest(ctx, request.ID, node.ID)
+					if err != nil {
+						return err
+					}
 				}
 
 				request.Progress = 100
@@ -563,6 +590,22 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 					connectionsToNode[i].Node.ActualStartTime = &now
 				}
 				err := s.NodeRepo.UpdateNode(ctx, tx, connectionsToNode[i].Node)
+				if err != nil {
+					return err
+				}
+
+				users, err := s.UserAPI.FindUsersByUserIds([]int32{*connectionsToNode[i].Node.AssigneeID})
+				if err != nil {
+					return err
+				}
+
+				err = s.NotificationService.NotifyTaskAvailable(ctx, connectionsToNode[i].Node.Title, users.Data[0].ID)
+				if err != nil {
+					return err
+				}
+
+				// History
+				err = s.HistoryService.HistoryNewTask(ctx, connectionsToNode[i].Node.RequestID, connectionsToNode[i].Node.ID, *connectionsToNode[i].Node.AssigneeID)
 				if err != nil {
 					return err
 				}

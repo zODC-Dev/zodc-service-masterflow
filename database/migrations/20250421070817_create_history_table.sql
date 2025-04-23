@@ -5,7 +5,7 @@ CREATE TABLE histories (
     updated_at TIMESTAMP DEFAULT now() NOT NULL,
     deleted_at TIMESTAMP,
 
-    type_action TEXT NOT NULL CHECK (type_action IN ('STATUS', 'ASSIGNEE', 'APPROVE_REJECT')),
+    type_action TEXT NOT NULL CHECK (type_action IN ('STATUS', 'ASSIGNEE', 'APPROVE_REJECT', 'START_REQUEST', 'END_REQUEST', 'NEW_TASK')),
 
     user_id INT,
 
@@ -13,7 +13,7 @@ CREATE TABLE histories (
     node_id TEXT NOT NULL REFERENCES nodes (id),
 
     from_value TEXT,
-    to_value TEXT NOT NULL
+    to_value TEXT
 );
 
 -- +goose Down

@@ -16,6 +16,7 @@ type HistoryResponse struct {
 	ID        int32               `json:"id"`
 	CreatedAt time.Time           `json:"createdAt"`
 	Assignee  types.Assignee      `json:"assignee"`
+	Type      string              `json:"type"`
 	Node      HistoryNodeResponse `json:"node"`
 	From      interface{}         `json:"from"`
 	To        interface{}         `json:"to"`
