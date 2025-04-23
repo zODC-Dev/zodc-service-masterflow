@@ -788,6 +788,7 @@ func (r *RequestRepository) FindAllTasksByMidSprintReport(ctx context.Context, d
 
 	conditions := []postgres.BoolExpression{
 		Workflows.Type.EQ(postgres.String(string(constants.WorkflowTypeProject))),
+		Requests.IsTemplate.EQ(postgres.Bool(false)),
 	}
 
 	if queryParams.SprintId != "" {

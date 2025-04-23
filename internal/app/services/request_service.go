@@ -1542,6 +1542,13 @@ func (s *RequestService) ReportMidSprintTasks(ctx context.Context, queryParams q
 					IsApproved:       node.IsApproved,
 					IsRejected:       node.IsRejected,
 				}
+
+				if node.JiraKey != nil {
+					taskRes.Key = *node.JiraKey
+				} else {
+					taskRes.Key = strconv.Itoa(int(node.Key))
+				}
+
 				requestTasksResponse = append(requestTasksResponse, taskRes)
 			}
 
