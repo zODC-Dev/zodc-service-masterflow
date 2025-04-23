@@ -123,10 +123,6 @@ CREATE TABLE nodes (
     end_type TEXT CHECK (end_type IN ('COMPLETE', 'TERMINATE', null)),
 
     -- task node
-    task_assigned_requester BOOLEAN NOT NULL DEFAULT false,
-    task_assigned_assignee BOOLEAN NOT NULL DEFAULT false,
-    task_assigned_participants BOOLEAN NOT NULL DEFAULT false,
-
     task_started_requester BOOLEAN NOT NULL DEFAULT false,  
     task_started_assignee BOOLEAN NOT NULL DEFAULT false,
     task_started_participants BOOLEAN NOT NULL DEFAULT false,

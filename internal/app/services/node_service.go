@@ -437,6 +437,11 @@ func (s *NodeService) StartNodeHandler(ctx context.Context, userId int32, nodeId
 		return fmt.Errorf("commit fail: %w", err)
 	}
 
+	// Notify
+	if err := s.NotificationService.NotifyTaskStarted(ctx, node); err != nil {
+		return err
+	}
+
 	// History
 	oldStatus := string(constants.NodeStatusTodo)
 	err = s.HistoryService.HistoryChangeNodeStatus(ctx, userId, node.RequestID, nodeId, &oldStatus, string(constants.NodeStatusInProgress))
@@ -618,6 +623,7 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 					return err
 				}
 
+				// Notify
 				err = s.NotificationService.NotifyTaskAvailable(ctx, connectionsToNode[i].Node.Title, users.Data[0].ID)
 				if err != nil {
 					return err
@@ -634,7 +640,7 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 	}
 
 	// send notification
-	s.NotificationService.NotifyTaskCompleted(ctx, node.Title, userId)
+	s.NotificationService.NotifyTaskCompleted(ctx, node)
 
 	// Calculate Request Process
 	if err := s.RequestService.UpdateCalculateRequestProgress(ctx, tx, node.RequestID); err != nil {

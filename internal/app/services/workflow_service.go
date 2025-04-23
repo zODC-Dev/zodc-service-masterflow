@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"sort"
 	"strconv"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/requests"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/responses"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/results"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/externals"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
@@ -365,6 +367,16 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			PlannedEndTime: setTimeToEndOfWorkday(storyReq.Node.Data.EndDate),
 			// Index
 			Level: storyReq.Node.Level,
+
+			IsSendForm: storyReq.Node.Data.IsSendForm,
+
+			TaskStartedRequester:    storyReq.Node.Data.TaskStarted.Requester,
+			TaskStartedAssignee:     storyReq.Node.Data.TaskStarted.Assignee,
+			TaskStartedParticipants: storyReq.Node.Data.TaskStarted.Participants,
+
+			TaskCompletedRequester:    storyReq.Node.Data.TaskCompleted.Requester,
+			TaskCompletedAssignee:     storyReq.Node.Data.TaskCompleted.Assignee,
+			TaskCompletedParticipants: storyReq.Node.Data.TaskCompleted.Participants,
 		}
 
 		if formSystemVersionId, exists := formSystemTagMap["TASK"]; exists {
@@ -447,6 +459,16 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 				PlannedEndTime: setTimeToEndOfWorkday(storyNodeReq.Data.EndDate),
 				//
 				Level: storyNodeReq.Level,
+
+				IsSendForm: storyNodeReq.Data.IsSendForm,
+
+				TaskStartedRequester:    storyNodeReq.Data.TaskStarted.Requester,
+				TaskStartedAssignee:     storyNodeReq.Data.TaskStarted.Assignee,
+				TaskStartedParticipants: storyNodeReq.Data.TaskStarted.Participants,
+
+				TaskCompletedRequester:    storyNodeReq.Data.TaskCompleted.Requester,
+				TaskCompletedAssignee:     storyNodeReq.Data.TaskCompleted.Assignee,
+				TaskCompletedParticipants: storyNodeReq.Data.TaskCompleted.Participants,
 			}
 
 			if storyNodeReq.ParentId != "" {
@@ -590,6 +612,14 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			Level: workflowNodeReq.Level,
 
 			IsSendForm: workflowNodeReq.Data.IsSendForm,
+
+			TaskStartedRequester:    workflowNodeReq.Data.TaskStarted.Requester,
+			TaskStartedAssignee:     workflowNodeReq.Data.TaskStarted.Assignee,
+			TaskStartedParticipants: workflowNodeReq.Data.TaskStarted.Participants,
+
+			TaskCompletedRequester:    workflowNodeReq.Data.TaskCompleted.Requester,
+			TaskCompletedAssignee:     workflowNodeReq.Data.TaskCompleted.Assignee,
+			TaskCompletedParticipants: workflowNodeReq.Data.TaskCompleted.Participants,
 		}
 
 		if workflowNodeReq.Data.EditorContent.Cc != nil {
@@ -1437,20 +1467,6 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 		}
 	}
 
-	// Notify Start Workflow
-	userIds := []string{}
-	existingUserIds := make(map[string]bool)
-	for _, node := range req.Nodes {
-		if node.Data.Assignee.Id != 0 {
-			if !existingUserIds[strconv.Itoa(int(node.Data.Assignee.Id))] {
-				userIds = append(userIds, strconv.Itoa(int(node.Data.Assignee.Id)))
-				existingUserIds[strconv.Itoa(int(node.Data.Assignee.Id))] = true
-			}
-		}
-	}
-
-	s.NotificationService.NotifyStartWorkflow(ctx, req.Title, userIds)
-
 	if err := tx.Commit(); err != nil {
 		return 0, fmt.Errorf("commit fail: %w", err)
 	}
@@ -1463,6 +1479,75 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 			}
 			break
 		}
+	}
+
+	// Notify Start Request With Detail
+	// sort nodes by level
+	userIdsInt32 := []int32{}
+	existingUserIds := make(map[int32]bool)
+	for _, node := range req.Nodes {
+		if node.Data.Assignee.Id != 0 {
+			if !existingUserIds[node.Data.Assignee.Id] {
+				userIdsInt32 = append(userIdsInt32, node.Data.Assignee.Id)
+				existingUserIds[node.Data.Assignee.Id] = true
+			}
+		}
+	}
+
+	userApiMap := map[int32]results.UserApiDataResult{}
+	if len(userIdsInt32) > 0 {
+		assigneeResult, err := s.UserAPI.FindUsersByUserIds(userIdsInt32)
+		if err != nil {
+			return 0, err
+		}
+		for _, userApi := range assigneeResult.Data {
+			userApiMap[userApi.ID] = userApi
+		}
+	}
+
+	mapUser := func(id *int32) types.Assignee {
+		assignee := types.Assignee{}
+		if id != nil {
+			if user, ok := userApiMap[*id]; ok {
+				assignee.Id = user.ID
+				assignee.Name = user.Name
+				assignee.Email = user.Email
+				assignee.AvatarUrl = user.AvatarUrl
+				assignee.IsSystemUser = user.IsSystemUser
+			}
+		}
+		return assignee
+	}
+
+	sort.Slice(req.Nodes, func(i, j int) bool {
+		return *req.Nodes[i].Level < *req.Nodes[j].Level
+	})
+
+	userTasks := map[int32][]requests.Node{}
+	for _, node := range req.Nodes {
+		if node.Type == string(constants.NodeTypeTask) || node.Type == string(constants.NodeTypeInput) || node.Type == string(constants.NodeTypeApproval) {
+			userTasks[node.Data.Assignee.Id] = append(userTasks[node.Data.Assignee.Id], node)
+		}
+	}
+
+	for _, tasks := range userTasks {
+		subject := fmt.Sprintf("[ZODC] You’ve Been Assigned to a New Request – “%s”", req.Title)
+		bodyTasks := fmt.Sprintf("Hi %s,", mapUser(&tasks[0].Data.Assignee.Id).Name) + "\n\n"
+		bodyTasks += fmt.Sprintf("You have been added as a participant in the request “%s”, which has just been started by the Product Owner.", req.Title) + "\n\n"
+		bodyTasks += "Below is a list of tasks assigned to you in this request:" + "\n\n"
+
+		userId := int32(0)
+
+		for i, node := range tasks {
+			bodyTasks += fmt.Sprintf("Task %d: %s\n", i+1, node.Data.Title) + "\n\n"
+			userId = node.Data.Assignee.Id
+		}
+
+		bodyTasks += "Please log in to the ZODC system to review the workflow, complete your input forms, and track task dependencies." + "\n\n"
+		bodyTasks += "If you have any questions regarding this request, feel free to contact the PO or check the request details in ZODC." + "\n\n"
+		bodyTasks += "Best regards,\nZODC System"
+
+		s.NotificationService.NotifyStartRequestWithDetail(ctx, userId, subject, bodyTasks)
 	}
 
 	return newRequest.ID, nil

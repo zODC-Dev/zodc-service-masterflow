@@ -44,9 +44,6 @@ type Nodes struct {
 	IsApproved                bool
 	IsRejected                bool
 	EndType                   *string
-	TaskAssignedRequester     bool
-	TaskAssignedAssignee      bool
-	TaskAssignedParticipants  bool
 	TaskStartedRequester      bool
 	TaskStartedAssignee       bool
 	TaskStartedParticipants   bool

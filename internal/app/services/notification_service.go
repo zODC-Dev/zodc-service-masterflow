@@ -2,24 +2,31 @@ package services
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strconv"
 
+	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/externals"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/repositories"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
 	"github.com/zODC-Dev/zodc-service-masterflow/pkg/nats"
 )
 
 type NotificationService struct {
-	NatsClient *nats.NATSClient
-	UserAPI    *externals.UserAPI
+	DB          *sql.DB
+	NatsClient  *nats.NATSClient
+	UserAPI     *externals.UserAPI
+	RequestRepo *repositories.RequestRepository
 }
 
-func NewNotificationService(natsClient *nats.NATSClient, userAPI *externals.UserAPI) *NotificationService {
+func NewNotificationService(db *sql.DB, natsClient *nats.NATSClient, userAPI *externals.UserAPI, requestRepo *repositories.RequestRepository) *NotificationService {
 	return &NotificationService{
-		NatsClient: natsClient,
-		UserAPI:    userAPI,
+		DB:          db,
+		NatsClient:  natsClient,
+		UserAPI:     userAPI,
+		RequestRepo: requestRepo,
 	}
 }
 
@@ -55,27 +62,112 @@ func (s *NotificationService) NotifyRequestCompleted(ctx context.Context, reques
 	return s.SendNotification(ctx, notification)
 }
 
-func (s *NotificationService) NotifyTaskCompleted(ctx context.Context, taskTitle string, userId int32) error {
-	users, err := s.UserAPI.FindUsersByUserIds([]int32{userId})
-	if err != nil {
-		return err
+func (s *NotificationService) NotifyTaskCompleted(ctx context.Context, node model.Nodes) error {
+
+	userIds := []string{}
+	existingUserIds := map[int32]bool{}
+	isSendNotification := false
+
+	if node.TaskCompletedAssignee {
+		isSendNotification = true
+		userIds = append(userIds, strconv.Itoa(int(*node.AssigneeID)))
+		existingUserIds[*node.AssigneeID] = true
 	}
 
-	notification := types.Notification{
-		ToUserIds: []string{strconv.Itoa(int(userId))},
-		Subject:   fmt.Sprintf("Task completed: %s", taskTitle),
-		Body:      fmt.Sprintf("%s has marked this task as done.", users.Data[0].Name),
+	if node.TaskCompletedRequester || node.TaskCompletedParticipants {
+		isSendNotification = true
+
+		request, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, node.RequestID)
+		if err != nil {
+			return err
+		}
+
+		if node.TaskCompletedRequester {
+			userIds = append(userIds, strconv.Itoa(int(request.UserID)))
+			existingUserIds[request.UserID] = true
+		}
+
+		if node.TaskCompletedParticipants {
+			for _, nodeRequest := range request.Nodes {
+				if !existingUserIds[*nodeRequest.AssigneeID] {
+					userIds = append(userIds, strconv.Itoa(int(*nodeRequest.AssigneeID)))
+					existingUserIds[*nodeRequest.AssigneeID] = true
+				}
+			}
+
+		}
 	}
-	return s.SendNotification(ctx, notification)
+
+	if isSendNotification {
+
+		users, err := s.UserAPI.FindUsersByUserIds([]int32{*node.AssigneeID})
+		if err != nil {
+			return err
+		}
+
+		notification := types.Notification{
+			ToUserIds: userIds,
+			Subject:   fmt.Sprintf("Task completed: %s", node.Title),
+			Body:      fmt.Sprintf("%s has marked this task as done.", users.Data[0].Name),
+		}
+		return s.SendNotification(ctx, notification)
+	}
+
+	return nil
 }
 
-func (s *NotificationService) NotifyTaskReassigned(ctx context.Context, taskTitle string, userId int32, userName string) error {
-	notification := types.Notification{
-		ToUserIds: []string{strconv.Itoa(int(userId))},
-		Subject:   fmt.Sprintf("Task reassigned: %s", taskTitle),
-		Body:      fmt.Sprintf("The task “%s” has been reassigned to you.", taskTitle),
+func (s *NotificationService) NotifyTaskStarted(ctx context.Context, node model.Nodes) error {
+
+	userIds := []string{}
+	existingUserIds := map[int32]bool{}
+	isSendNotification := false
+
+	if node.TaskCompletedAssignee {
+		isSendNotification = true
+		userIds = append(userIds, strconv.Itoa(int(*node.AssigneeID)))
+		existingUserIds[*node.AssigneeID] = true
 	}
-	return s.SendNotification(ctx, notification)
+
+	if node.TaskCompletedRequester || node.TaskCompletedParticipants {
+		isSendNotification = true
+
+		request, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, node.RequestID)
+		if err != nil {
+			return err
+		}
+
+		if node.TaskCompletedRequester {
+			userIds = append(userIds, strconv.Itoa(int(request.UserID)))
+			existingUserIds[request.UserID] = true
+		}
+
+		if node.TaskCompletedParticipants {
+			for _, nodeRequest := range request.Nodes {
+				if !existingUserIds[*nodeRequest.AssigneeID] {
+					userIds = append(userIds, strconv.Itoa(int(*nodeRequest.AssigneeID)))
+					existingUserIds[*nodeRequest.AssigneeID] = true
+				}
+			}
+
+		}
+	}
+
+	if isSendNotification {
+
+		users, err := s.UserAPI.FindUsersByUserIds([]int32{*node.AssigneeID})
+		if err != nil {
+			return err
+		}
+
+		notification := types.Notification{
+			ToUserIds: userIds,
+			Subject:   fmt.Sprintf("Task started: %s", node.Title),
+			Body:      fmt.Sprintf("%s has started this task.", users.Data[0].Name),
+		}
+		return s.SendNotification(ctx, notification)
+	}
+
+	return nil
 }
 
 func (s *NotificationService) NotifyTaskAvailable(ctx context.Context, taskTitle string, userId int32) error {
@@ -87,11 +179,11 @@ func (s *NotificationService) NotifyTaskAvailable(ctx context.Context, taskTitle
 	return s.SendNotification(ctx, notification)
 }
 
-func (s *NotificationService) NotifyStartWorkflow(ctx context.Context, workflowTitle string, userIds []string) error {
+func (s *NotificationService) NotifyStartRequestWithDetail(ctx context.Context, userId int32, subject string, body string) error {
 	notification := types.Notification{
-		ToUserIds: userIds,
-		Subject:   "New Request Started",
-		Body:      fmt.Sprintf("A new request “%s” has been initiated.", workflowTitle),
+		ToUserIds: []string{strconv.Itoa(int(userId))},
+		Subject:   subject,
+		Body:      body,
 	}
 	return s.SendNotification(ctx, notification)
 }

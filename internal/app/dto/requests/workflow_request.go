@@ -48,6 +48,12 @@ type NodeDataEditorContent struct {
 	Bcc     *[]string
 }
 
+type TaskConfigNotification struct {
+	Requester    bool
+	Assignee     bool
+	Participants bool
+}
+
 type NodeData struct {
 	Type          string
 	Title         string
@@ -67,6 +73,9 @@ type NodeData struct {
 	FormAttached []NodeDataFormAttached
 
 	EditorContent NodeDataEditorContent
+
+	TaskCompleted TaskConfigNotification
+	TaskStarted   TaskConfigNotification
 }
 
 type NodeForm struct {
