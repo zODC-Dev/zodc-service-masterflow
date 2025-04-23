@@ -272,6 +272,8 @@ func (s *FormService) UpdateFormTemplate(ctx context.Context, req *requests.Form
 	if req.DataSheet != nil {
 		datasheet := string(*req.DataSheet)
 		formTemplateModel.DataSheet = &datasheet
+	} else {
+		formTemplateModel.DataSheet = formTemplate.DataSheet
 	}
 
 	if err := s.formRepo.UpdateFormTemplate(ctx, tx, formTemplateModel); err != nil {
