@@ -38,6 +38,7 @@ func (r *FormRepository) FindAllFormTemplate(ctx context.Context, db *sql.DB, qu
 
 	conditions := []postgres.BoolExpression{
 		FormTemplates.Type.EQ(postgres.String("USER")),
+		FormTemplates.CurrentVersion.EQ(FormTemplateVersions.Version),
 	}
 
 	if queryParam.CategoryID != "" {
@@ -326,7 +327,7 @@ func (r *FormRepository) UpdateFormTemplate(ctx context.Context, tx *sql.Tx, for
 
 	formTemplate.UpdatedAt = time.Now()
 
-	columns := FormTemplates.AllColumns.Except(FormTemplates.ID, FormTemplates.CreatedAt, FormTemplates.DeletedAt, FormTemplates.CurrentVersion)
+	columns := FormTemplates.AllColumns.Except(FormTemplates.ID, FormTemplates.CreatedAt, FormTemplates.DeletedAt)
 
 	statement := FormTemplates.UPDATE(columns).MODEL(formTemplate).WHERE(FormTemplates.ID.EQ(postgres.Int32(formTemplate.ID)))
 

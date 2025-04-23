@@ -256,30 +256,20 @@ func (s *FormService) UpdateFormTemplate(ctx context.Context, req *requests.Form
 		return err
 	}
 
-	if req.FileName != "" {
-		formTemplate.FileName = req.FileName
-	}
-
-	if req.Title != "" {
-		formTemplate.Title = req.Title
-	}
-
-	if req.CategoryID != nil {
-		formTemplate.CategoryID = req.CategoryID
-	}
-
-	if req.TemplateID != nil {
-		formTemplate.TemplateID = req.TemplateID
+	formTemplateModel := model.FormTemplates{
+		ID:             formTemplate.ID,
+		FileName:       req.FileName,
+		Title:          req.Title,
+		CurrentVersion: formTemplate.CurrentVersion,
+		CategoryID:     req.CategoryID,
+		TemplateID:     req.TemplateID,
+		Description:    req.Description,
+		Decoration:     req.Decoration,
 	}
 
 	if req.DataSheet != nil {
 		datasheet := string(*req.DataSheet)
-		formTemplate.DataSheet = &datasheet
-	}
-
-	formTemplateModel := model.FormTemplates{}
-	if err := utils.Mapper(formTemplate, &formTemplateModel); err != nil {
-		return fmt.Errorf("mapping form template failed: %w", err)
+		formTemplateModel.DataSheet = &datasheet
 	}
 
 	if err := s.formRepo.UpdateFormTemplate(ctx, tx, formTemplateModel); err != nil {
@@ -305,7 +295,7 @@ func (s *FormService) ConfigFormTemplate(ctx context.Context, formTemplateId int
 		return err
 	}
 
-	formTemplate.CurrentVersion++
+	formTemplate.CurrentVersion = formTemplate.CurrentVersion + 1
 	formTemplateModel := model.FormTemplates{}
 	if err := utils.Mapper(formTemplate, &formTemplateModel); err != nil {
 		return fmt.Errorf("mapping form template failed: %w", err)
