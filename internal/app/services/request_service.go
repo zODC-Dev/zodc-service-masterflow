@@ -1521,28 +1521,30 @@ func (s *RequestService) ReportMidSprintTasks(ctx context.Context, queryParams q
 
 	for _, request := range requests {
 		for _, node := range request.Nodes {
-			taskRes := responses.RequestTaskResponse{
-				Id:               node.ID,
-				Title:            node.Title,
-				Status:           node.Status,
-				Type:             node.Type,
-				RequestID:        request.ID,
-				RequestTitle:     request.Title,
-				RequestProgress:  request.Progress,
-				ProjectKey:       request.Workflow.ProjectKey,
-				JiraLinkUrl:      node.JiraLinkURL,
-				Assignee:         mapUser(node.AssigneeID),
-				PlannedStartTime: node.PlannedStartTime,
-				PlannedEndTime:   node.PlannedEndTime,
-				ActualStartTime:  node.ActualStartTime,
-				ActualEndTime:    node.ActualEndTime,
-				EstimatePoint:    node.EstimatePoint,
-				IsCurrent:        node.IsCurrent,
-				IsApproved:       node.IsApproved,
-				IsRejected:       node.IsRejected,
+			if node.Type == string(constants.NodeTypeTask) {
+				taskRes := responses.RequestTaskResponse{
+					Id:               node.ID,
+					Title:            node.Title,
+					Status:           node.Status,
+					Type:             node.Type,
+					RequestID:        request.ID,
+					RequestTitle:     request.Title,
+					RequestProgress:  request.Progress,
+					ProjectKey:       request.Workflow.ProjectKey,
+					JiraLinkUrl:      node.JiraLinkURL,
+					Assignee:         mapUser(node.AssigneeID),
+					PlannedStartTime: node.PlannedStartTime,
+					PlannedEndTime:   node.PlannedEndTime,
+					ActualStartTime:  node.ActualStartTime,
+					ActualEndTime:    node.ActualEndTime,
+					EstimatePoint:    node.EstimatePoint,
+					IsCurrent:        node.IsCurrent,
+					IsApproved:       node.IsApproved,
+					IsRejected:       node.IsRejected,
+				}
+				requestTasksResponse = append(requestTasksResponse, taskRes)
 			}
 
-			requestTasksResponse = append(requestTasksResponse, taskRes)
 		}
 	}
 
