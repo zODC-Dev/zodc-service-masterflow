@@ -103,6 +103,7 @@ type RequestCompletedFormInputResponse struct {
 	FormData    []RequestCompletedFormDataResponse `json:"formData"`
 	Template    FormTemplateDetails                `json:"template"`
 	TaskRelated []TaskRelated                      `json:"taskRelated"`
+	Parent      *TaskRelated                       `json:"parent"`
 }
 
 type RequestCompletedFormApprovalOverviewResponse struct {

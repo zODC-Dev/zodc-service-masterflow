@@ -940,6 +940,18 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 			userIds = append(userIds, *node.AssigneeID)
 			existUserIds[*node.AssigneeID] = true
 		}
+
+		if node.ParentID != nil {
+			parentNode, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, *node.ParentID)
+			if err != nil {
+				return paginatedResponse, err
+			}
+
+			if parentNode.AssigneeID != nil && !existUserIds[*parentNode.AssigneeID] {
+				userIds = append(userIds, *parentNode.AssigneeID)
+				existUserIds[*parentNode.AssigneeID] = true
+			}
+		}
 	}
 
 	userApiMap := map[int32]results.UserApiDataResult{}
@@ -1044,6 +1056,27 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 				}
 
 				requestCompletedFormRes.TaskRelated = taskRelated
+
+				// Task Parent
+				if node.ParentID != nil {
+					parentTask, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, *node.ParentID)
+					if err != nil {
+						return paginatedResponse, err
+					}
+
+					requestCompletedFormRes.Parent = &responses.TaskRelated{
+						Title:    parentTask.Title,
+						Type:     parentTask.Type,
+						Status:   parentTask.Status,
+						Assignee: mapUser(parentTask.AssigneeID),
+					}
+
+					if parentTask.JiraKey != nil {
+						requestCompletedFormRes.Parent.Key = *parentTask.JiraKey
+					} else {
+						requestCompletedFormRes.Parent.Key = strconv.Itoa(int(parentTask.Key))
+					}
+				}
 
 				requestCompletedFormResponse = append(requestCompletedFormResponse, requestCompletedFormRes)
 			}

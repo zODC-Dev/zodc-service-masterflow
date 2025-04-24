@@ -33,7 +33,13 @@ func (r *RequestRepository) FindAllRequest(ctx context.Context, db *sql.DB, requ
 			LEFT_JOIN(Nodes, Requests.ID.EQ(Nodes.RequestID)).
 			LEFT_JOIN(WorkflowVerions, Requests.WorkflowVersionID.EQ(WorkflowVerions.ID)).
 			LEFT_JOIN(Workflows, WorkflowVerions.WorkflowID.EQ(Workflows.ID)),
-	).LIMIT(int64(requestQueryParam.PageSize)).OFFSET(int64(requestQueryParam.Page - 1))
+	).LIMIT(
+		int64(requestQueryParam.PageSize),
+	).OFFSET(
+		int64(requestQueryParam.Page - 1),
+	).GROUP_BY(
+		Requests.ID,
+	)
 
 	rRequestsConditions := []postgres.BoolExpression{
 		Requests.UserID.EQ(postgres.Int32(userId)).OR(Nodes.AssigneeID.EQ(postgres.Int32(userId))),
@@ -673,7 +679,13 @@ func (r *RequestRepository) FindAllRequestCompletedFormByRequestId(ctx context.C
 	).WHERE(
 		Nodes.RequestID.EQ(postgres.Int32(requestId)).
 			AND(NodeForms.IsSubmitted.EQ(postgres.Bool(true))),
-	).LIMIT(int64(pageSize)).OFFSET(int64(page - 1)).AsTable("nodeFormTable")
+	).LIMIT(
+		int64(pageSize),
+	).OFFSET(
+		int64(page - 1),
+	).GROUP_BY(
+		NodeForms.ID,
+	).AsTable("nodeFormTable")
 
 	nodeFormNodeId := NodeForms.NodeID.From(rNodeFormStatement)
 	nodeFormDataId := NodeForms.DataID.From(rNodeFormStatement)
