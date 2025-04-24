@@ -88,26 +88,21 @@ type RequestFileManagerResponse struct {
 	Data        []string       `json:"data"`
 }
 
-type RequestCompletedFormApprovalResponse struct {
-	Assignee   types.Assignee `json:"assignee"`
-	IsApproved bool           `json:"isApproved"`
-}
-
 type RequestCompletedFormDataResponse struct {
 	FieldID string `json:"fieldId"`
 	Value   string `json:"value"`
 }
 
 type RequestCompletedFormInputResponse struct {
-	DataId      *string                                `json:"dataId"`
-	Key         string                                 `json:"key"`
-	Type        string                                 `json:"type"`
-	SubmittedAt time.Time                              `json:"submittedAt"`
-	Submitter   types.Assignee                         `json:"submitter"`
-	LastUpdate  types.Assignee                         `json:"lastUpdate"`
-	Approval    []RequestCompletedFormApprovalResponse `json:"approval"`
-	FormData    []RequestCompletedFormDataResponse     `json:"formData"`
-	Template    FormTemplateDetails                    `json:"template"`
+	DataId      *string                            `json:"dataId"`
+	Key         string                             `json:"key"`
+	Type        string                             `json:"type"`
+	SubmittedAt time.Time                          `json:"submittedAt"`
+	Submitter   types.Assignee                     `json:"submitter"`
+	LastUpdate  types.Assignee                     `json:"lastUpdate"`
+	FormData    []RequestCompletedFormDataResponse `json:"formData"`
+	Template    FormTemplateDetails                `json:"template"`
+	TaskRelated []TaskRelated                      `json:"taskRelated"`
 }
 
 type RequestCompletedFormApprovalOverviewResponse struct {

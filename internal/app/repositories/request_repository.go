@@ -660,7 +660,6 @@ func (r *RequestRepository) RemoveNodesConnectionsStoriesByRequestId(ctx context
 func (r *RequestRepository) FindAllRequestCompletedFormByRequestId(ctx context.Context, db *sql.DB, requestId int32, page int, pageSize int) (int, []results.NodeFormCompletedResult, error) {
 	NodeForms := table.NodeForms
 	Nodes := table.Nodes
-	NodeFormApproveOrRejectUsers := table.NodeFormApproveOrRejectUsers
 	FormData := table.FormData
 	FormFieldData := table.FormFieldData
 	FormTemplateVersions := table.FormTemplateVersions
@@ -678,13 +677,11 @@ func (r *RequestRepository) FindAllRequestCompletedFormByRequestId(ctx context.C
 
 	nodeFormNodeId := NodeForms.NodeID.From(rNodeFormStatement)
 	nodeFormDataId := NodeForms.DataID.From(rNodeFormStatement)
-	nodeFormId := NodeForms.ID.From(rNodeFormStatement)
 	nodeFormIsSubmitted := NodeForms.IsSubmitted.From(rNodeFormStatement)
 
 	statement := NodeForms.SELECT(
 		rNodeFormStatement.AllColumns(),
 		Nodes.AllColumns,
-		NodeFormApproveOrRejectUsers.AllColumns,
 		FormData.AllColumns,
 		FormFieldData.AllColumns,
 		FormTemplateVersions.AllColumns,
@@ -692,9 +689,6 @@ func (r *RequestRepository) FindAllRequestCompletedFormByRequestId(ctx context.C
 	).FROM(
 		rNodeFormStatement.
 			LEFT_JOIN(Nodes, nodeFormNodeId.EQ(Nodes.ID)).
-			LEFT_JOIN(
-				NodeFormApproveOrRejectUsers, nodeFormId.EQ(NodeFormApproveOrRejectUsers.NodeFormID),
-			).
 			LEFT_JOIN(FormData, nodeFormDataId.EQ(FormData.ID)).
 			LEFT_JOIN(FormFieldData, FormData.ID.EQ(FormFieldData.FormDataID)).
 			//

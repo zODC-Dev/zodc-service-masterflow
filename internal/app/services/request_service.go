@@ -932,6 +932,41 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 
 	total := 0
 
+	userIds := []int32{}
+	existUserIds := make(map[int32]bool)
+
+	for _, node := range request.Nodes {
+		if node.AssigneeID != nil && !existUserIds[*node.AssigneeID] {
+			userIds = append(userIds, *node.AssigneeID)
+			existUserIds[*node.AssigneeID] = true
+		}
+	}
+
+	userApiMap := map[int32]results.UserApiDataResult{}
+	if len(userIds) > 0 {
+		assigneeResult, err := s.UserAPI.FindUsersByUserIds(userIds)
+		if err != nil {
+			return paginatedResponse, err
+		}
+		for _, userApi := range assigneeResult.Data {
+			userApiMap[userApi.ID] = userApi
+		}
+	}
+
+	mapUser := func(id *int32) types.Assignee {
+		assignee := types.Assignee{}
+		if id != nil {
+			if user, ok := userApiMap[*id]; ok {
+				assignee.Id = user.ID
+				assignee.Name = user.Name
+				assignee.Email = user.Email
+				assignee.AvatarUrl = user.AvatarUrl
+				assignee.IsSystemUser = user.IsSystemUser
+			}
+		}
+		return assignee
+	}
+
 	if request.Workflow.Type == string(constants.WorkflowTypeProject) {
 		for _, node := range request.Nodes {
 			if node.Type == string(constants.NodeTypeTask) || node.Type == string(constants.NodeTypeStory) {
@@ -941,16 +976,6 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 				}
 
 				total = len(formData)
-
-				users, err := s.UserAPI.FindUsersByUserIds([]int32{*node.AssigneeID})
-				if err != nil {
-					return paginatedResponse, err
-				}
-
-				assignee := types.Assignee{}
-				if err := utils.Mapper(users.Data[0], &assignee); err != nil {
-					return paginatedResponse, err
-				}
 
 				formTemplateSystem, err := s.FormRepo.FindOneFormTemplateByFormTemplateId(ctx, s.DB, constants.FormTemplateIDJiraSystemForm)
 				if err != nil {
@@ -981,10 +1006,9 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 					SubmittedAt: node.UpdatedAt,
 					Type:        node.Type,
 					FormData:    formDataResponse,
-					Approval:    []responses.RequestCompletedFormApprovalResponse{},
 					Template:    formTemplate,
-					Submitter:   assignee,
-					LastUpdate:  assignee,
+					Submitter:   mapUser(node.AssigneeID),
+					LastUpdate:  mapUser(node.AssigneeID),
 					DataId:      node.FormDataID,
 				}
 
@@ -993,6 +1017,33 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 				} else {
 					requestCompletedFormRes.Key = strconv.Itoa(int(node.Key))
 				}
+
+				// Task Related
+				taskRelated := []responses.TaskRelated{}
+				for _, task := range request.Nodes {
+					if task.ID == node.ID {
+						continue
+					}
+
+					if task.Type == string(constants.NodeTypeTask) || task.Type == string(constants.NodeTypeStory) || task.Type == string(constants.NodeTypeSubWorkflow) || task.Type == string(constants.NodeTypeInput) || task.Type == string(constants.NodeTypeApproval) {
+						taskRelatedRes := responses.TaskRelated{
+							Title:    task.Title,
+							Type:     task.Type,
+							Status:   task.Status,
+							Assignee: mapUser(task.AssigneeID),
+						}
+
+						if task.JiraKey != nil {
+							taskRelatedRes.Key = *task.JiraKey
+						} else {
+							taskRelatedRes.Key = strconv.Itoa(int(task.Key))
+						}
+
+						taskRelated = append(taskRelated, taskRelatedRes)
+					}
+				}
+
+				requestCompletedFormRes.TaskRelated = taskRelated
 
 				requestCompletedFormResponse = append(requestCompletedFormResponse, requestCompletedFormRes)
 			}
@@ -1051,7 +1102,6 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 							SubmittedAt: subNode.UpdatedAt,
 							Type:        subNode.Type,
 							FormData:    formDataResponse,
-							Approval:    []responses.RequestCompletedFormApprovalResponse{},
 							Template:    formTemplate,
 							Submitter:   assignee,
 							LastUpdate:  assignee,
@@ -1064,6 +1114,33 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 							requestCompletedFormRes.Key = strconv.Itoa(int(subNode.Key))
 						}
 
+						// Task Related
+						taskRelated := []responses.TaskRelated{}
+						for _, subTask := range subRequest.Nodes {
+							if subTask.ID == subNode.ID {
+								continue
+							}
+
+							if subTask.Type == string(constants.NodeTypeTask) || subTask.Type == string(constants.NodeTypeStory) || subTask.Type == string(constants.NodeTypeSubWorkflow) || subTask.Type == string(constants.NodeTypeInput) || subTask.Type == string(constants.NodeTypeApproval) {
+								taskRelatedRes := responses.TaskRelated{
+									Title:    subTask.Title,
+									Type:     subTask.Type,
+									Status:   subTask.Status,
+									Assignee: mapUser(subTask.AssigneeID),
+								}
+
+								if subTask.JiraKey != nil {
+									taskRelatedRes.Key = *subTask.JiraKey
+								} else {
+									taskRelatedRes.Key = strconv.Itoa(int(subTask.Key))
+								}
+
+								taskRelated = append(taskRelated, taskRelatedRes)
+							}
+						}
+
+						requestCompletedFormRes.TaskRelated = taskRelated
+
 						requestCompletedFormResponse = append(requestCompletedFormResponse, requestCompletedFormRes)
 					}
 				}
@@ -1074,55 +1151,6 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 		total = int(count)
 		if err != nil {
 			return paginatedResponse, err
-		}
-
-		userIds := []int32{}
-		existUserIds := make(map[int32]bool)
-
-		for _, nodeForm := range nodeForms {
-			if nodeForm.Permission != string(constants.NodeFormPermissionInput) {
-				continue
-			}
-
-			if nodeForm.SubmittedByUserID != nil && !existUserIds[*nodeForm.SubmittedByUserID] {
-				userIds = append(userIds, *nodeForm.SubmittedByUserID)
-				existUserIds[*nodeForm.SubmittedByUserID] = true
-			}
-			if nodeForm.LastUpdateUserID != nil && !existUserIds[*nodeForm.LastUpdateUserID] {
-				userIds = append(userIds, *nodeForm.LastUpdateUserID)
-				existUserIds[*nodeForm.LastUpdateUserID] = true
-			}
-			for _, approveOrRejectUser := range nodeForm.ApproveOrRejectUsers {
-				if approveOrRejectUser.UserID != 0 && !existUserIds[approveOrRejectUser.UserID] {
-					userIds = append(userIds, approveOrRejectUser.UserID)
-					existUserIds[approveOrRejectUser.UserID] = true
-				}
-			}
-		}
-
-		userApiMap := map[int32]results.UserApiDataResult{}
-		if len(userIds) > 0 {
-			assigneeResult, err := s.UserAPI.FindUsersByUserIds(userIds)
-			if err != nil {
-				return paginatedResponse, err
-			}
-			for _, userApi := range assigneeResult.Data {
-				userApiMap[userApi.ID] = userApi
-			}
-		}
-
-		mapUser := func(id *int32) types.Assignee {
-			assignee := types.Assignee{}
-			if id != nil {
-				if user, ok := userApiMap[*id]; ok {
-					assignee.Id = user.ID
-					assignee.Name = user.Name
-					assignee.Email = user.Email
-					assignee.AvatarUrl = user.AvatarUrl
-					assignee.IsSystemUser = user.IsSystemUser
-				}
-			}
-			return assignee
 		}
 
 		//
@@ -1143,16 +1171,6 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 			} else {
 				requestCompletedFormRes.Key = strconv.Itoa(int(nodeForm.Node.Key))
 			}
-
-			//
-			approval := []responses.RequestCompletedFormApprovalResponse{}
-			for _, approveOrRejectUser := range nodeForm.ApproveOrRejectUsers {
-				approval = append(approval, responses.RequestCompletedFormApprovalResponse{
-					Assignee:   mapUser(&approveOrRejectUser.UserID),
-					IsApproved: approveOrRejectUser.IsApproved,
-				})
-			}
-			requestCompletedFormRes.Approval = approval
 
 			formTemplateNodeForm, err := s.FormRepo.FindOneFormTemplateByFormTemplateId(ctx, s.DB, nodeForm.FormData.FormTemplate.ID)
 			if err != nil {
@@ -1182,6 +1200,33 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 			requestCompletedFormRes.Template = formTemplate
 
 			requestCompletedFormRes.DataId = nodeForm.DataID
+
+			// Task Related
+			taskRelated := []responses.TaskRelated{}
+			for _, task := range request.Nodes {
+				if task.ID == nodeForm.NodeID {
+					continue
+				}
+
+				if task.Type == string(constants.NodeTypeTask) || task.Type == string(constants.NodeTypeStory) || task.Type == string(constants.NodeTypeSubWorkflow) || task.Type == string(constants.NodeTypeInput) || task.Type == string(constants.NodeTypeApproval) {
+					taskRelatedRes := responses.TaskRelated{
+						Title:    task.Title,
+						Type:     task.Type,
+						Status:   task.Status,
+						Assignee: mapUser(task.AssigneeID),
+					}
+
+					if task.JiraKey != nil {
+						taskRelatedRes.Key = *task.JiraKey
+					} else {
+						taskRelatedRes.Key = strconv.Itoa(int(task.Key))
+					}
+
+					taskRelated = append(taskRelated, taskRelatedRes)
+				}
+			}
+
+			requestCompletedFormRes.TaskRelated = taskRelated
 
 			requestCompletedFormResponse = append(requestCompletedFormResponse, requestCompletedFormRes)
 		}

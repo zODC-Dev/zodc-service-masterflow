@@ -324,17 +324,17 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 						}
 
 						if connection.Node.Type == string(constants.NodeTypeEnd) {
-							nodeModel := model.Nodes{}
-							utils.Mapper(node, &nodeModel)
-							nodeModel.IsCurrent = true
-							nodeModel.Status = string(constants.NodeStatusCompleted)
-							if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
+							connection.Node.IsCurrent = true
+							now := time.Now().UTC().Add(7 * time.Hour)
+							connection.Node.ActualStartTime = &now
+							connection.Node.ActualEndTime = &now
+							connection.Node.Status = string(constants.NodeStatusCompleted)
+
+							if err := s.NodeRepo.UpdateNode(ctx, tx, connection.Node); err != nil {
 								return err
 							}
 
 							// Update Request
-							now := time.Now().UTC().Add(7 * time.Hour)
-
 							request, err := s.RequestRepo.FindOneRequestByRequestIdTx(ctx, tx, node.RequestID)
 							if err != nil {
 								return err
@@ -354,6 +354,12 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 							requestModel.Progress = 100
 
 							if err := s.RequestRepo.UpdateRequest(ctx, tx, requestModel); err != nil {
+								return err
+							}
+
+							// History
+							err = s.HistoryService.HistoryEndRequest(ctx, request.ID, node.ID)
+							if err != nil {
 								return err
 							}
 
@@ -387,7 +393,6 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 				if err != nil {
 					return err
 				}
-
 			}
 		}
 	}
