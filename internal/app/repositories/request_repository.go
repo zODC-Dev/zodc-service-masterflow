@@ -369,6 +369,7 @@ func (r *RequestRepository) CountRequestTaskByStatusAndUserIdAndQueryParams(ctx 
 		Nodes.Type.NOT_EQ(postgres.String(string(constants.NodeTypeEnd))),
 		Nodes.Type.NOT_EQ(postgres.String(string(constants.NodeTypeStory))),
 		Requests.Progress.NOT_EQ(postgres.Float(100)),
+		Requests.Status.NOT_EQ(postgres.String(string(constants.RequestStatusCanceled))),
 	}
 
 	if queryparams.ProjectKey != "" {

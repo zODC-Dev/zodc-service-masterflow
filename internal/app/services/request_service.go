@@ -903,7 +903,7 @@ func (s *RequestService) UpdateRequestHandler(ctx context.Context, requestId int
 	if originalRequest.Status == string(constants.RequestStatusInProgress) {
 		for _, node := range originalRequest.Nodes {
 			if node.Type == string(constants.NodeTypeStart) {
-				err = s.HistoryService.HistoryEditRequest(ctx, requestId, node.ID)
+				err = s.HistoryService.HistoryEditRequest(ctx, requestId, node.ID, userId)
 				if err != nil {
 					return fmt.Errorf("history edit request fail: %w", err)
 				}
@@ -1136,6 +1136,7 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 			}
 
 			requestCompletedFormRes.Type = nodeForm.Node.Type
+			requestCompletedFormRes.SubmittedAt = *nodeForm.SubmittedAt
 
 			if nodeForm.Node.JiraKey != nil {
 				requestCompletedFormRes.Key = *nodeForm.Node.JiraKey

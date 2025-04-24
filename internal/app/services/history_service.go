@@ -153,8 +153,10 @@ func (s *HistoryService) HistoryNewTask(ctx context.Context, requestId int32, no
 	defer tx.Rollback()
 
 	toUserIdStr := strconv.Itoa(int(toUserId))
+
+	userIdSystem := int32(0)
 	history := model.Histories{
-		UserID:     nil,
+		UserID:     &userIdSystem,
 		RequestID:  requestId,
 		NodeID:     nodeId,
 		TypeAction: constants.HistoryTypeNewTask,
@@ -174,7 +176,7 @@ func (s *HistoryService) HistoryNewTask(ctx context.Context, requestId int32, no
 	return nil
 }
 
-func (s *HistoryService) HistoryStartRequest(ctx context.Context, requestId int32, nodeId string) error {
+func (s *HistoryService) HistoryStartRequest(ctx context.Context, userId int32, requestId int32, nodeId string) error {
 	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
@@ -182,7 +184,7 @@ func (s *HistoryService) HistoryStartRequest(ctx context.Context, requestId int3
 	defer tx.Rollback()
 
 	history := model.Histories{
-		UserID:     nil,
+		UserID:     &userId,
 		RequestID:  requestId,
 		NodeID:     nodeId,
 		TypeAction: constants.HistoryTypeStartRequest,
@@ -209,8 +211,9 @@ func (s *HistoryService) HistoryEndRequest(ctx context.Context, requestId int32,
 	}
 	defer tx.Rollback()
 
+	userIdSystem := int32(0)
 	history := model.Histories{
-		UserID:     nil,
+		UserID:     &userIdSystem,
 		RequestID:  requestId,
 		NodeID:     nodeId,
 		TypeAction: constants.HistoryTypeEndRequest,
@@ -230,7 +233,7 @@ func (s *HistoryService) HistoryEndRequest(ctx context.Context, requestId int32,
 	return nil
 }
 
-func (s *HistoryService) HistoryEditRequest(ctx context.Context, requestId int32, nodeId string) error {
+func (s *HistoryService) HistoryEditRequest(ctx context.Context, requestId int32, nodeId string, userId int32) error {
 	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
@@ -238,7 +241,7 @@ func (s *HistoryService) HistoryEditRequest(ctx context.Context, requestId int32
 	defer tx.Rollback()
 
 	history := model.Histories{
-		UserID:     nil,
+		UserID:     &userId,
 		RequestID:  requestId,
 		NodeID:     nodeId,
 		TypeAction: constants.HistoryTypeEditRequest,
