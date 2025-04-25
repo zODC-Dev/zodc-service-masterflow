@@ -1446,10 +1446,6 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
-		return 0, fmt.Errorf("commit fail: %w", err)
-	}
-
 	for _, node := range req.Nodes {
 		if node.Type == string(constants.NodeTypeStart) {
 			err = s.HistoryService.HistoryStartRequest(ctx, tx, userId, newRequest.ID, node.Id)
@@ -1458,6 +1454,10 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 			}
 			break
 		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("commit fail: %w", err)
 	}
 
 	// Notify Start Request With Detail
