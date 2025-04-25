@@ -136,6 +136,7 @@ type StartWorkflow struct {
 	RequestID  int32
 	SprintID   *int32
 	IsTemplate bool
+	Template   *NodesConnectionsStories
 
 	NodesConnectionsStories
 }

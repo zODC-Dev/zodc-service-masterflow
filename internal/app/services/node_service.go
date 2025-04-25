@@ -386,14 +386,12 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 					return err
 				}
 
-				err = s.NotificationService.NotifyTaskAvailable(ctx, node.Title, users.Data[0].ID)
-				if err != nil {
+				if err := s.NotificationService.NotifyTaskAvailable(ctx, node.Title, users.Data[0].ID); err != nil {
 					return err
 				}
 
 				// History
-				err = s.HistoryService.HistoryNewTask(ctx, tx, node.RequestID, node.ID, *node.AssigneeID)
-				if err != nil {
+				if err := s.HistoryService.HistoryNewTask(ctx, tx, node.RequestID, node.ID, *node.AssigneeID); err != nil {
 					return err
 				}
 			}
@@ -468,7 +466,7 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 	}
 	defer tx.Rollback()
 
-	nodeResult, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
+	nodeResult, err := s.NodeRepo.FindOneNodeByNodeIdTx(ctx, tx, nodeId)
 	if err != nil {
 		return fmt.Errorf("find node by node id fail: %w", err)
 	}
@@ -877,14 +875,13 @@ func (s *NodeService) ApproveNode(ctx context.Context, userId int32, nodeId stri
 		return fmt.Errorf("logic for condition node fail: %w", err)
 	}
 
-	// Commit
-	if err := tx.Commit(); err != nil {
+	// History
+	if err := s.HistoryService.HistoryApproveNode(ctx, tx, userId, node.RequestID, nodeId); err != nil {
 		return err
 	}
 
-	// History
-	err = s.HistoryService.HistoryApproveNode(ctx, tx, userId, node.RequestID, nodeId)
-	if err != nil {
+	// Commit
+	if err := tx.Commit(); err != nil {
 		return err
 	}
 
@@ -921,13 +918,13 @@ func (s *NodeService) RejectNode(ctx context.Context, userId int32, nodeId strin
 		return fmt.Errorf("logic for condition node fail: %w", err)
 	}
 
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit fail: %w", err)
+	// History
+	if err := s.HistoryService.HistoryRejectNode(ctx, tx, userId, node.RequestID, nodeId); err != nil {
+		return err
 	}
 
-	err = s.HistoryService.HistoryRejectNode(ctx, tx, userId, node.RequestID, nodeId)
-	if err != nil {
-		return err
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit fail: %w", err)
 	}
 
 	return nil

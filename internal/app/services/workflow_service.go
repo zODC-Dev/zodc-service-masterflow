@@ -1266,8 +1266,17 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 			Progress:          0,
 		}
 
-		_, err = s.RequestRepo.CreateRequest(ctx, tx, requestTemplate)
+		requestTemplate, err = s.RequestRepo.CreateRequest(ctx, tx, requestTemplate)
 		if err != nil {
+			return 0, err
+		}
+
+		nodeConnectionStoryReq := requests.NodesConnectionsStories{}
+		if err := utils.Mapper(req.Template, &nodeConnectionStoryReq); err != nil {
+			return 0, err
+		}
+
+		if err := s.CreateNodesConnectionsStories(ctx, tx, &nodeConnectionStoryReq, requestTemplate.ID, request.Workflow.ProjectKey, userId, req.SprintID, false); err != nil {
 			return 0, err
 		}
 
