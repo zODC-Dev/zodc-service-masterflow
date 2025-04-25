@@ -336,6 +336,9 @@ func (s *RequestService) GetRequestDetailHandler(ctx context.Context, userId int
 	}
 	requestDetailResponse.RequestedBy = requestedByResponse
 
+	// StarterId
+	requestDetailResponse.StarterId = request.UserID
+
 	return requestDetailResponse, nil
 }
 

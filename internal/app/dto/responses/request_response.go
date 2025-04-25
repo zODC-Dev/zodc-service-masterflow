@@ -42,6 +42,7 @@ type RequestDetailResponse struct {
 	RequestedBy   types.Assignee    `json:"requestedBy"`
 	Participants  []types.Assignee  `json:"participants"`
 	Workflow      WorkflowResponse  `json:"workflow"`
+	StarterId     int32             `json:"starterId"`
 }
 
 type RequestTaskResponse struct {
