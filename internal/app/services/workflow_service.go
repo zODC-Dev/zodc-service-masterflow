@@ -1452,7 +1452,7 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 
 	for _, node := range req.Nodes {
 		if node.Type == string(constants.NodeTypeStart) {
-			err = s.HistoryService.HistoryStartRequest(ctx, userId, newRequest.ID, node.Id)
+			err = s.HistoryService.HistoryStartRequest(ctx, tx, userId, newRequest.ID, node.Id)
 			if err != nil {
 				return 0, fmt.Errorf("history start request fail: %w", err)
 			}

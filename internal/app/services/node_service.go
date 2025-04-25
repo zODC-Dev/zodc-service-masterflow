@@ -361,7 +361,7 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 							}
 
 							// History
-							err = s.HistoryService.HistoryEndRequest(ctx, request.ID, node.ID)
+							err = s.HistoryService.HistoryEndRequest(ctx, tx, request.ID, node.ID)
 							if err != nil {
 								return err
 							}
@@ -392,7 +392,7 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 				}
 
 				// History
-				err = s.HistoryService.HistoryNewTask(ctx, node.RequestID, node.ID, *node.AssigneeID)
+				err = s.HistoryService.HistoryNewTask(ctx, tx, node.RequestID, node.ID, *node.AssigneeID)
 				if err != nil {
 					return err
 				}
@@ -452,7 +452,7 @@ func (s *NodeService) StartNodeHandler(ctx context.Context, userId int32, nodeId
 
 	// History
 	oldStatus := string(constants.NodeStatusTodo)
-	err = s.HistoryService.HistoryChangeNodeStatus(ctx, userId, node.RequestID, nodeId, &oldStatus, string(constants.NodeStatusInProgress))
+	err = s.HistoryService.HistoryChangeNodeStatus(ctx, tx, userId, node.RequestID, nodeId, &oldStatus, string(constants.NodeStatusInProgress))
 	if err != nil {
 		return err
 	}
@@ -502,6 +502,13 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 			return err
 		}
 		if err := s.ConnectionRepo.UpdateConnection(ctx, tx, connectionModel); err != nil {
+			return err
+		}
+
+		// History
+		oldStatus := string(constants.NodeStatusInProgress)
+		err = s.HistoryService.HistoryChangeNodeStatus(ctx, tx, userId, node.RequestID, nodeId, &oldStatus, string(constants.NodeStatusCompleted))
+		if err != nil {
 			return err
 		}
 
@@ -571,7 +578,7 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 					}
 
 					// History
-					err = s.HistoryService.HistoryEndRequest(ctx, request.ID, node.ID)
+					err = s.HistoryService.HistoryEndRequest(ctx, tx, request.ID, node.ID)
 					if err != nil {
 						return err
 					}
@@ -587,7 +594,7 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 					}
 
 					// History
-					err = s.HistoryService.HistoryEndRequest(ctx, request.ID, node.ID)
+					err = s.HistoryService.HistoryEndRequest(ctx, tx, request.ID, node.ID)
 					if err != nil {
 						return err
 					}
@@ -638,7 +645,7 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 				}
 
 				// History
-				err = s.HistoryService.HistoryNewTask(ctx, connectionsToNode[i].Node.RequestID, connectionsToNode[i].Node.ID, *connectionsToNode[i].Node.AssigneeID)
+				err = s.HistoryService.HistoryNewTask(ctx, tx, connectionsToNode[i].Node.RequestID, connectionsToNode[i].Node.ID, *connectionsToNode[i].Node.AssigneeID)
 				if err != nil {
 					return err
 				}
@@ -663,13 +670,6 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 	// Commit
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit fail: %w", err)
-	}
-
-	// History
-	oldStatus := string(constants.NodeStatusInProgress)
-	err = s.HistoryService.HistoryChangeNodeStatus(ctx, userId, node.RequestID, nodeId, &oldStatus, string(constants.NodeStatusCompleted))
-	if err != nil {
-		return err
 	}
 
 	return nil
@@ -837,7 +837,7 @@ func (s *NodeService) ReassignNode(ctx context.Context, nodeId string, userId in
 	}
 
 	// History
-	err = s.HistoryService.HistoryChangeNodeAssignee(ctx, userId, node.RequestID, nodeId, oldAssigneeId, userIdReq)
+	err = s.HistoryService.HistoryChangeNodeAssignee(ctx, tx, userId, node.RequestID, nodeId, oldAssigneeId, userIdReq)
 	if err != nil {
 		return err
 	}
@@ -883,7 +883,7 @@ func (s *NodeService) ApproveNode(ctx context.Context, userId int32, nodeId stri
 	}
 
 	// History
-	err = s.HistoryService.HistoryApproveNode(ctx, userId, node.RequestID, nodeId)
+	err = s.HistoryService.HistoryApproveNode(ctx, tx, userId, node.RequestID, nodeId)
 	if err != nil {
 		return err
 	}
@@ -925,7 +925,7 @@ func (s *NodeService) RejectNode(ctx context.Context, userId int32, nodeId strin
 		return fmt.Errorf("commit fail: %w", err)
 	}
 
-	err = s.HistoryService.HistoryRejectNode(ctx, userId, node.RequestID, nodeId)
+	err = s.HistoryService.HistoryRejectNode(ctx, tx, userId, node.RequestID, nodeId)
 	if err != nil {
 		return err
 	}

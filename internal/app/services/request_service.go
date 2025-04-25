@@ -903,7 +903,7 @@ func (s *RequestService) UpdateRequestHandler(ctx context.Context, requestId int
 	if originalRequest.Status == string(constants.RequestStatusInProgress) {
 		for _, node := range originalRequest.Nodes {
 			if node.Type == string(constants.NodeTypeStart) {
-				err = s.HistoryService.HistoryEditRequest(ctx, requestId, node.ID, userId)
+				err = s.HistoryService.HistoryEditRequest(ctx, tx, requestId, node.ID, userId)
 				if err != nil {
 					return fmt.Errorf("history edit request fail: %w", err)
 				}

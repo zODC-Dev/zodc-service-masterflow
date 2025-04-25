@@ -25,13 +25,7 @@ func NewHistoryService(db *sql.DB, historyRepo *repositories.HistoryRepository, 
 	}
 }
 
-func (s *HistoryService) HistoryChangeNodeStatus(ctx context.Context, userId int32, requestId int32, nodeId string, fromStatus *string, toStatus string) error {
-	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
+func (s *HistoryService) HistoryChangeNodeStatus(ctx context.Context, tx *sql.Tx, userId int32, requestId int32, nodeId string, fromStatus *string, toStatus string) error {
 	history := model.Histories{
 		UserID:     &userId,
 		RequestID:  requestId,
@@ -41,25 +35,10 @@ func (s *HistoryService) HistoryChangeNodeStatus(ctx context.Context, userId int
 		ToValue:    &toStatus,
 	}
 
-	err = s.HistoryRepo.CreateHistory(ctx, tx, history)
-	if err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	return s.HistoryRepo.CreateHistory(ctx, tx, history)
 }
 
-func (s *HistoryService) HistoryApproveNode(ctx context.Context, userId int32, requestId int32, nodeId string) error {
-	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
+func (s *HistoryService) HistoryApproveNode(ctx context.Context, tx *sql.Tx, userId int32, requestId int32, nodeId string) error {
 	history := model.Histories{
 		UserID:     &userId,
 		RequestID:  requestId,
@@ -69,25 +48,10 @@ func (s *HistoryService) HistoryApproveNode(ctx context.Context, userId int32, r
 		FromValue:  nil,
 	}
 
-	err = s.HistoryRepo.CreateHistory(ctx, tx, history)
-	if err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	return s.HistoryRepo.CreateHistory(ctx, tx, history)
 }
 
-func (s *HistoryService) HistoryRejectNode(ctx context.Context, userId int32, requestId int32, nodeId string) error {
-	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
+func (s *HistoryService) HistoryRejectNode(ctx context.Context, tx *sql.Tx, userId int32, requestId int32, nodeId string) error {
 	history := model.Histories{
 		UserID:     &userId,
 		RequestID:  requestId,
@@ -97,25 +61,10 @@ func (s *HistoryService) HistoryRejectNode(ctx context.Context, userId int32, re
 		FromValue:  nil,
 	}
 
-	err = s.HistoryRepo.CreateHistory(ctx, tx, history)
-	if err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	return s.HistoryRepo.CreateHistory(ctx, tx, history)
 }
 
-func (s *HistoryService) HistoryChangeNodeAssignee(ctx context.Context, userId int32, requestId int32, nodeId string, fromAssigneeId *int32, toAssigneeId int32) error {
-	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
+func (s *HistoryService) HistoryChangeNodeAssignee(ctx context.Context, tx *sql.Tx, userId int32, requestId int32, nodeId string, fromAssigneeId *int32, toAssigneeId int32) error {
 	var fromAssigneeIdStr *string = nil
 	if fromAssigneeId != nil {
 		tempStr := strconv.Itoa(int(*fromAssigneeId))
@@ -133,25 +82,11 @@ func (s *HistoryService) HistoryChangeNodeAssignee(ctx context.Context, userId i
 		ToValue:    &toAssigneeIdStr,
 	}
 
-	err = s.HistoryRepo.CreateHistory(ctx, tx, history)
-	if err != nil {
-		return err
-	}
+	return s.HistoryRepo.CreateHistory(ctx, tx, history)
 
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	return nil
 }
 
-func (s *HistoryService) HistoryNewTask(ctx context.Context, requestId int32, nodeId string, toUserId int32) error {
-	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
+func (s *HistoryService) HistoryNewTask(ctx context.Context, tx *sql.Tx, requestId int32, nodeId string, toUserId int32) error {
 	toUserIdStr := strconv.Itoa(int(toUserId))
 
 	userIdSystem := int32(0)
@@ -164,25 +99,10 @@ func (s *HistoryService) HistoryNewTask(ctx context.Context, requestId int32, no
 		FromValue:  nil,
 	}
 
-	err = s.HistoryRepo.CreateHistory(ctx, tx, history)
-	if err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	return s.HistoryRepo.CreateHistory(ctx, tx, history)
 }
 
-func (s *HistoryService) HistoryStartRequest(ctx context.Context, userId int32, requestId int32, nodeId string) error {
-	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
+func (s *HistoryService) HistoryStartRequest(ctx context.Context, tx *sql.Tx, userId int32, requestId int32, nodeId string) error {
 	history := model.Histories{
 		UserID:     &userId,
 		RequestID:  requestId,
@@ -192,25 +112,10 @@ func (s *HistoryService) HistoryStartRequest(ctx context.Context, userId int32, 
 		ToValue:    nil,
 	}
 
-	err = s.HistoryRepo.CreateHistory(ctx, tx, history)
-	if err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	return s.HistoryRepo.CreateHistory(ctx, tx, history)
 }
 
-func (s *HistoryService) HistoryEndRequest(ctx context.Context, requestId int32, nodeId string) error {
-	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
+func (s *HistoryService) HistoryEndRequest(ctx context.Context, tx *sql.Tx, requestId int32, nodeId string) error {
 	userIdSystem := int32(0)
 	history := model.Histories{
 		UserID:     &userIdSystem,
@@ -221,25 +126,10 @@ func (s *HistoryService) HistoryEndRequest(ctx context.Context, requestId int32,
 		ToValue:    nil,
 	}
 
-	err = s.HistoryRepo.CreateHistory(ctx, tx, history)
-	if err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	return s.HistoryRepo.CreateHistory(ctx, tx, history)
 }
 
-func (s *HistoryService) HistoryEditRequest(ctx context.Context, requestId int32, nodeId string, userId int32) error {
-	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
+func (s *HistoryService) HistoryEditRequest(ctx context.Context, tx *sql.Tx, requestId int32, nodeId string, userId int32) error {
 	history := model.Histories{
 		UserID:     &userId,
 		RequestID:  requestId,
@@ -249,14 +139,5 @@ func (s *HistoryService) HistoryEditRequest(ctx context.Context, requestId int32
 		ToValue:    nil,
 	}
 
-	err = s.HistoryRepo.CreateHistory(ctx, tx, history)
-	if err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	return s.HistoryRepo.CreateHistory(ctx, tx, history)
 }
