@@ -40,6 +40,8 @@ func (r *HistoryRepository) FindAllHistoryByRequestId(ctx context.Context, db *s
 			LEFT_JOIN(Nodes, Nodes.ID.EQ(Histories.NodeID)),
 	).WHERE(
 		Histories.RequestID.EQ(postgres.Int32(requestId)),
+	).ORDER_BY(
+		Histories.CreatedAt.DESC(),
 	)
 
 	var histories []results.HistoryResult

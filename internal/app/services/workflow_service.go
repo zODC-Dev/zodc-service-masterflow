@@ -344,7 +344,8 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			// Index
 			Level: storyReq.Node.Level,
 
-			IsSendForm: storyReq.Node.Data.IsSendForm,
+			IsSendApprovedForm: storyReq.Node.Data.EditorContent.IsSendApprovedForm,
+			IsSendRejectedForm: storyReq.Node.Data.EditorContent.IsSendRejectedForm,
 
 			TaskStartedRequester:    storyReq.Node.Data.TaskStarted.Requester,
 			TaskStartedAssignee:     storyReq.Node.Data.TaskStarted.Assignee,
@@ -436,7 +437,8 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 				//
 				Level: storyNodeReq.Level,
 
-				IsSendForm: storyNodeReq.Data.IsSendForm,
+				IsSendApprovedForm: storyNodeReq.Data.EditorContent.IsSendApprovedForm,
+				IsSendRejectedForm: storyNodeReq.Data.EditorContent.IsSendRejectedForm,
 
 				TaskStartedRequester:    storyNodeReq.Data.TaskStarted.Requester,
 				TaskStartedAssignee:     storyNodeReq.Data.TaskStarted.Assignee,
@@ -587,7 +589,8 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			// Index
 			Level: workflowNodeReq.Level,
 
-			IsSendForm: workflowNodeReq.Data.IsSendForm,
+			IsSendApprovedForm: workflowNodeReq.Data.EditorContent.IsSendApprovedForm,
+			IsSendRejectedForm: workflowNodeReq.Data.EditorContent.IsSendRejectedForm,
 
 			TaskStartedRequester:    workflowNodeReq.Data.TaskStarted.Requester,
 			TaskStartedAssignee:     workflowNodeReq.Data.TaskStarted.Assignee,

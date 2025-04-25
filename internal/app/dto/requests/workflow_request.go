@@ -41,11 +41,13 @@ type NodeDataCondition struct {
 }
 
 type NodeDataEditorContent struct {
-	Subject *string
-	Body    *string
-	Cc      *[]string
-	To      *[]string
-	Bcc     *[]string
+	Subject            *string
+	Body               *string
+	Cc                 *[]string
+	To                 *[]string
+	Bcc                *[]string
+	IsSendApprovedForm bool
+	IsSendRejectedForm bool
 }
 
 type TaskConfigNotification struct {
@@ -63,8 +65,6 @@ type NodeData struct {
 	SubRequestID  *int32
 	JiraKey       string
 	EstimatePoint *float32
-
-	IsSendForm bool
 
 	JiraLinkUrl *string
 

@@ -274,7 +274,7 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 					}
 
 					// Is Send Form
-					if node.IsSendForm {
+					if node.IsSendApprovedForm || node.IsSendRejectedForm {
 						request, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, node.RequestID)
 						if err != nil {
 							return err
@@ -283,7 +283,10 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 						notification.Body += "\n\n\n"
 						for _, node := range request.Nodes {
 							for _, nodeForm := range node.NodeForms {
-								if nodeForm.IsApproved {
+								if nodeForm.IsApproved && node.IsSendApprovedForm {
+									notification.Body += "\n" + configs.Env.FE_HOST + "/form-management/review/" + *nodeForm.DataID
+								}
+								if nodeForm.IsRejected && node.IsSendRejectedForm {
 									notification.Body += "\n" + configs.Env.FE_HOST + "/form-management/review/" + *nodeForm.DataID
 								}
 							}

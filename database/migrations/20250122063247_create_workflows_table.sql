@@ -113,7 +113,8 @@ CREATE TABLE nodes (
     cc_emails TEXT,
     to_emails TEXT,
     bcc_emails TEXT,
-    is_send_form BOOLEAN NOT NULL DEFAULT false,
+    is_send_approved_form BOOLEAN NOT NULL DEFAULT false,
+    is_send_rejected_form BOOLEAN NOT NULL DEFAULT false,
 
     -- Approval node
     is_approved BOOLEAN NOT NULL DEFAULT false,

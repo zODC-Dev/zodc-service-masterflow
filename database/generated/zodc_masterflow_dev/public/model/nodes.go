@@ -40,7 +40,8 @@ type Nodes struct {
 	CcEmails                  *string
 	ToEmails                  *string
 	BccEmails                 *string
-	IsSendForm                bool
+	IsSendApprovedForm        bool
+	IsSendRejectedForm        bool
 	IsApproved                bool
 	IsRejected                bool
 	EndType                   *string
