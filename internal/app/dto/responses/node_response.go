@@ -44,3 +44,10 @@ type TaskDetail struct {
 	JiraLinkURL *string `json:"jiraLinkUrl"`
 	ProjectKey  *string `json:"projectKey"`
 }
+
+type NodeTaskCountResponse struct {
+	ProjectTasks   int32 `json:"projectTasks"`
+	InputTasks     int32 `json:"inputTasks"`
+	ApprovalTasks  int32 `json:"approvalTasks"`
+	ActiveRequests int32 `json:"activeRequests"`
+}

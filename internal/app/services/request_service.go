@@ -1662,6 +1662,10 @@ func (s *RequestService) CancelRequestHandler(ctx context.Context, requestId int
 		return err
 	}
 
+	if err := s.HistoryService.HistoryCancelRequest(ctx, tx, requestId, request.Nodes[0].ID); err != nil {
+		return err
+	}
+
 	if err := tx.Commit(); err != nil {
 		return err
 	}

@@ -12,6 +12,7 @@ import (
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/configs"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/constants"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/requests"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/responses"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/results"
@@ -438,11 +439,6 @@ func (s *NodeService) StartNodeHandler(ctx context.Context, userId int32, nodeId
 		return fmt.Errorf("sync jira when start node fail: %w", err)
 	}
 
-	//Commit
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit fail: %w", err)
-	}
-
 	// Notify
 	if err := s.NotificationService.NotifyTaskStarted(ctx, node); err != nil {
 		return err
@@ -453,6 +449,11 @@ func (s *NodeService) StartNodeHandler(ctx context.Context, userId int32, nodeId
 	err = s.HistoryService.HistoryChangeNodeStatus(ctx, tx, userId, node.RequestID, nodeId, &oldStatus, string(constants.NodeStatusInProgress))
 	if err != nil {
 		return err
+	}
+
+	//Commit
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit fail: %w", err)
 	}
 
 	return nil
@@ -1400,4 +1401,42 @@ func (s *NodeService) SyncJiraWhenStartNode(ctx context.Context, tx *sql.Tx, nod
 	}
 
 	return nil
+}
+
+func (s *NodeService) GetNodeTaskCount(ctx context.Context, userId int32) (responses.NodeTaskCountResponse, error) {
+	response := responses.NodeTaskCountResponse{}
+
+	count, err := s.RequestRepo.CountActiveRequests(ctx, s.DB, userId)
+	if err != nil {
+		return responses.NodeTaskCountResponse{}, err
+	}
+	response.ActiveRequests = count
+
+	approvalCount, err := s.RequestRepo.CountRequestTaskByStatusAndUserIdAndQueryParams(ctx, s.DB, userId, "", queryparams.RequestTaskCount{
+		Type:         string(constants.NodeTypeApproval),
+		WorkflowType: string(constants.WorkflowTypeGeneral),
+	})
+	if err != nil {
+		return responses.NodeTaskCountResponse{}, err
+	}
+	response.ApprovalTasks = int32(approvalCount)
+
+	inputTaskCount, err := s.RequestRepo.CountRequestTaskByStatusAndUserIdAndQueryParams(ctx, s.DB, userId, "", queryparams.RequestTaskCount{
+		Type:         string(constants.NodeTypeInput),
+		WorkflowType: string(constants.WorkflowTypeGeneral),
+	})
+	if err != nil {
+		return responses.NodeTaskCountResponse{}, err
+	}
+	response.InputTasks = int32(inputTaskCount)
+
+	projectTasks, err := s.RequestRepo.CountRequestTaskByStatusAndUserIdAndQueryParams(ctx, s.DB, userId, "", queryparams.RequestTaskCount{
+		WorkflowType: string(constants.WorkflowTypeProject),
+	})
+	if err != nil {
+		return responses.NodeTaskCountResponse{}, err
+	}
+	response.ProjectTasks = int32(projectTasks)
+
+	return response, nil
 }

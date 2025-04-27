@@ -835,3 +835,25 @@ func (r *RequestRepository) FindAllTasksByMidSprintReport(ctx context.Context, d
 
 	return result, err
 }
+
+func (r *RequestRepository) CountActiveRequests(ctx context.Context, db *sql.DB, userId int32) (int32, error) {
+	Requests := table.Requests
+	Nodes := table.Nodes
+
+	statement := Requests.SELECT(
+		Requests.ID,
+	).FROM(
+		Requests.
+			LEFT_JOIN(Nodes, Requests.ID.EQ(Nodes.RequestID)),
+	).WHERE(
+		(Requests.UserID.EQ(postgres.Int32(userId)).
+			OR(Nodes.AssigneeID.EQ(postgres.Int32(userId)))).
+			AND(Requests.Status.EQ(postgres.String(string(constants.RequestStatusInProgress))).
+				AND(Requests.IsTemplate.EQ(postgres.Bool(false)))),
+	)
+
+	count := []model.Requests{}
+	err := statement.QueryContext(ctx, db, &count)
+
+	return int32(len(count)), err
+}

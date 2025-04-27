@@ -129,6 +129,34 @@ func (s *HistoryService) HistoryEndRequest(ctx context.Context, tx *sql.Tx, requ
 	return s.HistoryRepo.CreateHistory(ctx, tx, history)
 }
 
+func (s *HistoryService) HistoryCancelRequest(ctx context.Context, tx *sql.Tx, requestId int32, nodeId string) error {
+	userIdSystem := int32(0)
+	history := model.Histories{
+		UserID:     &userIdSystem,
+		RequestID:  requestId,
+		NodeID:     nodeId,
+		TypeAction: constants.HistoryTypeCancelRequest,
+		FromValue:  nil,
+		ToValue:    nil,
+	}
+
+	return s.HistoryRepo.CreateHistory(ctx, tx, history)
+}
+
+func (s *HistoryService) HistoryTerminateRequest(ctx context.Context, tx *sql.Tx, requestId int32, nodeId string) error {
+	userIdSystem := int32(0)
+	history := model.Histories{
+		UserID:     &userIdSystem,
+		RequestID:  requestId,
+		NodeID:     nodeId,
+		TypeAction: constants.HistoryTypeTerminateRequest,
+		FromValue:  nil,
+		ToValue:    nil,
+	}
+
+	return s.HistoryRepo.CreateHistory(ctx, tx, history)
+}
+
 func (s *HistoryService) HistoryEditRequest(ctx context.Context, tx *sql.Tx, requestId int32, nodeId string, userId int32) error {
 	history := model.Histories{
 		UserID:     &userId,

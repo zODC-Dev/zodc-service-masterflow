@@ -302,3 +302,16 @@ func (c *NodeController) GetNodeStoryByAssignee(e echo.Context) error {
 
 	return e.JSON(http.StatusOK, stories)
 }
+
+func (c *NodeController) GetNodeTaskCount(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	userId, _ := middlewares.GetUserID(e)
+
+	count, err := c.nodeService.GetNodeTaskCount(ctx, int32(userId))
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, count)
+}
