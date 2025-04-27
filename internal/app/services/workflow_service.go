@@ -853,57 +853,11 @@ func (s *WorkflowService) CreateWorkflowHandler(ctx context.Context, req *reques
 
 	// Tính toán Gantt Chart nếu có project key
 	if reqClone.ProjectKey != "" && reqClone.SprintId != nil {
-		// Tạo bản đồ NodeId -> JiraKey để theo dõi các JiraKey
-		jiraKeyMap := make(map[string]string)
-
 		// Luôn đồng bộ với Jira để thiết lập mối quan hệ giữa các tasks
-		jiraResponse, err := s.NatsService.PublishWorkflowToJira(ctx, tx, reqClone.Nodes, reqClone.Stories, reqClone.Connections, reqClone.ProjectKey, *reqClone.SprintId)
+		_, err := s.NatsService.PublishWorkflowToJira(ctx, tx, reqClone.Nodes, reqClone.Stories, reqClone.Connections, reqClone.ProjectKey, *reqClone.SprintId)
 		if err != nil {
 			slog.Error("Failed to sync with Jira", "error", err)
-			// Tiếp tục xử lý, không return error
-		} else {
-			// Cập nhật jiraKeyMap từ response
-			for _, issue := range jiraResponse.Data.Data.Issues {
-				jiraKeyMap[issue.NodeId] = issue.JiraKey
-
-				// Thêm bước cập nhật JiraKey trong form field data
-				if err := s.FormRepo.UpdateFormFieldJiraKey(ctx, tx, issue.NodeId, issue.JiraKey); err != nil {
-					slog.Error("Failed to update JiraKey in form field data",
-						"nodeId", issue.NodeId,
-						"jiraKey", issue.JiraKey,
-						"error", err)
-					// Không trả về lỗi để không làm fail quy trình chính
-				}
-			}
-		}
-
-		// Dùng lại bản đồ ID -> JiraKey đã có hoặc JiraKey từ database
-		updatedNodes := make([]requests.Node, len(reqClone.Nodes))
-		for i, node := range reqClone.Nodes {
-			updatedNode := node
-			// Ưu tiên JiraKey từ Jira response
-			if jiraKey, exists := jiraKeyMap[node.Id]; exists && jiraKey != "" {
-				updatedNode.JiraKey = &jiraKey
-			}
-			updatedNodes[i] = updatedNode
-		}
-
-		// Cập nhật JiraKey cho stories
-		updatedStories := make([]requests.Story, len(reqClone.Stories))
-		for i, story := range reqClone.Stories {
-			updatedStory := story
-			// Ưu tiên JiraKey từ Jira response
-			if jiraKey, exists := jiraKeyMap[story.Node.Id]; exists && jiraKey != "" {
-				updatedStory.Node.JiraKey = &jiraKey
-			}
-			updatedStories[i] = updatedStory
-		}
-
-		// Tính toán Gantt Chart với JiraKey đã cập nhật
-		if err := s.NatsService.PublishWorkflowToGanttChart(ctx, tx, updatedNodes, updatedStories, reqClone.Connections, reqClone.ProjectKey, *reqClone.SprintId, workflow.ID); err != nil {
-			slog.Error("Failed to calculate Gantt Chart", "error", err)
-			// Không return error ở đây để không làm fail luồng chính nếu tính toán Gantt Chart lỗi
-		}
+		} 
 	}
 
 	//Commit
@@ -1319,55 +1273,40 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 			return 0, fmt.Errorf("nats service is nil")
 		}
 
-		jiraResponse, err := s.NatsService.PublishWorkflowToJira(ctx, tx, reqClone.Nodes, reqClone.Stories, reqClone.Connections, *reqDetailClone.Workflow.ProjectKey, *reqClone.SprintID)
+		_, err := s.NatsService.PublishWorkflowToJira(ctx, tx, reqClone.Nodes, reqClone.Stories, reqClone.Connections, *reqDetailClone.Workflow.ProjectKey, *reqClone.SprintID)
 		if err != nil {
 			slog.Error("Failed to sync with Jira", "error", err)
 			// Tiếp tục xử lý, không return error
 		} else {
-			// Cập nhật jiraKeyMap từ response
-			for _, issue := range jiraResponse.Data.Data.Issues {
-				jiraKeyMap[issue.NodeId] = issue.JiraKey
-
-				// Thêm bước cập nhật JiraKey trong form field data
-				if err := s.FormRepo.UpdateFormFieldJiraKey(ctx, tx, issue.NodeId, issue.JiraKey); err != nil {
-					slog.Error("Failed to update JiraKey in form field data",
-						"nodeId", issue.NodeId,
-						"jiraKey", issue.JiraKey,
-						"error", err)
-					// Không trả về lỗi để không làm fail quy trình chính
+			// Dùng lại bản đồ ID -> JiraKey đã có hoặc JiraKey từ database
+			updatedNodes := make([]requests.Node, len(reqClone.Nodes))
+			for i, node := range reqClone.Nodes {
+				updatedNode := node
+				// Ưu tiên JiraKey từ Jira response
+				if jiraKey, exists := jiraKeyMap[node.Id]; exists && jiraKey != "" {
+					updatedNode.JiraKey = &jiraKey
 				}
+				updatedNodes[i] = updatedNode
 			}
-		}
-
-		// Dùng lại bản đồ ID -> JiraKey đã có hoặc JiraKey từ database
-		updatedNodes := make([]requests.Node, len(reqClone.Nodes))
-		for i, node := range reqClone.Nodes {
-			updatedNode := node
-			// Ưu tiên JiraKey từ Jira response
-			if jiraKey, exists := jiraKeyMap[node.Id]; exists && jiraKey != "" {
-				updatedNode.JiraKey = &jiraKey
+			
+			// Cập nhật JiraKey cho stories
+			updatedStories := make([]requests.Story, len(reqClone.Stories))
+			for i, story := range reqClone.Stories {
+				updatedStory := story
+				// Ưu tiên JiraKey từ Jira response
+				if jiraKey, exists := jiraKeyMap[story.Node.Id]; exists && jiraKey != "" {
+					updatedStory.Node.JiraKey = &jiraKey
+				}
+				updatedStories[i] = updatedStory
 			}
-			updatedNodes[i] = updatedNode
-		}
-
-		// Cập nhật JiraKey cho stories
-		updatedStories := make([]requests.Story, len(reqClone.Stories))
-		for i, story := range reqClone.Stories {
-			updatedStory := story
-			// Ưu tiên JiraKey từ Jira response
-			if jiraKey, exists := jiraKeyMap[story.Node.Id]; exists && jiraKey != "" {
-				updatedStory.Node.JiraKey = &jiraKey
+			
+			// Tính toán Gantt Chart với JiraKey đã cập nhật
+			if err := s.NatsService.PublishWorkflowToGanttChart(ctx, tx, updatedNodes, updatedStories, reqClone.Connections, *reqDetailClone.Workflow.ProjectKey, *reqClone.SprintID, request.Workflow.ID); err != nil {
+				slog.Error("Failed to calculate Gantt Chart", "error", err)
 			}
-			updatedStories[i] = updatedStory
-		}
-
-		// Tính toán Gantt Chart với JiraKey đã cập nhật
-		if err := s.NatsService.PublishWorkflowToGanttChart(ctx, tx, updatedNodes, updatedStories, reqClone.Connections, *reqDetailClone.Workflow.ProjectKey, *reqClone.SprintID, request.Workflow.ID); err != nil {
-			slog.Error("Failed to calculate Gantt Chart", "error", err)
-			// Không return error ở đây để không làm fail luồng chính nếu tính toán Gantt Chart lỗi
 		}
 	}
-
+	
 	// =========================== END SYNC JIRA ===========================
 
 	// Create Sub Workflow and Stories

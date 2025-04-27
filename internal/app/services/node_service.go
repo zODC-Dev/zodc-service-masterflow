@@ -823,22 +823,24 @@ func (s *NodeService) ReassignNode(ctx context.Context, nodeId string, userId in
 	}
 	s.NotificationService.SendNotification(ctx, notification)
 
+	// History
+	err = s.HistoryService.HistoryChangeNodeAssignee(ctx, tx, userId, node.RequestID, nodeId, oldAssigneeId, userIdReq)
+	if err != nil {
+		slog.Error("Error when creating history change node assignee", "error", err)
+		return err
+	}
+
 	if err := tx.Commit(); err != nil {
 		return err
 	}
 
 	// Check if node has Jira Key, then send update to Jira
 	if node.JiraKey != nil {
-		err := s.NatsService.SyncJiraWhenReassignNode(ctx, tx, node)
+		err := s.NatsService.SyncJiraWhenReassignNode(node)
 		if err != nil {
+			slog.Error("Error when syncing Jira when reassign node", "error", err)
 			return err
 		}
-	}
-
-	// History
-	err = s.HistoryService.HistoryChangeNodeAssignee(ctx, tx, userId, node.RequestID, nodeId, oldAssigneeId, userIdReq)
-	if err != nil {
-		return err
 	}
 
 	return nil
