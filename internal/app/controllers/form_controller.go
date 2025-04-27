@@ -182,3 +182,19 @@ func (c *FormController) ConfigFormTemplate(e echo.Context) error {
 		"message": "Form template config updated successfully",
 	})
 }
+
+func (c *FormController) FindOneFormDataByFormDataId(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	formDataId := e.Param("formDataId")
+	if formDataId == "" {
+		return e.JSON(http.StatusBadRequest, "Form data ID is required")
+	}
+
+	formData, err := c.formService.FindOneFormDataByFormDataId(ctx, formDataId)
+	if err != nil {
+		return e.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, formData)
+}

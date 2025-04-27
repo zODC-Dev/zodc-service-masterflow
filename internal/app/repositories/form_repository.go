@@ -222,16 +222,19 @@ func (r *FormRepository) FindFormDataById(ctx context.Context, db *sql.DB, formD
 	FormFieldData := table.FormFieldData
 	FormTemplateVersions := table.FormTemplateVersions
 	FormTemplateFields := table.FormTemplateFields
+	FormTemplates := table.FormTemplates
 
 	statement := FormData.SELECT(
 		FormData.AllColumns,
 		FormTemplateFields.AllColumns,
 		FormFieldData.AllColumns,
+		FormTemplates.AllColumns,
 	).FROM(
 		FormData.
 			LEFT_JOIN(FormFieldData, FormData.ID.EQ(FormFieldData.FormDataID)).
 			LEFT_JOIN(FormTemplateVersions, FormData.FormTemplateVersionID.EQ(FormTemplateVersions.ID)).
-			LEFT_JOIN(FormTemplateFields, FormTemplateVersions.ID.EQ(FormTemplateFields.FormTemplateVersionID)),
+			LEFT_JOIN(FormTemplateFields, FormTemplateVersions.ID.EQ(FormTemplateFields.FormTemplateVersionID)).
+			LEFT_JOIN(FormTemplates, FormTemplateVersions.FormTemplateID.EQ(FormTemplates.ID)),
 	).WHERE(
 		FormData.ID.EQ(postgres.String(formDataId)),
 	)
