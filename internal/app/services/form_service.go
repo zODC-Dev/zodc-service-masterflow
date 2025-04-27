@@ -353,3 +353,36 @@ func (s *FormService) ConfigFormTemplate(ctx context.Context, formTemplateId int
 
 	return nil
 }
+
+func (s *FormService) FindOneFormDataByFormDataId(ctx context.Context, formDataId string) (responses.JiraFormDetailResponse, error) {
+	formDataResponse := responses.JiraFormDetailResponse{}
+
+	formData, err := s.formRepo.FindFormDataById(ctx, s.db, formDataId)
+	if err != nil {
+		return formDataResponse, err
+	}
+
+	formTemplate, err := s.FindOneFormTemplateDetailByFormTemplateId(ctx, formData.FormTemplates.ID)
+	if err != nil {
+		return responses.JiraFormDetailResponse{}, err
+	}
+
+	fieldMap := map[int32]string{}
+	for _, formTemplateField := range formData.FormTemplateFields {
+		fieldMap[formTemplateField.ID] = formTemplateField.FieldID
+	}
+
+	formDatas := []responses.NodeFormDataResponse{}
+	for _, formData := range formData.FormFieldData {
+		formDatas = append(formDatas, responses.NodeFormDataResponse{
+			FieldId: fieldMap[formData.FormTemplateFieldID],
+			Value:   formData.Value,
+		})
+	}
+
+	formDataResponse.Template = formTemplate.Template
+	formDataResponse.Fields = formTemplate.Fields
+	formDataResponse.Data = formDatas
+
+	return formDataResponse, nil
+}
