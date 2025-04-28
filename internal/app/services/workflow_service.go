@@ -857,7 +857,7 @@ func (s *WorkflowService) CreateWorkflowHandler(ctx context.Context, req *reques
 		_, err := s.NatsService.PublishWorkflowToJira(ctx, tx, reqClone.Nodes, reqClone.Stories, reqClone.Connections, reqClone.ProjectKey, *reqClone.SprintId)
 		if err != nil {
 			slog.Error("Failed to sync with Jira", "error", err)
-		} 
+		}
 	}
 
 	//Commit
@@ -1288,7 +1288,7 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 				}
 				updatedNodes[i] = updatedNode
 			}
-			
+
 			// Cập nhật JiraKey cho stories
 			updatedStories := make([]requests.Story, len(reqClone.Stories))
 			for i, story := range reqClone.Stories {
@@ -1299,14 +1299,14 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 				}
 				updatedStories[i] = updatedStory
 			}
-			
+
 			// Tính toán Gantt Chart với JiraKey đã cập nhật
 			if err := s.NatsService.PublishWorkflowToGanttChart(ctx, tx, updatedNodes, updatedStories, reqClone.Connections, *reqDetailClone.Workflow.ProjectKey, *reqClone.SprintID, request.Workflow.ID); err != nil {
 				slog.Error("Failed to calculate Gantt Chart", "error", err)
 			}
 		}
 	}
-	
+
 	// =========================== END SYNC JIRA ===========================
 
 	// Create Sub Workflow and Stories

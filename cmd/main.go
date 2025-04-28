@@ -90,16 +90,9 @@ func setupNats(ctx context.Context, database *sql.DB) *services.NatsSubscriberSe
 	// Set up UserAPI if needed for NodeService
 	userApi := externals.NewUserAPI()
 
-	// Khởi tạo NotificationService
-	notificationService := services.NewNotificationService(services.NotificationService{
-		NatsClient: natsClient,
-	})
-
-	// Khởi tạo HistoryService
-	historyService := services.NewHistoryService(services.HistoryService{
-		DB:          database,
-		HistoryRepo: historyRepo,
-	})
+	notificationService := services.NewNotificationService(database, natsClient, userApi, requestRepo)
+	historyService := services.NewHistoryService(database, historyRepo, userApi)
+	formService := services.NewFormService(database, formRepo, natsClient)
 
 	// Create NatsService needed for NodeService
 	natsService := services.NewNatsService(services.NatsService{
@@ -111,17 +104,11 @@ func setupNats(ctx context.Context, database *sql.DB) *services.NatsSubscriberSe
 
 	// Khởi tạo RequestService - cần cho NodeService
 	requestService := services.NewRequestService(services.RequestService{
-		DB:                database,
-		RequestRepo:       requestRepo,
-		NodeRepo:          nodeRepo,
-		ConnectionRepo:    connectionRepo,
-		HistoryService:    historyService,
-	})
-
-	// Khởi tạo FormService - cần cho NodeService
-	formService := services.NewFormService(services.FormService{
-		DB:       database,
-		FormRepo: formRepo,
+		DB:             database,
+		RequestRepo:    requestRepo,
+		NodeRepo:       nodeRepo,
+		ConnectionRepo: connectionRepo,
+		HistoryService: historyService,
 	})
 
 	// Initialize the NodeService with all dependencies
