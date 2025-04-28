@@ -1682,16 +1682,3 @@ func (s *RequestService) GetRetrospectiveReportHandler(ctx context.Context, quer
 
 	return retrospectiveReportResponse, nil
 }
-
-func (s *RequestService) UpdateRunningRequestHandler(ctx context.Context, requestId int32, req *requests.RequestUpdateRequestRunning) error {
-	tx, err := s.DB.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	return nil
-}
