@@ -244,9 +244,6 @@ func (s *RequestService) GetRequestDetailHandler(ctx context.Context, userId int
 		return requestDetailResponse, err
 	}
 
-	// ProjectKey
-	requestDetailResponse.ProjectKey = request.Workflow.ProjectKey
-
 	// Parent Request
 	if request.ParentID != nil {
 		parentRequest, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, *request.ParentID)
@@ -633,7 +630,6 @@ func (s *RequestService) GetRequestOverviewHandler(ctx context.Context, requestI
 	if err != nil {
 		return requestOverviewResponse, err
 	}
-	requestOverviewResponse.Title = request.Title
 
 	requestOverviewResponse.Progress = request.Progress
 	requestOverviewResponse.Category = responses.CategoryFindAll{
@@ -1681,17 +1677,4 @@ func (s *RequestService) GetRetrospectiveReportHandler(ctx context.Context, quer
 	retrospectiveReportResponse := []responses.RequestRetrospectiveReportResponse{}
 
 	return retrospectiveReportResponse, nil
-}
-
-func (s *RequestService) UpdateRunningRequestHandler(ctx context.Context, requestId int32, req *requests.RequestUpdateRequestRunning) error {
-	tx, err := s.DB.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	return nil
 }

@@ -172,18 +172,6 @@ func (r *NodeRepository) UpdateJiraKey(ctx context.Context, tx *sql.Tx, nodeId s
 	return err
 }
 
-func (r *NodeRepository) UpdateJiraLinkURL(ctx context.Context, tx *sql.Tx, nodeId string, jiraLinkURL string) error {
-	Nodes := table.Nodes
-
-	statement := Nodes.UPDATE(Nodes.JiraLinkURL).
-		SET(postgres.String(jiraLinkURL)).
-		WHERE(Nodes.ID.EQ(postgres.String(nodeId)))
-
-	_, err := statement.ExecContext(ctx, tx)
-
-	return err
-}
-
 func (r *NodeRepository) CreateNodeForms(ctx context.Context, tx *sql.Tx, nodeForms []model.NodeForms) error {
 	NodeForms := table.NodeForms
 

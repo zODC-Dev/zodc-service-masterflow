@@ -44,8 +44,8 @@ type WorkflowEditResponse struct {
 			Issues []struct {
 				NodeId  string `json:"node_id"`
 				JiraKey string `json:"jira_key"`
-				JiraLinkURL string `json:"jira_link_url"`
 			} `json:"issues"`
+			NodeMappings []NodeJiraMapping `json:"node_mappings"` // Updated mappings between node IDs and Jira keys
 		} `json:"data"`
 	} `json:"data"`
 }

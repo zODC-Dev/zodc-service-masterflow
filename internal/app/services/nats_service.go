@@ -175,11 +175,6 @@ func (s *NatsService) PublishWorkflowToJira(ctx context.Context, tx *sql.Tx, nod
 			continue
 		}
 
-		if node.Type == string(constants.NodeTypeStart) ||
-			node.Type == string(constants.NodeTypeEnd) {
-			continue
-		}
-
 		// Sử dụng node ID để tạo connectionKey
 		connectionKey := fmt.Sprintf("%s-%s", parentNode.Id, node.Id)
 		if processedConnections[connectionKey] {
@@ -271,10 +266,6 @@ func (s *NatsService) PublishWorkflowToJira(ctx context.Context, tx *sql.Tx, nod
 		// Update JiraKey in Node table
 		if err := s.NodeRepo.UpdateJiraKey(ctx, tx, issue.NodeId, issue.JiraKey); err != nil {
 			return natsModel.WorkflowSyncResponse{}, fmt.Errorf("failed to update JiraKey: %w", err)
-		}
-
-		if err := s.NodeRepo.UpdateJiraLinkURL(ctx, tx, issue.NodeId, issue.JiraLinkURL); err != nil {
-			return natsModel.WorkflowSyncResponse{}, fmt.Errorf("failed to update JiraLinkURL: %w", err)
 		}
 
 		// Update JiraKey in FormData table
@@ -431,16 +422,17 @@ func (s *NatsService) PublishWorkflowToGanttChart(ctx context.Context, tx *sql.T
 				"nodeId", node.Id,
 				"type", node.Type,
 				"title", node.Data.Title)
-		} else {
-			issue := natsModel.GanttChartJiraIssue{
-				NodeId:  node.Id,
-				Type:    node.Type,
-				JiraKey: *jiraKey,
-			}
-			ganttRequest.Issues = append(ganttRequest.Issues, issue)
 		}
+
+		issue := natsModel.GanttChartJiraIssue{
+			NodeId:  node.Id,
+			Type:    node.Type,
+			JiraKey: *jiraKey,
+		}
+
+		ganttRequest.Issues = append(ganttRequest.Issues, issue)
 	}
-		
+
 	// Processing Connections
 	processedConnections := make(map[string]bool)
 
@@ -850,11 +842,6 @@ func (s *NatsService) PublishWorkflowEditToJira(ctx context.Context, tx *sql.Tx,
 			continue
 		}
 
-		if node.Type == string(constants.NodeTypeStart) ||
-			node.Type == string(constants.NodeTypeEnd) {
-			continue
-		}
-
 		// Find parent node
 		parentNode := findNodeByIdFromRequest(nodes, stories, node.ParentId)
 		if parentNode == nil {
@@ -956,16 +943,22 @@ func (s *NatsService) PublishWorkflowEditToJira(ctx context.Context, tx *sql.Tx,
 		if err := s.NodeRepo.UpdateJiraKey(ctx, tx, issue.NodeId, issue.JiraKey); err != nil {
 			return natsModel.WorkflowEditResponse{}, fmt.Errorf("failed to update JiraKey: %w", err)
 		}
+	}
 
-		if err := s.NodeRepo.UpdateJiraLinkURL(ctx, tx, issue.NodeId, issue.JiraLinkURL); err != nil {
-			return natsModel.WorkflowEditResponse{}, fmt.Errorf("failed to update JiraLinkURL: %w", err)
+	// Also process the node mappings from the response
+	if len(syncResponse.Data.Data.NodeMappings) > 0 {
+		for _, mapping := range syncResponse.Data.Data.NodeMappings {
+			if err := s.NodeRepo.UpdateJiraKey(ctx, tx, mapping.NodeId, mapping.JiraKey); err != nil {
+				slog.Error("Failed to update node mapping", "error", err, "nodeId", mapping.NodeId)
+				// Continue processing other mappings
+			}
 		}
 	}
 
 	return syncResponse, nil
 }
 
-func (s *NatsService) SyncJiraWhenReassignNode(node model.Nodes) error {
+func (s *NatsService) SyncJiraWhenReassignNode(ctx context.Context, tx *sql.Tx, node model.Nodes) error {
 	// Nếu node không có Jira key thì không cần đồng bộ
 	if node.JiraKey == nil {
 		return nil
@@ -1015,6 +1008,10 @@ func (s *NatsService) SyncJiraWhenReassignNode(node model.Nodes) error {
 		if syncResponse.ErrorMessage != nil {
 			errorMsg = *syncResponse.ErrorMessage
 		}
+		slog.Error("Jira reassignment failed",
+			"nodeId", node.ID,
+			"jiraKey", *node.JiraKey,
+			"error", errorMsg)
 		return fmt.Errorf("jira reassignment failed: %s", errorMsg)
 	}
 
