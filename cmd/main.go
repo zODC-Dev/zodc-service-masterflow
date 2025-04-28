@@ -73,6 +73,9 @@ func setupNats(ctx context.Context, database *sql.DB) *services.NatsSubscriberSe
 	// Initialize repositories
 	nodeRepo := repositories.NewNodeRepository()
 	requestRepo := repositories.NewRequestRepository()
+	connectionRepo := repositories.NewConnectionRepository()
+	formRepo := repositories.NewFormRepository()
+	historyRepo := repositories.NewHistoryRepository()
 
 	// Initialize NATS client
 	natsConfig := nats.DefaultConfig()
@@ -83,21 +86,13 @@ func setupNats(ctx context.Context, database *sql.DB) *services.NatsSubscriberSe
 		return nil
 	}
 
-	// Initialize and start NATS subscriber service
-	natsSubscriberService := services.NewNatsSubscriberService(
-		natsClient,
-		database,
-		nodeRepo,
-		requestRepo,
-		nil, // We will create a proper NodeService below and set it
-	)
-
-	// Initialize other required dependencies for NodeService
-	connectionRepo := repositories.NewConnectionRepository()
-	formRepo := repositories.NewFormRepository()
-
+	// Khởi tạo các services cần thiết
 	// Set up UserAPI if needed for NodeService
 	userApi := externals.NewUserAPI()
+
+	notificationService := services.NewNotificationService(database, natsClient, userApi, requestRepo)
+	historyService := services.NewHistoryService(database, historyRepo, userApi)
+	formService := services.NewFormService(database, formRepo, natsClient)
 
 	// Create NatsService needed for NodeService
 	natsService := services.NewNatsService(services.NatsService{
@@ -107,20 +102,39 @@ func setupNats(ctx context.Context, database *sql.DB) *services.NatsSubscriberSe
 		FormRepo:    formRepo,
 	})
 
-	// Initialize the NodeService with all dependencies
-	nodeService := services.NewNodeService(services.NodeService{
+	// Khởi tạo RequestService - cần cho NodeService
+	requestService := services.NewRequestService(services.RequestService{
 		DB:             database,
+		RequestRepo:    requestRepo,
 		NodeRepo:       nodeRepo,
 		ConnectionRepo: connectionRepo,
-		RequestRepo:    requestRepo,
-		FormRepo:       formRepo,
-		NatsClient:     natsClient,
-		NatsService:    natsService,
-		UserAPI:        userApi,
+		HistoryService: historyService,
 	})
 
-	// Now set the NodeService in the NatsSubscriberService
-	natsSubscriberService.NodeService = nodeService
+	// Initialize the NodeService with all dependencies
+	nodeService := services.NewNodeService(services.NodeService{
+		DB:                  database,
+		NodeRepo:            nodeRepo,
+		ConnectionRepo:      connectionRepo,
+		RequestRepo:         requestRepo,
+		FormRepo:            formRepo,
+		NatsClient:          natsClient,
+		NatsService:         natsService,
+		UserAPI:             userApi,
+		HistoryService:      historyService,
+		NotificationService: notificationService,
+		RequestService:      requestService,
+		FormService:         formService,
+	})
+
+	// Initialize and start NATS subscriber service
+	natsSubscriberService := services.NewNatsSubscriberService(
+		natsClient,
+		database,
+		nodeRepo,
+		requestRepo,
+		nodeService,
+	)
 
 	// Start the subscriber service in a goroutine
 	go func() {

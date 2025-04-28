@@ -263,8 +263,8 @@ func (r *FormRepository) UpdateFormFieldJiraKey(ctx context.Context, tx *sql.Tx,
 		FormDataID *string
 	}
 	if err := formDataQuery.QueryContext(ctx, tx, &nodeData); err != nil {
-		slog.Error("Lỗi khi truy vấn formDataId", "nodeId", nodeId, "error", err)
-		return fmt.Errorf("không thể lấy formDataId từ nodeId: %w", err)
+		slog.Error("Error when querying formDataId", "nodeId", nodeId, "error", err)
+		return fmt.Errorf("error when querying formDataId from nodeId: %w", err)
 	}
 
 	// Nếu node không có formDataId thì return
@@ -293,8 +293,8 @@ func (r *FormRepository) UpdateFormFieldJiraKey(ctx context.Context, tx *sql.Tx,
 	}
 
 	if err := findKeyFieldQuery.QueryContext(ctx, tx, &keyFields); err != nil {
-		slog.Error("Lỗi khi tìm field có fieldId='key'", "formDataId", formDataId, "error", err)
-		return fmt.Errorf("không thể tìm field có fieldId='key': %w", err)
+		slog.Error("Error when finding field with fieldId='key'", "formDataId", formDataId, "error", err)
+		return fmt.Errorf("error when finding field with fieldId='key': %w", err)
 	}
 
 	if len(keyFields) == 0 {
@@ -318,8 +318,8 @@ func (r *FormRepository) UpdateFormFieldJiraKey(ctx context.Context, tx *sql.Tx,
 
 	_, err := statement.ExecContext(ctx, tx)
 	if err != nil {
-		slog.Error("Lỗi khi cập nhật jiraKey", "formDataId", formDataId, "error", err)
-		return fmt.Errorf("không thể cập nhật jiraKey trong form field data: %w", err)
+		slog.Error("Error when updating jiraKey", "formDataId", formDataId, "error", err)
+		return fmt.Errorf("error when updating jiraKey in form field data: %w", err)
 	}
 
 	return nil
