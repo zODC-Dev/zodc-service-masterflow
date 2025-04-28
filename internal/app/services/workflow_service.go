@@ -356,6 +356,26 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			TaskCompletedParticipants: storyReq.Node.Data.TaskCompleted.Participants,
 		}
 
+		// For Update
+		if storyReq.Node.Status != string(constants.NodeStatusTodo) {
+			storyNode.Status = storyReq.Node.Status
+		}
+		if storyReq.Node.Data.PlannedStartTime != nil {
+			storyNode.PlannedStartTime = storyReq.Node.Data.PlannedStartTime
+		}
+		if storyReq.Node.Data.PlannedEndTime != nil {
+			storyNode.PlannedEndTime = storyReq.Node.Data.PlannedEndTime
+		}
+		if storyReq.Node.Data.ActualStartTime != nil {
+			storyNode.ActualStartTime = storyReq.Node.Data.ActualStartTime
+		}
+		if storyReq.Node.Data.ActualEndTime != nil {
+			storyNode.ActualEndTime = storyReq.Node.Data.ActualEndTime
+		}
+
+		storyNode.IsCurrent = storyReq.Node.IsCurrent
+		// End For Update
+
 		if formSystemVersionId, exists := formSystemTagMap["TASK"]; exists {
 			// Create Form Data
 			uuid := uuid.New()
@@ -449,6 +469,26 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 				TaskCompletedParticipants: storyNodeReq.Data.TaskCompleted.Participants,
 			}
 
+			// For Update
+			if storyNodeReq.Status != string(constants.NodeStatusTodo) {
+				storyNode.Status = storyNodeReq.Status
+			}
+			if storyNodeReq.Data.PlannedStartTime != nil {
+				storyNode.PlannedStartTime = storyNodeReq.Data.PlannedStartTime
+			}
+			if storyNodeReq.Data.PlannedEndTime != nil {
+				storyNode.PlannedEndTime = storyNodeReq.Data.PlannedEndTime
+			}
+			if storyNodeReq.Data.ActualStartTime != nil {
+				storyNode.ActualStartTime = storyNodeReq.Data.ActualStartTime
+			}
+			if storyNodeReq.Data.ActualEndTime != nil {
+				storyNode.ActualEndTime = storyNodeReq.Data.ActualEndTime
+			}
+
+			storyNode.IsCurrent = storyNodeReq.IsCurrent
+			// End For Update
+
 			if storyNodeReq.ParentId != "" {
 				storyNode.ParentID = &storyNodeReq.ParentId
 			}
@@ -521,10 +561,11 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 					shouldKeepConnection = false
 
 					storyConnection := model.Connections{
-						ID:         connReq.Id,
-						FromNodeID: connReq.From,
-						ToNodeID:   connReq.To,
-						RequestID:  storyRequest.ID,
+						ID:          connReq.Id,
+						FromNodeID:  connReq.From,
+						ToNodeID:    connReq.To,
+						RequestID:   storyRequest.ID,
+						IsCompleted: connReq.IsCompleted,
 					}
 
 					if connReq.Text != "" {
@@ -600,6 +641,26 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			TaskCompletedAssignee:     workflowNodeReq.Data.TaskCompleted.Assignee,
 			TaskCompletedParticipants: workflowNodeReq.Data.TaskCompleted.Participants,
 		}
+
+		// For Update
+		if workflowNodeReq.Status != string(constants.NodeStatusTodo) {
+			workflowNode.Status = workflowNodeReq.Status
+		}
+		if workflowNodeReq.Data.PlannedStartTime != nil {
+			workflowNode.PlannedStartTime = workflowNodeReq.Data.PlannedStartTime
+		}
+		if workflowNodeReq.Data.PlannedEndTime != nil {
+			workflowNode.PlannedEndTime = workflowNodeReq.Data.PlannedEndTime
+		}
+		if workflowNodeReq.Data.ActualStartTime != nil {
+			workflowNode.ActualStartTime = workflowNodeReq.Data.ActualStartTime
+		}
+		if workflowNodeReq.Data.ActualEndTime != nil {
+			workflowNode.ActualEndTime = workflowNodeReq.Data.ActualEndTime
+		}
+
+		workflowNode.IsCurrent = workflowNodeReq.IsCurrent
+		// End For Update
 
 		if workflowNodeReq.Data.EditorContent.Cc != nil {
 			ccEmail, err := json.Marshal(workflowNodeReq.Data.EditorContent.Cc)
@@ -776,6 +837,8 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 			FromNodeID: workflowConnectionReq.From,
 			ToNodeID:   workflowConnectionReq.To,
+
+			IsCompleted: workflowConnectionReq.IsCompleted,
 
 			RequestID: requestId,
 		}

@@ -7,10 +7,11 @@ import (
 )
 
 type Connection struct {
-	Id   string
-	From string
-	To   string
-	Text string
+	Id          string
+	From        string
+	To          string
+	Text        string
+	IsCompleted bool
 }
 
 type NodeDataFormAttachedApprovalOrRejectUsers struct {
@@ -76,6 +77,12 @@ type NodeData struct {
 
 	TaskCompleted TaskConfigNotification
 	TaskStarted   TaskConfigNotification
+
+	// Add for update request
+	PlannedStartTime *time.Time
+	PlannedEndTime   *time.Time
+	ActualStartTime  *time.Time
+	ActualEndTime    *time.Time
 }
 
 type NodeForm struct {
@@ -96,6 +103,9 @@ type Node struct {
 	Type string
 
 	Data NodeData
+
+	Status    string
+	IsCurrent bool
 
 	Form []NodeForm
 }

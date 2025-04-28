@@ -9,8 +9,8 @@ CREATE TABLE histories (
 
     user_id INT,
 
-    request_id INT NOT NULL REFERENCES requests (id),
-    node_id TEXT NOT NULL REFERENCES nodes (id),
+    request_id INT NOT NULL REFERENCES requests (id) ON DELETE CASCADE,
+    node_id TEXT NOT NULL REFERENCES nodes (id) ON DELETE CASCADE,
 
     from_value TEXT,
     to_value TEXT

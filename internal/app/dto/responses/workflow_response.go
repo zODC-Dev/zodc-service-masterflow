@@ -44,6 +44,12 @@ type NodeDataResponse struct {
 	FormAttached []NodeFormResponse `json:"formAttached"`
 
 	EditorContent NodeDataResponseEditorContent `json:"editorContent"`
+
+	// Add for update request
+	PlannedStartTime *time.Time `json:"plannedStartTime"`
+	PlannedEndTime   *time.Time `json:"plannedEndTime"`
+	ActualStartTime  *time.Time `json:"actualStartTime"`
+	ActualEndTime    *time.Time `json:"actualEndTime"`
 }
 
 type NodeFormApprovalOrRejectUsersResponse struct {
