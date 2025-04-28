@@ -89,22 +89,22 @@ type RequestFileManagerResponse struct {
 	Data        []string       `json:"data"`
 }
 
-type RequestCompletedFormDataResponse struct {
+type FormDataResponse struct {
 	FieldID string `json:"fieldId"`
 	Value   string `json:"value"`
 }
 
 type RequestCompletedFormInputResponse struct {
-	DataId      *string                            `json:"dataId"`
-	Key         string                             `json:"key"`
-	Type        string                             `json:"type"`
-	SubmittedAt time.Time                          `json:"submittedAt"`
-	Submitter   types.Assignee                     `json:"submitter"`
-	LastUpdate  types.Assignee                     `json:"lastUpdate"`
-	FormData    []RequestCompletedFormDataResponse `json:"formData"`
-	Template    FormTemplateDetails                `json:"template"`
-	TaskRelated []TaskRelated                      `json:"taskRelated"`
-	Parent      *TaskRelated                       `json:"parent"`
+	DataId      *string             `json:"dataId"`
+	Key         string              `json:"key"`
+	Type        string              `json:"type"`
+	SubmittedAt time.Time           `json:"submittedAt"`
+	Submitter   types.Assignee      `json:"submitter"`
+	LastUpdate  types.Assignee      `json:"lastUpdate"`
+	FormData    []FormDataResponse  `json:"formData"`
+	Template    FormTemplateDetails `json:"template"`
+	TaskRelated []TaskRelated       `json:"taskRelated"`
+	Parent      *TaskRelated        `json:"parent"`
 }
 
 type RequestCompletedFormApprovalOverviewResponse struct {
@@ -113,4 +113,9 @@ type RequestCompletedFormApprovalOverviewResponse struct {
 	IsApproved bool           `json:"isApproved"`
 	IsRejected bool           `json:"isRejected"`
 	Assignee   types.Assignee `json:"assignee"`
+}
+
+type RequestRetrospectiveReportResponse struct {
+	Assignee types.Assignee     `json:"assignee"`
+	Data     []FormDataResponse `json:"data"`
 }

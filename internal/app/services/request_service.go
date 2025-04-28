@@ -1002,10 +1002,10 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 					formFieldMap[formTemplateField.ID] = formTemplateField.FieldID
 				}
 
-				formDataResponse := []responses.RequestCompletedFormDataResponse{}
+				formDataResponse := []responses.FormDataResponse{}
 				for _, form := range formData {
 					for _, formFieldData := range form.FormFieldData {
-						formDataResponse = append(formDataResponse, responses.RequestCompletedFormDataResponse{
+						formDataResponse = append(formDataResponse, responses.FormDataResponse{
 							FieldID: formFieldMap[formFieldData.FormTemplateFieldID],
 							Value:   formFieldData.Value,
 						})
@@ -1119,10 +1119,10 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 							formFieldMap[formTemplateField.ID] = formTemplateField.FieldID
 						}
 
-						formDataResponse := []responses.RequestCompletedFormDataResponse{}
+						formDataResponse := []responses.FormDataResponse{}
 						for _, form := range formData {
 							for _, formFieldData := range form.FormFieldData {
-								formDataResponse = append(formDataResponse, responses.RequestCompletedFormDataResponse{
+								formDataResponse = append(formDataResponse, responses.FormDataResponse{
 									FieldID: formFieldMap[formFieldData.FormTemplateFieldID],
 									Value:   formFieldData.Value,
 								})
@@ -1219,9 +1219,9 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 			}
 
 			//
-			formData := []responses.RequestCompletedFormDataResponse{}
+			formData := []responses.FormDataResponse{}
 			for _, formFieldData := range nodeForm.FormData.FormFieldData {
-				formData = append(formData, responses.RequestCompletedFormDataResponse{
+				formData = append(formData, responses.FormDataResponse{
 					FieldID: fieldMap[formFieldData.FormTemplateFieldID],
 					Value:   formFieldData.Value,
 				})
@@ -1671,4 +1671,10 @@ func (s *RequestService) CancelRequestHandler(ctx context.Context, requestId int
 	}
 
 	return nil
+}
+
+func (s *RequestService) GetRetrospectiveReportHandler(ctx context.Context, queryParams queryparams.RetrospectiveReportQueryParam) ([]responses.RequestRetrospectiveReportResponse, error) {
+	retrospectiveReportResponse := []responses.RequestRetrospectiveReportResponse{}
+
+	return retrospectiveReportResponse, nil
 }
