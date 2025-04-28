@@ -5,8 +5,8 @@ VALUES
     ('Recruitment', 'GENERAL', 'HR'),
     ('Employee Onboarding', 'GENERAL', 'EMPLOYEE_ONBOARDING'),
     ('Sprint', 'PROJECT', 'SPRINT'),
-    ('Story', 'PROJECT', 'STORY');
-
+    ('Story', 'PROJECT', 'STORY'),
+    ('Retrospective', 'GENERAL', 'RETROSPECTIVE');
 
 -- +goose Down
 

@@ -98,6 +98,7 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 
 		requestRoute.PUT("/:id/cancel", requestController.CancelRequest)
 
+		requestRoute.GET("/retrospective/report", requestController.GetRetrospectiveReport)
 	}
 
 }

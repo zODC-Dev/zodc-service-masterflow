@@ -223,11 +223,21 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 
 						// Notify
 						s.NotificationService.NotifyRequestTerminated(ctx, request.Title, userIds)
+
+						// History
+						if err := s.HistoryService.HistoryTerminateRequest(ctx, tx, request.ID, node.ID); err != nil {
+							return err
+						}
 					} else {
 						requestModel.Status = string(constants.RequestStatusCompleted)
 						requestModel.CompletedAt = &now
 
 						s.NotificationService.NotifyRequestCompleted(ctx, request.Title, userIds)
+
+						// History
+						if err := s.HistoryService.HistoryEndRequest(ctx, tx, request.ID, node.ID); err != nil {
+							return err
+						}
 					}
 
 					requestModel.CompletedAt = &now
@@ -284,11 +294,13 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 						notification.Body += "\n\n\n"
 						for _, node := range request.Nodes {
 							for _, nodeForm := range node.NodeForms {
+								formDataUrl := configs.Env.FE_HOST + "/form-management/review/" + *nodeForm.DataID
 								if nodeForm.IsApproved && node.IsSendApprovedForm {
-									notification.Body += "\n" + configs.Env.FE_HOST + "/form-management/review/" + *nodeForm.DataID
+									notification.Body += "\n" + "<a href=\"" + formDataUrl + "\">" + formDataUrl + "</a>"
 								}
+
 								if nodeForm.IsRejected && node.IsSendRejectedForm {
-									notification.Body += "\n" + configs.Env.FE_HOST + "/form-management/review/" + *nodeForm.DataID
+									notification.Body += "\n" + "<a href=\"" + formDataUrl + "\">" + formDataUrl + "</a>"
 								}
 							}
 						}
@@ -347,23 +359,46 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 							requestModel := model.Requests{}
 							utils.Mapper(request, &requestModel)
 
+							// Notify
+							userIds := []string{}
+							existingUserIds := map[string]bool{}
+							for _, node := range request.Nodes {
+								if node.AssigneeID != nil {
+									if !existingUserIds[strconv.Itoa(int(*node.AssigneeID))] {
+										userIds = append(userIds, strconv.Itoa(int(*node.AssigneeID)))
+										existingUserIds[strconv.Itoa(int(*node.AssigneeID))] = true
+									}
+								}
+							}
+
 							if *node.EndType == string(constants.NodeEndTypeTerminate) {
 								requestModel.Status = string(constants.RequestStatusTerminated)
 								requestModel.TerminatedAt = &now
+
+								//Notify
+								s.NotificationService.NotifyRequestTerminated(ctx, request.Title, userIds)
+
+								// History
+
+								if err := s.HistoryService.HistoryTerminateRequest(ctx, tx, request.ID, node.ID); err != nil {
+									return err
+								}
 							} else {
 								requestModel.Status = string(constants.RequestStatusCompleted)
 								requestModel.CompletedAt = &now
+
+								// Notify
+								s.NotificationService.NotifyRequestCompleted(ctx, request.Title, userIds)
+
+								// History
+								if err := s.HistoryService.HistoryEndRequest(ctx, tx, request.ID, node.ID); err != nil {
+									return err
+								}
 							}
 
 							requestModel.Progress = 100
 
 							if err := s.RequestRepo.UpdateRequest(ctx, tx, requestModel); err != nil {
-								return err
-							}
-
-							// History
-							err = s.HistoryService.HistoryEndRequest(ctx, tx, request.ID, node.ID)
-							if err != nil {
 								return err
 							}
 
