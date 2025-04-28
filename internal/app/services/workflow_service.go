@@ -146,6 +146,8 @@ func (s *WorkflowService) MapToWorkflowNodeResponse(node model.Nodes) (responses
 		CompletedAt: node.ActualEndTime,
 
 		Level: node.Level,
+
+		IsCurrent: node.IsCurrent,
 	}
 
 	return nodeResponse, nil
