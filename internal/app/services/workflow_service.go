@@ -1006,6 +1006,7 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 	workflowResponse.IsArchived = request.Workflow.IsArchived
 
 	workflowResponse.RequestId = requestId
+	workflowResponse.Title = request.Title
 
 	if request.Workflow.ProjectKey != nil {
 		workflowResponse.ProjectKey = *request.Workflow.ProjectKey
