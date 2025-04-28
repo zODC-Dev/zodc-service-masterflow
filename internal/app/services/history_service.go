@@ -169,3 +169,31 @@ func (s *HistoryService) HistoryEditRequest(ctx context.Context, tx *sql.Tx, req
 
 	return s.HistoryRepo.CreateHistory(ctx, tx, history)
 }
+
+func (s *HistoryService) HistorySystemNotificationComplete(ctx context.Context, tx *sql.Tx, requestId int32, nodeId string) error {
+	userIdSystem := int32(0)
+	history := model.Histories{
+		UserID:     &userIdSystem,
+		RequestID:  requestId,
+		NodeID:     nodeId,
+		TypeAction: constants.HistoryTypeSystemNotificationComplete,
+		FromValue:  nil,
+		ToValue:    nil,
+	}
+
+	return s.HistoryRepo.CreateHistory(ctx, tx, history)
+}
+
+func (s *HistoryService) HistorySystemNotificationStart(ctx context.Context, tx *sql.Tx, requestId int32, nodeId string) error {
+	userIdSystem := int32(0)
+	history := model.Histories{
+		UserID:     &userIdSystem,
+		RequestID:  requestId,
+		NodeID:     nodeId,
+		TypeAction: constants.HistoryTypeSystemNotificationStart,
+		FromValue:  nil,
+		ToValue:    nil,
+	}
+
+	return s.HistoryRepo.CreateHistory(ctx, tx, history)
+}

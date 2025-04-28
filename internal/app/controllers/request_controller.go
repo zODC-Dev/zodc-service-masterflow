@@ -613,3 +613,28 @@ func (c *RequestController) CancelRequest(e echo.Context) error {
 
 	return e.JSON(http.StatusOK, fmt.Sprintf("Request canceled successfully: %d", requestIdInt))
 }
+
+// GetRetrospectiveReport godoc
+// @Summary      Get retrospective report
+// @Description  Get retrospective report
+// @Tags         Requests
+// @Produce      json
+// @Router       /requests/retrospective/report [get]
+func (c *RequestController) GetRetrospectiveReport(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	categoryKey := e.QueryParam("categoryKey")
+	sprintId := e.QueryParam("sprintId")
+
+	queryParams := queryparams.RetrospectiveReportQueryParam{
+		CategoryKey: categoryKey,
+		SprintId:    sprintId,
+	}
+
+	retrospectiveReportResponse, err := c.requestService.GetRetrospectiveReportHandler(ctx, queryParams)
+	if err != nil {
+		return e.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, retrospectiveReportResponse)
+}
