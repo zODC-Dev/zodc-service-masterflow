@@ -175,6 +175,11 @@ func (s *NatsService) PublishWorkflowToJira(ctx context.Context, tx *sql.Tx, nod
 			continue
 		}
 
+		if node.Type == string(constants.NodeTypeStart) ||
+			node.Type == string(constants.NodeTypeEnd) {
+			continue
+		}
+
 		// Sử dụng node ID để tạo connectionKey
 		connectionKey := fmt.Sprintf("%s-%s", parentNode.Id, node.Id)
 		if processedConnections[connectionKey] {
@@ -842,6 +847,11 @@ func (s *NatsService) PublishWorkflowEditToJira(ctx context.Context, tx *sql.Tx,
 	// Process parent-child relationships for new connections
 	for _, node := range nodes {
 		if node.ParentId == "" {
+			continue
+		}
+
+		if node.Type == string(constants.NodeTypeStart) ||
+			node.Type == string(constants.NodeTypeEnd) {
 			continue
 		}
 

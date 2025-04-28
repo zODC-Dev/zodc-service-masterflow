@@ -78,19 +78,31 @@ func (s *NatsSubscriberService) subscribeToTopics(ctx context.Context) error {
 func (s *NatsSubscriberService) handleMessage(msg *natslib.Msg) {
 	slog.Info("Received message", "subject", msg.Subject, "data_length", len(msg.Data))
 
+	// Biến để lưu thông tin cần xử lý sau khi commit
+	var postCommitActions []func()
+
 	// Start transaction
 	tx, err := s.DB.Begin()
 	if err != nil {
 		slog.Error("Failed to start transaction", "error", err)
 		return
 	}
-	defer tx.Rollback()
+	
+	// Use a flag to track if we've committed the transaction
+	var committed bool
+	defer func() {
+		if !committed {
+			if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+				slog.Error("Failed to rollback transaction", "error", err)
+			}
+		}
+	}()
 
 	// Process message based on subject
 	var processErr error
 	switch msg.Subject {
 	case "jira.issue.update":
-		processErr = s.handleJiraIssueUpdate(tx, msg.Data)
+		processErr, postCommitActions = s.handleJiraIssueUpdate(tx, msg.Data)
 	default:
 		slog.Warn("No handler for subject", "subject", msg.Subject)
 	}
@@ -105,21 +117,27 @@ func (s *NatsSubscriberService) handleMessage(msg *natslib.Msg) {
 		slog.Error("Failed to commit transaction", "error", err)
 		return
 	}
+	committed = true
+
+	// Thực hiện các action sau khi commit thành công
+	for _, action := range postCommitActions {
+		action()
+	}
 
 	slog.Info("Successfully processed message", "subject", msg.Subject)
 }
 
 // handleJiraIssueUpdate processes messages from jira.issue.update
-func (s *NatsSubscriberService) handleJiraIssueUpdate(tx *sql.Tx, data []byte) error {
+func (s *NatsSubscriberService) handleJiraIssueUpdate(tx *sql.Tx, data []byte) (error, []func()) {
 	// Parse message data
 	var message natsModel.JiraIssueUpdateMessage
 	if err := json.Unmarshal(data, &message); err != nil {
-		return fmt.Errorf("failed to unmarshal Jira issue update message: %w", err)
+		return fmt.Errorf("failed to unmarshal Jira issue update message: %w", err), nil
 	}
 
 	// Validation
 	if message.JiraKey == "" {
-		return fmt.Errorf("missing required field: jiraKey")
+		return fmt.Errorf("missing required field: jiraKey"), nil
 	}
 
 	// Map Jira status to system status
@@ -213,7 +231,7 @@ func (s *NatsSubscriberService) handleJiraIssueUpdate(tx *sql.Tx, data []byte) e
 	// Execute the update for all nodes with this Jira key
 	_, err := tx.ExecContext(context.Background(), finalUpdateQuery, allParams...)
 	if err != nil {
-		return fmt.Errorf("failed to update nodes: %w", err)
+		return fmt.Errorf("failed to update nodes: %w", err), nil
 	}
 
 	// Step 2: Update form data for all corresponding forms
@@ -258,65 +276,7 @@ func (s *NatsSubscriberService) handleJiraIssueUpdate(tx *sql.Tx, data []byte) e
 		message.JiraKey,       // $4 - Jira key for finding matching forms
 	)
 	if err != nil {
-		return fmt.Errorf("failed to update form field data: %w", err)
-	}
-
-	// Step 3: Find active node for workflow state transition
-	if message.SprintId != nil && message.OldStatus != nil {
-		findActiveNodeQuery := `
-			SELECT n.id
-			FROM requests r 
-			INNER JOIN nodes n ON n.request_id = r.id
-			WHERE r.status = 'IN_PROGRESS' 
-			AND r.sprint_id = $1 
-			AND n.jira_key = $2
-		`
-
-		var activeNodeId string
-		err := tx.QueryRowContext(context.Background(), findActiveNodeQuery, *message.SprintId, message.JiraKey).Scan(&activeNodeId)
-
-		if err != nil {
-			slog.Error("Error finding active node", "error", err)
-		} else {
-
-			// Step 4: Apply workflow state transition based on status change
-			if message.OldStatus != nil && message.Status != "" {
-				// Use mapped system status values for state transition logic
-				if oldSystemStatus != nil && systemStatus != "" {
-					// From Todo to In Progress -> Start Node
-					if *oldSystemStatus == string(constants.NodeStatusTodo) && systemStatus == string(constants.NodeStatusInProgress) {
-						// Use NodeService to start the node - this will be handled in a separate transaction
-						ctx := context.Background()
-
-						// GET ASSIGNEE ID
-						assigneeId := 0
-						if message.AssigneeId != nil {
-							assigneeId, _ = strconv.Atoi(*message.AssigneeId)
-						}
-						if err := s.NodeService.StartNodeHandler(ctx, int32(assigneeId), activeNodeId); err != nil {
-							slog.Error("Failed to start node", "nodeId", activeNodeId, "error", err)
-							// Continue execution even if node start fails
-						}
-					} else if *oldSystemStatus == string(constants.NodeStatusInProgress) && systemStatus == string(constants.NodeStatusCompleted) {
-						// Use NodeService to complete the node - this will be handled in a separate transaction
-						ctx := context.Background()
-
-						// Use system user ID for completion or a default value
-						var systemUserId int32 = 1 // default system user ID
-						if message.AssigneeId != nil {
-							if assigneeId, err := strconv.ParseInt(*message.AssigneeId, 10, 32); err == nil {
-								systemUserId = int32(assigneeId)
-							}
-						}
-
-						if err := s.NodeService.CompleteNodeHandler(ctx, activeNodeId, systemUserId, false); err != nil {
-							slog.Error("Failed to complete node", "nodeId", activeNodeId, "error", err)
-							// Continue execution even if node completion fails
-						}
-					}
-				}
-			}
-		}
+		return fmt.Errorf("failed to update form field data: %w", err), nil
 	}
 
 	// Optionally, also update the estimate point in form data if provided
@@ -347,11 +307,77 @@ func (s *NatsSubscriberService) handleJiraIssueUpdate(tx *sql.Tx, data []byte) e
 			message.JiraKey,
 		)
 		if err != nil {
-			slog.Warn("Failed to update estimate point", "error", err)
+			// Log nhưng không return lỗi vì đây là cập nhật phụ
+			slog.Warn("Failed to update estimate point in form data", "error", err, "jiraKey", message.JiraKey)
+			// Không return error vì đây là trường tùy chọn, cho phép tiếp tục xử lý
+		} else {
+			slog.Debug("Successfully updated estimate point in form data", "jiraKey", message.JiraKey, "value", *message.EstimatePoint)
 		}
 	}
 
-	return nil
+	// Mảng các hàm sẽ được thực thi sau khi commit
+	var postCommitActions []func()
+
+	// Step 3: Find active node for workflow state transition
+	if message.SprintId != nil && message.OldStatus != nil {
+		findActiveNodeQuery := `
+			SELECT n.id
+			FROM requests r 
+			INNER JOIN nodes n ON n.request_id = r.id
+			WHERE r.status = 'IN_PROGRESS' 
+			AND r.sprint_id = $1 
+			AND n.jira_key = $2
+		`
+
+		var activeNodeId string
+		err := tx.QueryRowContext(context.Background(), findActiveNodeQuery, *message.SprintId, message.JiraKey).Scan(&activeNodeId)
+
+		if err != nil {
+			slog.Error("Error finding active node", "error", err)
+		} else {
+			// Step 4: Determine if we need to apply workflow state transition
+			if message.OldStatus != nil && message.Status != "" && oldSystemStatus != nil && systemStatus != "" {
+				// From Todo to In Progress -> Start Node
+				if *oldSystemStatus == string(constants.NodeStatusTodo) && systemStatus == string(constants.NodeStatusInProgress) {
+					// Capture needed data to use after commit
+					nodeId := activeNodeId
+					var assigneeId int32 = 0
+					if message.AssigneeId != nil {
+						if parsedId, err := strconv.ParseInt(*message.AssigneeId, 10, 32); err == nil {
+							assigneeId = int32(parsedId)
+						}
+					}
+
+					// Add StartNodeHandler to post-commit actions
+					postCommitActions = append(postCommitActions, func() {
+						ctx := context.Background()
+						if err := s.NodeService.StartNodeHandler(ctx, assigneeId, nodeId); err != nil {
+							slog.Error("Failed to start node", "nodeId", nodeId, "error", err)
+						}
+					})
+				} else if *oldSystemStatus == string(constants.NodeStatusInProgress) && systemStatus == string(constants.NodeStatusCompleted) {
+					// Capture needed data to use after commit
+					nodeId := activeNodeId
+					var assigneeId int32 = 1 // default system user ID
+					if message.AssigneeId != nil {
+						if parsedId, err := strconv.ParseInt(*message.AssigneeId, 10, 32); err == nil {
+							assigneeId = int32(parsedId)
+						}
+					}
+
+					// Add CompleteNodeHandler to post-commit actions
+					postCommitActions = append(postCommitActions, func() {
+						ctx := context.Background()
+						if err := s.NodeService.CompleteNodeHandler(ctx, nodeId, assigneeId, false); err != nil {
+							slog.Error("Failed to complete node", "nodeId", nodeId, "error", err)
+						}
+					})
+				}
+			}
+		}
+	}
+
+	return nil, postCommitActions
 }
 
 // Shutdown stops the subscriber service
