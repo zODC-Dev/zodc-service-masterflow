@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"time"
 
 	"github.com/go-jet/jet/v2/postgres"
@@ -485,4 +486,43 @@ func (r *NodeRepository) CreateApproveOrRejectUser(ctx context.Context, tx *sql.
 	err := statement.QueryContext(ctx, tx, &approveOrRejectUser)
 
 	return err
+}
+
+func (r *NodeRepository) FindAllNodeRetrospectiveReport(ctx context.Context, db *sql.DB, queryParams queryparams.RetrospectiveReportQueryParam) ([]results.NodeRetrospectiveReportResult, error) {
+	Nodes := table.Nodes
+	NodeForms := table.NodeForms
+	FormData := table.FormData
+	FormFieldData := table.FormFieldData
+	Requests := table.Requests
+	WorkflowVersions := table.WorkflowVersions
+	Workflows := table.Workflows
+	Categories := table.Categories
+	FormTemplateFields := table.FormTemplateFields
+
+	sprintIdInt, _ := strconv.Atoi(queryParams.SprintId)
+
+	statement := postgres.SELECT(
+		Nodes.AllColumns,
+		FormFieldData.AllColumns,
+		FormTemplateFields.AllColumns,
+	).FROM(
+		Nodes.
+			LEFT_JOIN(Requests, Nodes.SubRequestID.EQ(Requests.ID)).
+			LEFT_JOIN(WorkflowVersions, Requests.WorkflowVersionID.EQ(WorkflowVersions.ID)).
+			LEFT_JOIN(Workflows, WorkflowVersions.WorkflowID.EQ(Workflows.ID)).
+			LEFT_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)).
+			LEFT_JOIN(NodeForms, Nodes.ID.EQ(NodeForms.NodeID)).
+			LEFT_JOIN(FormData, NodeForms.DataID.EQ(FormData.ID)).
+			LEFT_JOIN(FormFieldData, FormData.ID.EQ(FormFieldData.FormDataID)).
+			LEFT_JOIN(FormTemplateFields, FormFieldData.FormTemplateFieldID.EQ(FormTemplateFields.ID)),
+	).WHERE(
+		Requests.SprintID.EQ(postgres.Int64(int64(sprintIdInt))).AND(
+			Categories.Key.EQ(postgres.String(queryParams.CategoryKey)),
+		),
+	)
+
+	result := []results.NodeRetrospectiveReportResult{}
+	err := statement.QueryContext(ctx, db, &result)
+
+	return result, err
 }

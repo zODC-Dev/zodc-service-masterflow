@@ -1726,5 +1726,65 @@ func (s *RequestService) CancelRequestHandler(ctx context.Context, requestId int
 func (s *RequestService) GetRetrospectiveReportHandler(ctx context.Context, queryParams queryparams.RetrospectiveReportQueryParam) ([]responses.RequestRetrospectiveReportResponse, error) {
 	retrospectiveReportResponse := []responses.RequestRetrospectiveReportResponse{}
 
+	nodes, err := s.NodeRepo.FindAllNodeRetrospectiveReport(ctx, s.DB, queryParams)
+	if err != nil {
+		return nil, err
+	}
+
+	formFieldDataMap := map[int32]string{}
+	for _, node := range nodes {
+		for _, formTemplateField := range node.FormTemplateFields {
+			formFieldDataMap[formTemplateField.ID] = formTemplateField.FieldID
+		}
+	}
+	userIds := []int32{}
+	existUserIds := make(map[int32]bool)
+	for _, node := range nodes {
+		if node.AssigneeID != nil && !existUserIds[*node.AssigneeID] {
+			existUserIds[*node.AssigneeID] = true
+			userIds = append(userIds, *node.AssigneeID)
+		}
+	}
+
+	userApiMap := map[int32]results.UserApiDataResult{}
+	if len(userIds) > 0 {
+		assigneeResult, err := s.UserAPI.FindUsersByUserIds(userIds)
+		if err != nil {
+			return nil, err
+		}
+		for _, userApi := range assigneeResult.Data {
+			userApiMap[userApi.ID] = userApi
+		}
+	}
+
+	mapUser := func(id *int32) types.Assignee {
+		assignee := types.Assignee{}
+		if id != nil {
+			if user, ok := userApiMap[*id]; ok {
+				assignee.Id = user.ID
+				assignee.Name = user.Name
+				assignee.Email = user.Email
+				assignee.AvatarUrl = user.AvatarUrl
+				assignee.IsSystemUser = user.IsSystemUser
+			}
+		}
+		return assignee
+	}
+
+	for _, node := range nodes {
+		formFieldData := []responses.FormDataResponse{}
+		for _, formField := range node.FormFieldData {
+			formFieldData = append(formFieldData, responses.FormDataResponse{
+				FieldID: formFieldDataMap[formField.FormTemplateFieldID],
+				Value:   formField.Value,
+			})
+		}
+
+		retrospectiveReportResponse = append(retrospectiveReportResponse, responses.RequestRetrospectiveReportResponse{
+			Assignee: mapUser(node.AssigneeID),
+			Data:     formFieldData,
+		})
+	}
+
 	return retrospectiveReportResponse, nil
 }
