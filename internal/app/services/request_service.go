@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
+	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/table"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/constants"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/requests"
@@ -918,6 +919,51 @@ func (s *RequestService) UpdateRequestHandler(ctx context.Context, requestId int
 			}
 		}
 	}
+
+	// Logic for Update Request
+	requestTx, err := s.RequestRepo.FindOneRequestByRequestIdTx(ctx, tx, requestId)
+	if err != nil {
+		return fmt.Errorf("request not found")
+	}
+	connToMap := make(map[string][]model.Connections)
+	for _, conn := range requestTx.Connections {
+		connToMap[conn.ToNodeID] = append(connToMap[conn.ToNodeID], conn)
+	}
+
+	for _, node := range requestTx.Nodes {
+		if node.Type != string(constants.NodeTypeStory) && node.Type != string(constants.NodeTypeTask) && node.Type != string(constants.NodeTypeBug) {
+			continue
+		}
+
+		isCheckNodeToIsCurrent := true
+		for _, conn := range connToMap[node.ID] {
+			if !conn.IsCompleted {
+				isCheckNodeToIsCurrent = false
+				break
+			}
+		}
+
+		if isCheckNodeToIsCurrent {
+			node.IsCurrent = true
+
+			modelNode := model.Nodes{}
+			if err := utils.Mapper(node, &modelNode); err != nil {
+				return fmt.Errorf("map node fail: %w", err)
+			}
+			if err := s.NodeRepo.UpdateNodeOnlyColumn(ctx, tx, modelNode, table.Nodes.IsCurrent); err != nil {
+				return fmt.Errorf("update node fail: %w", err)
+			}
+
+			if node.Type == string(constants.NodeTypeStory) {
+				err := s.WorkflowService.RunWorkflow(ctx, tx, *node.SubRequestID)
+				if err != nil {
+					return fmt.Errorf("run workflow fail: %w", err)
+				}
+			}
+		}
+	}
+
+	// --- End Logic for Update Request ---
 
 	//Commit
 	if err := tx.Commit(); err != nil {

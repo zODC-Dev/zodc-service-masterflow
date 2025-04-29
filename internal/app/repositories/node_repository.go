@@ -30,9 +30,15 @@ func (r *NodeRepository) UpdateNode(ctx context.Context, tx *sql.Tx, node model.
 
 	statement := Nodes.UPDATE(columns).MODEL(node).WHERE(Nodes.ID.EQ(postgres.String(node.ID))).RETURNING(Nodes.ID)
 
-	err := statement.QueryContext(ctx, tx, &node)
+	return statement.QueryContext(ctx, tx, &node)
+}
 
-	return err
+func (r *NodeRepository) UpdateNodeOnlyColumn(ctx context.Context, tx *sql.Tx, node model.Nodes, onlyComlumns postgres.Column) error {
+	Nodes := table.Nodes
+
+	statement := Nodes.UPDATE(onlyComlumns).MODEL(node).WHERE(Nodes.ID.EQ(postgres.String(node.ID))).RETURNING(Nodes.ID)
+
+	return statement.QueryContext(ctx, tx, &node)
 }
 
 func (r *NodeRepository) FindOneNodeByNodeId(ctx context.Context, db *sql.DB, nodeId string) (results.NodeResult, error) {
