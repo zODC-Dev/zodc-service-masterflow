@@ -6,7 +6,9 @@ VALUES
     ('Employee Onboarding', 'GENERAL', 'EMPLOYEE_ONBOARDING'),
     ('Sprint', 'PROJECT', 'SPRINT'),
     ('Story', 'PROJECT', 'STORY'),
-    ('Retrospective', 'GENERAL', 'RETROSPECTIVE');
+    ('Retrospective', 'GENERAL', 'RETROSPECTIVE'),
+    ('Edit Profile', 'GENERAL', 'EDIT_PROFILE'),
+    ('Performance Evaluate', 'GENERAL', 'PERFORMANCE_EVALUATE');
 
 -- +goose Down
 

@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/constants"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/queryparams"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/requests"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/responses"
@@ -385,4 +386,22 @@ func (s *FormService) FindOneFormDataByFormDataId(ctx context.Context, formDataI
 	formDataResponse.Data = formDatas
 
 	return formDataResponse, nil
+}
+
+func (s *FormService) GetEditProfileFormTemplate(ctx context.Context) (responses.FormTemplateDetails, error) {
+	formTemplate, err := s.FindOneFormTemplateDetailByFormTemplateId(ctx, constants.FormTemplateIDEditProfileForm)
+	if err != nil {
+		return responses.FormTemplateDetails{}, err
+	}
+
+	return formTemplate, nil
+}
+
+func (s *FormService) GetPerformanceEvaluateFormTemplate(ctx context.Context) (responses.FormTemplateDetails, error) {
+	formTemplate, err := s.FindOneFormTemplateDetailByFormTemplateId(ctx, constants.FormTemplateIDPerformanceEvaluate)
+	if err != nil {
+		return responses.FormTemplateDetails{}, err
+	}
+
+	return formTemplate, nil
 }

@@ -198,3 +198,25 @@ func (c *FormController) FindOneFormDataByFormDataId(e echo.Context) error {
 
 	return e.JSON(http.StatusOK, formData)
 }
+
+func (c *FormController) GetEditProfileFormTemplate(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	formTemplate, err := c.formService.GetEditProfileFormTemplate(ctx)
+	if err != nil {
+		return e.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, formTemplate)
+}
+
+func (c *FormController) GetPerformanceEvaluateFormTemplate(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	formTemplate, err := c.formService.GetPerformanceEvaluateFormTemplate(ctx)
+	if err != nil {
+		return e.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, formTemplate)
+}

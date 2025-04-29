@@ -28,4 +28,5 @@ VALUES
     ('{"tooltip": null, "helpText": null, "maxChars": null, "validation": null, "placeholder": "Status", "defaultValue": null}'::jsonb, 2, false, 'BASIC_FIELD', 'Text', 'format_color_text', 'status', 'TEXT', 'Status', 1),
     ('{"tooltip": null, "helpText": null, "maxChars": null, "placeholder": "Story Point Estimate", "validations": [], "defaultValue": null, "decimalPlaces": null}'::jsonb, 3, false, 'BASIC_FIELD', 'Number', 'looks_one', 'estimatePoint', 'NUMBER', 'Story Point Estimate', 1);
 
+
 -- +goose Down

@@ -29,5 +29,8 @@ func FormRoute(group *echo.Group, db *sql.DB) {
 		formRoute.GET("/templates/:formTemplateId/detail", formController.FindOneFormTemplateDetailByFormTemplateId)
 
 		formRoute.GET("/data/:dataId", formController.FindOneFormDataByFormDataId)
+
+		formRoute.GET("/templates/edit-profile", formController.GetEditProfileFormTemplate)
+		formRoute.GET("/templates/performance-evaluate", formController.GetPerformanceEvaluateFormTemplate)
 	}
 }
