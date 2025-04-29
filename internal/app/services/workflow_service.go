@@ -1693,6 +1693,17 @@ func (s *WorkflowService) UpdateWorkflowHandler(ctx context.Context, req *reques
 		return fmt.Errorf("update workflow fail: %w", err)
 	}
 
+	requestTemplate, err := s.RequestRepo.FindOneRequestTemplateByWorkflowId(ctx, s.DB, workflowId)
+	if err != nil {
+		return fmt.Errorf("find request template fail: %w", err)
+	}
+
+	requestTemplate.Title = req.Title
+
+	if err := s.RequestRepo.UpdateRequest(ctx, tx, requestTemplate); err != nil {
+		return fmt.Errorf("update request fail: %w", err)
+	}
+
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit fail: %w", err)
 	}

@@ -264,6 +264,11 @@ func (r *RequestRepository) FindOneRequestByRequestIdTx(ctx context.Context, tx 
 	WorkflowVersions := table.WorkflowVersions
 	Requests := table.Requests
 	Nodes := table.Nodes
+	NodeForms := table.NodeForms
+	FormData := table.FormData
+	FormFieldData := table.FormFieldData
+	FormTemplateFields := table.FormTemplateFields
+	NodeFormApproveOrRejectUsers := table.NodeFormApproveOrRejectUsers
 	Connections := table.Connections
 	Categories := table.Categories
 
@@ -272,17 +277,30 @@ func (r *RequestRepository) FindOneRequestByRequestIdTx(ctx context.Context, tx 
 		WorkflowVersions.AllColumns,
 		Workflows.AllColumns,
 		Nodes.AllColumns,
+		NodeForms.AllColumns,
+		NodeFormApproveOrRejectUsers.AllColumns,
 		Connections.AllColumns,
 		Categories.AllColumns,
+		FormData.AllColumns,
+		FormFieldData.AllColumns,
+		FormTemplateFields.AllColumns,
 	).FROM(
 		Requests.
 			LEFT_JOIN(WorkflowVersions, WorkflowVersions.ID.EQ(Requests.WorkflowVersionID)).
 			LEFT_JOIN(Workflows, Workflows.ID.EQ(WorkflowVersions.WorkflowID)).
 			LEFT_JOIN(Nodes, Nodes.RequestID.EQ(Requests.ID)).
+			LEFT_JOIN(NodeForms, NodeForms.NodeID.EQ(Nodes.ID)).
+			LEFT_JOIN(NodeFormApproveOrRejectUsers, NodeFormApproveOrRejectUsers.NodeFormID.EQ(NodeForms.ID)).
+			LEFT_JOIN(FormData, FormData.ID.EQ(Nodes.FormDataID)).
+			LEFT_JOIN(FormFieldData, FormFieldData.FormDataID.EQ(FormData.ID)).
+			LEFT_JOIN(FormTemplateFields, FormTemplateFields.ID.EQ(FormFieldData.FormTemplateFieldID)).
 			LEFT_JOIN(Connections, Connections.RequestID.EQ(Requests.ID)).
 			LEFT_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)),
 	).WHERE(
 		Requests.ID.EQ(postgres.Int32(requestId)),
+	).ORDER_BY(
+		Nodes.Level.ASC(),
+		NodeForms.Level.ASC(),
 	)
 
 	result := results.RequestDetail{}
@@ -856,4 +874,27 @@ func (r *RequestRepository) CountActiveRequests(ctx context.Context, db *sql.DB,
 	err := statement.QueryContext(ctx, db, &count)
 
 	return int32(len(count)), err
+}
+
+func (r *RequestRepository) FindOneRequestTemplateByWorkflowId(ctx context.Context, db *sql.DB, workflowId int32) (model.Requests, error) {
+	Requests := table.Requests
+	WorkflowVersions := table.WorkflowVersions
+	Workflows := table.Workflows
+
+	statement := Requests.SELECT(
+		Requests.AllColumns,
+	).FROM(
+		Requests.
+			LEFT_JOIN(WorkflowVersions, Requests.WorkflowVersionID.EQ(WorkflowVersions.ID)).
+			LEFT_JOIN(Workflows, WorkflowVersions.WorkflowID.EQ(Workflows.ID)),
+	).WHERE(
+		Workflows.ID.EQ(postgres.Int32(workflowId)).
+			AND(Requests.IsTemplate.EQ(postgres.Bool(true))).
+			AND(WorkflowVersions.Version.EQ(Workflows.CurrentVersion)),
+	)
+
+	result := model.Requests{}
+	err := statement.QueryContext(ctx, db, &result)
+
+	return result, err
 }

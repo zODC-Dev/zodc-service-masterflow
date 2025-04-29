@@ -13,7 +13,7 @@ SELECT setval('form_templates_id_seq', (SELECT MAX(id) FROM form_templates));
 INSERT INTO public.form_templates
     (id,file_name, title, category_id, data_sheet, description, decoration, template_id, current_version, tag, "type")
 VALUES
-    (3, 'Performace Evaluation Form', 'Performace Evaluation Form', 7, NULL, 'Performace Evaluation Form', 'person_add|--primary-40', NULL, 1, 'FORM', 'USER');
+    (3, 'Performance Evaluation Form', 'Performance Evaluation Form', 7, NULL, 'Performance Evaluation Form', 'person_add|--primary-40', NULL, 1, 'FORM', 'USER');
 
 SELECT setval('form_templates_id_seq', (SELECT MAX(id) FROM form_templates));
 
@@ -89,7 +89,7 @@ INSERT INTO public.form_template_fields
 VALUES('2025-04-29 13:40:55.034', '2025-04-29 13:40:55.034', NULL, '{"options": [{"label": "Good", "value": "4"}, {"label": "Average", "value": "3"}, {"label": "Poor", "value": "2"}, {"label": "Very Poor", "value": "1"}], "tooltip": null, "helpText": null, "placeholder": "Test Coverage"}'::jsonb, 1, true, false, 'OPTION_FIELD', 'Dropdown', 'keyboard_arrow_down', 'testCoverage', 'DROPDOWN', 'Test Coverage', 3);
 INSERT INTO public.form_template_fields
 (created_at, updated_at, deleted_at, advanced_options, col_num, required, readonly, category, title, icon, field_id, field_type, field_name, form_template_version_id)
-VALUES('2025-04-29 13:40:55.034', '2025-04-29 13:40:55.034', NULL, '{"options": [{"label": "Good", "value": "4"}, {"label": "Average", "value": "3"}, {"label": "Poor", "value": "2"}, {"label": "Very Poor", "value": "1"}], "tooltip": null, "helpText": null, "placeholder": "Documentation Quality"}'::jsonb, 2, true, false, 'OPTION_FIELD', 'Dropdown', 'keyboard_arrow_down', 'dcocumentationQuality', 'DROPDOWN', 'Documentation Quality', 3);
+VALUES('2025-04-29 13:40:55.034', '2025-04-29 13:40:55.034', NULL, '{"options": [{"label": "Good", "value": "4"}, {"label": "Average", "value": "3"}, {"label": "Poor", "value": "2"}, {"label": "Very Poor", "value": "1"}], "tooltip": null, "helpText": null, "placeholder": "Documentation Quality"}'::jsonb, 2, true, false, 'OPTION_FIELD', 'Dropdown', 'keyboard_arrow_down', 'documentationQuality', 'DROPDOWN', 'Documentation Quality', 3);
 INSERT INTO public.form_template_fields
 (created_at, updated_at, deleted_at, advanced_options, col_num, required, readonly, category, title, icon, field_id, field_type, field_name, form_template_version_id)
 VALUES('2025-04-29 13:40:55.034', '2025-04-29 13:40:55.034', NULL, '{"options": [{"label": "Good", "value": "4"}, {"label": "Average", "value": "3"}, {"label": "Poor", "value": "2"}, {"label": "Very Poor", "value": "1"}], "tooltip": null, "helpText": null, "placeholder": "Overall Performance"}'::jsonb, 2, true, false, 'OPTION_FIELD', 'Dropdown', 'keyboard_arrow_down', 'overallPerformance', 'DROPDOWN', 'Overall Performance', 3);

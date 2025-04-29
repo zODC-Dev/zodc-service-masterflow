@@ -100,6 +100,10 @@ CREATE TABLE nodes (
 
     jira_link_url TEXT,
 
+    -- Document
+    description TEXT,
+    attach_file TEXT,
+
     -- estimate
     estimate_point REAL,
     planned_start_time TIMESTAMP,
@@ -120,7 +124,7 @@ CREATE TABLE nodes (
     is_approved BOOLEAN NOT NULL DEFAULT false,
     is_rejected BOOLEAN NOT NULL DEFAULT false,
 
-    -- end node
+    -- End node
     end_type TEXT CHECK (end_type IN ('COMPLETE', 'TERMINATE', null)),
 
     -- task node

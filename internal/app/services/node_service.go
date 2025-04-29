@@ -275,7 +275,9 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 						ToEmails:    to,
 						ToCcEmails:  cc,
 						ToBccEmails: bcc,
-						Subject:     *node.Subject,
+					}
+					if node.Subject != nil {
+						notification.Subject = *node.Subject
 					}
 					if node.Body != nil {
 						notification.Body = *node.Body
@@ -286,7 +288,7 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 
 					// Is Send Form
 					if node.IsSendApprovedForm || node.IsSendRejectedForm {
-						request, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, node.RequestID)
+						request, err := s.RequestRepo.FindOneRequestByRequestIdTx(ctx, tx, node.RequestID)
 						if err != nil {
 							return err
 						}
