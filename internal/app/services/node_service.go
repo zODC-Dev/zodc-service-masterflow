@@ -292,8 +292,8 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 						}
 
 						notification.Body += "\n\n\n"
-						for _, node := range request.Nodes {
-							for _, nodeForm := range node.NodeForms {
+						for _, nodeRequest := range request.Nodes {
+							for _, nodeForm := range nodeRequest.NodeForms {
 								formDataUrl := configs.Env.FE_HOST + "/form-management/review/" + *nodeForm.DataID
 								if nodeForm.IsApproved && node.IsSendApprovedForm {
 									notification.Body += "\n" + "<a href=\"" + formDataUrl + "\">" + formDataUrl + "</a>"
