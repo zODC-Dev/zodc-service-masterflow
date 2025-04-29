@@ -7,6 +7,7 @@ import (
 	"github.com/go-jet/jet/v2/postgres"
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/model"
 	"github.com/zODC-Dev/zodc-service-masterflow/database/generated/zodc_masterflow_dev/public/table"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/constants"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/results"
 )
 
@@ -42,6 +43,7 @@ func (r *HistoryRepository) FindAllHistoryByRequestId(ctx context.Context, db *s
 		Histories.RequestID.EQ(postgres.Int32(requestId)),
 	).ORDER_BY(
 		Histories.CreatedAt.DESC(),
+		Histories.TypeAction.EQ(postgres.String(constants.HistoryTypeNewTask)).DESC(),
 	)
 
 	var histories []results.HistoryResult

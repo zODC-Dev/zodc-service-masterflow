@@ -15,18 +15,20 @@ import (
 )
 
 type NotificationService struct {
-	DB          *sql.DB
-	NatsClient  *nats.NATSClient
-	UserAPI     *externals.UserAPI
-	RequestRepo *repositories.RequestRepository
+	DB             *sql.DB
+	NatsClient     *nats.NATSClient
+	UserAPI        *externals.UserAPI
+	RequestRepo    *repositories.RequestRepository
+	HistoryService *HistoryService
 }
 
-func NewNotificationService(db *sql.DB, natsClient *nats.NATSClient, userAPI *externals.UserAPI, requestRepo *repositories.RequestRepository) *NotificationService {
+func NewNotificationService(db *sql.DB, natsClient *nats.NATSClient, userAPI *externals.UserAPI, requestRepo *repositories.RequestRepository, historyService *HistoryService) *NotificationService {
 	return &NotificationService{
-		DB:          db,
-		NatsClient:  natsClient,
-		UserAPI:     userAPI,
-		RequestRepo: requestRepo,
+		DB:             db,
+		NatsClient:     natsClient,
+		UserAPI:        userAPI,
+		RequestRepo:    requestRepo,
+		HistoryService: historyService,
 	}
 }
 
@@ -62,7 +64,7 @@ func (s *NotificationService) NotifyRequestCompleted(ctx context.Context, reques
 	return s.SendNotification(ctx, notification)
 }
 
-func (s *NotificationService) NotifyTaskCompleted(ctx context.Context, node model.Nodes) error {
+func (s *NotificationService) NotifyTaskCompleted(ctx context.Context, tx *sql.Tx, node model.Nodes) error {
 
 	userIds := []string{}
 	existingUserIds := map[int32]bool{}
@@ -99,6 +101,12 @@ func (s *NotificationService) NotifyTaskCompleted(ctx context.Context, node mode
 	}
 
 	if isSendNotification {
+
+		// History
+		err := s.HistoryService.HistorySystemNotificationComplete(ctx, tx, node.RequestID, node.ID)
+		if err != nil {
+			return err
+		}
 
 		users, err := s.UserAPI.FindUsersByUserIds([]int32{*node.AssigneeID})
 		if err != nil {
@@ -116,7 +124,7 @@ func (s *NotificationService) NotifyTaskCompleted(ctx context.Context, node mode
 	return nil
 }
 
-func (s *NotificationService) NotifyTaskStarted(ctx context.Context, node model.Nodes) error {
+func (s *NotificationService) NotifyTaskStarted(ctx context.Context, tx *sql.Tx, node model.Nodes) error {
 
 	userIds := []string{}
 	existingUserIds := map[int32]bool{}
@@ -153,6 +161,12 @@ func (s *NotificationService) NotifyTaskStarted(ctx context.Context, node model.
 	}
 
 	if isSendNotification {
+
+		// History
+		err := s.HistoryService.HistorySystemNotificationStart(ctx, tx, node.RequestID, node.ID)
+		if err != nil {
+			return err
+		}
 
 		users, err := s.UserAPI.FindUsersByUserIds([]int32{*node.AssigneeID})
 		if err != nil {

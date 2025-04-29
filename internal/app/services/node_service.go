@@ -475,7 +475,7 @@ func (s *NodeService) StartNodeHandler(ctx context.Context, userId int32, nodeId
 	}
 
 	// Notify
-	if err := s.NotificationService.NotifyTaskStarted(ctx, node); err != nil {
+	if err := s.NotificationService.NotifyTaskStarted(ctx, tx, node); err != nil {
 		return err
 	}
 
@@ -689,7 +689,7 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 	}
 
 	// send notification
-	s.NotificationService.NotifyTaskCompleted(ctx, node)
+	s.NotificationService.NotifyTaskCompleted(ctx, tx, node)
 
 	// Calculate Request Process
 	if err := s.RequestService.UpdateCalculateRequestProgress(ctx, tx, node.RequestID); err != nil {

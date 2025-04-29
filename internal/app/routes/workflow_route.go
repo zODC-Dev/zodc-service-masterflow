@@ -43,8 +43,8 @@ func WorkflowRoute(group *echo.Group, db *sql.DB) {
 		FormRepo:    formRepo,
 	})
 
-	notificationService := services.NewNotificationService(db, natsClient, userApi, requestRepo)
 	historyService := services.NewHistoryService(db, historyRepo, userApi)
+	notificationService := services.NewNotificationService(db, natsClient, userApi, requestRepo, historyService)
 
 	workflowService := services.NewWorkflowService(services.WorkflowService{
 		DB:                  db,

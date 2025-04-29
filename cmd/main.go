@@ -90,8 +90,9 @@ func setupNats(ctx context.Context, database *sql.DB) *services.NatsSubscriberSe
 	// Set up UserAPI if needed for NodeService
 	userApi := externals.NewUserAPI()
 
-	notificationService := services.NewNotificationService(database, natsClient, userApi, requestRepo)
 	historyService := services.NewHistoryService(database, historyRepo, userApi)
+	notificationService := services.NewNotificationService(database, natsClient, userApi, requestRepo, historyService)
+
 	formService := services.NewFormService(database, formRepo, natsClient)
 
 	// Create NatsService needed for NodeService
