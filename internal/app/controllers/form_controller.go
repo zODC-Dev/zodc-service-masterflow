@@ -155,7 +155,7 @@ func (c *FormController) ConfigFormTemplate(e echo.Context) error {
 func (c *FormController) FindOneFormDataByFormDataId(e echo.Context) error {
 	ctx := e.Request().Context()
 
-	formDataId := e.Param("formDataId")
+	formDataId := e.Param("dataId")
 	if formDataId == "" {
 		return e.JSON(http.StatusBadRequest, "Form data ID is required")
 	}

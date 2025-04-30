@@ -19,11 +19,13 @@ type NodeDataConditionResponse struct {
 }
 
 type NodeDataResponseEditorContent struct {
-	Subject *string   `json:"subject"`
-	Body    *string   `json:"body"`
-	Cc      *[]string `json:"cc"`
-	To      *[]string `json:"to"`
-	Bcc     *[]string `json:"bcc"`
+	Subject            *string   `json:"subject"`
+	Body               *string   `json:"body"`
+	Cc                 *[]string `json:"cc"`
+	To                 *[]string `json:"to"`
+	Bcc                *[]string `json:"bcc"`
+	IsSendApprovedForm bool      `json:"isSendApprovedForm"`
+	IsSendRejectedForm bool      `json:"isSendRejectedForm"`
 }
 
 type NodeDataResponse struct {

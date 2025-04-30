@@ -113,11 +113,13 @@ func (s *WorkflowService) MapToWorkflowNodeResponse(node model.Nodes) (responses
 		}
 	}
 	nodeDataResponse.EditorContent = responses.NodeDataResponseEditorContent{
-		Subject: node.Subject,
-		Body:    node.Body,
-		Cc:      &cc,
-		To:      &to,
-		Bcc:     &bcc,
+		Subject:            node.Subject,
+		Body:               node.Body,
+		Cc:                 &cc,
+		To:                 &to,
+		Bcc:                &bcc,
+		IsSendApprovedForm: node.IsSendApprovedForm,
+		IsSendRejectedForm: node.IsSendRejectedForm,
 	}
 
 	if node.AssigneeID != nil {
