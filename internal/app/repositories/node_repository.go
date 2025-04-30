@@ -286,8 +286,8 @@ func (r *NodeRepository) FindAllNodeFormByNodeIdAndPermission(ctx context.Contex
 				LEFT_JOIN(NodeFormApproveOrRejectUsers, NodeForms.ID.EQ(NodeFormApproveOrRejectUsers.NodeFormID)).
 				LEFT_JOIN(FormData, NodeForms.DataID.EQ(FormData.ID)).
 				LEFT_JOIN(FormFieldData, FormData.ID.EQ(FormFieldData.FormDataID)).
-				LEFT_JOIN(FormTemplates, NodeForms.TemplateID.EQ(FormTemplates.ID)).
-				LEFT_JOIN(FormTemplateVersions, FormTemplates.ID.EQ(FormTemplateVersions.FormTemplateID).AND(FormTemplates.CurrentVersion.EQ(FormTemplateVersions.Version))).
+				LEFT_JOIN(FormTemplateVersions, FormTemplateVersions.ID.EQ(NodeForms.TemplateVersionID)).
+				LEFT_JOIN(FormTemplates, FormTemplateVersions.FormTemplateID.EQ(FormTemplates.ID)).
 				LEFT_JOIN(FormTemplateFields, FormTemplateFields.FormTemplateVersionID.EQ(FormTemplateVersions.ID)),
 		).
 		WHERE(

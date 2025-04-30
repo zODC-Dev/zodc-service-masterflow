@@ -779,6 +779,17 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 		}
 
 		// Form Attached
+		existedFormTemplateMap := map[int32]int32{}
+		for _, formAttached := range workflowNodeReq.Data.FormAttached {
+			if _, exist := existedFormTemplateMap[formAttached.FormTemplateId]; !exist {
+				formTemplate, err := s.FormRepo.FindOneFormTemplateByFormTemplateId(ctx, s.DB, formAttached.FormTemplateId)
+				if err != nil {
+					return fmt.Errorf("%w", err)
+				}
+
+				existedFormTemplateMap[formAttached.FormTemplateId] = formTemplate.Version.ID
+			}
+		}
 
 		for _, formAttached := range workflowNodeReq.Data.FormAttached {
 			formAttachedModel := model.NodeForms{
@@ -789,7 +800,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 				Permission:               formAttached.Permission,
 				IsOriginal:               formAttached.IsOriginal,
 				TemplateID:               formAttached.FormTemplateId,
-				TemplateVersionID:        formAttached.FormTemplateVersionId,
+				TemplateVersionID:        existedFormTemplateMap[formAttached.FormTemplateId],
 				NodeID:                   workflowNodeReq.Id,
 				Level:                    formAttached.Level,
 			}
@@ -802,7 +813,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			// Form Data
 
 			if formAttached.Permission == string("INPUT") && formAttached.DataId != "" {
-				formTemplate, err := s.FormRepo.FindOneFormTemplateByFormTemplateId(ctx, s.DB, formAttached.FormTemplateId)
+				formTemplate, err := s.FormRepo.FindOneFormTemplateByFormTemplateVersionId(ctx, s.DB, existedFormTemplateMap[formAttached.FormTemplateId])
 				if err != nil {
 					return fmt.Errorf("find form template fail: %w", err)
 				}

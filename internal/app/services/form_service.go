@@ -212,12 +212,65 @@ func (s *FormService) FindOneFormTemplateDetailByFormTemplateId(ctx context.Cont
 	formTemplateResponse.Version = formTemplate.Version.Version
 
 	fieldsResponse := [][]responses.FormTemplateFieldsFindAll{}
-	formTemplateFields, err := s.formRepo.FindAllFormTemplateFieldsByFormTemplateId(ctx, s.db, formTemplateId)
+	for _, formformTemplateField := range formTemplate.Fields {
+
+		colIndex := formformTemplateField.ColNum
+
+		for len(fieldsResponse) <= int(colIndex) {
+			fieldsResponse = append(fieldsResponse, []responses.FormTemplateFieldsFindAll{})
+		}
+
+		fieldResponse := responses.FormTemplateFieldsFindAll{}
+
+		//Mapping AdvancedOptions
+		var advancedOptions map[string]interface{}
+		if err := json.Unmarshal([]byte(*formformTemplateField.AdvancedOptions), &advancedOptions); err != nil {
+			return formTemplateDetails, err
+		}
+		fieldResponse.AdvancedOptions = advancedOptions
+		if err := utils.Mapper(formformTemplateField, &fieldResponse); err != nil {
+			return formTemplateDetails, err
+		}
+
+		fieldsResponse[colIndex] = append(fieldsResponse[colIndex], fieldResponse)
+	}
+
+	formTemplateDetails.Template = formTemplateResponse
+	formTemplateDetails.Fields = fieldsResponse
+
+	return formTemplateDetails, nil
+}
+
+func (s *FormService) FindOneFormTemplateDetailByFormTemplateVersionId(ctx context.Context, formTemplateVersionId int32) (responses.FormTemplateDetails, error) {
+	formTemplateDetails := responses.FormTemplateDetails{}
+
+	formTemplate, err := s.formRepo.FindOneFormTemplateByFormTemplateVersionId(ctx, s.db, formTemplateVersionId)
 	if err != nil {
 		return formTemplateDetails, err
 	}
 
-	for _, formformTemplateField := range formTemplateFields {
+	formTemplateResponse := responses.FormTemplateFindAll{}
+	if err := utils.Mapper(formTemplate, &formTemplateResponse); err != nil {
+		return formTemplateDetails, fmt.Errorf("map form template fail: %w", err)
+	}
+
+	if formTemplate.DataSheet != nil {
+		var dataSheet map[string]interface{}
+		if err := json.Unmarshal([]byte(*formTemplate.DataSheet), &dataSheet); err != nil {
+			return formTemplateDetails, fmt.Errorf("unmarshal data sheet fail: %w", err)
+		}
+		formTemplateResponse.DataSheet = &dataSheet
+	}
+
+	formTemplateResponse.Category = responses.CategoryFindAll{}
+	if err := utils.Mapper(formTemplate.Category, &formTemplateResponse.Category); err != nil {
+		return formTemplateDetails, fmt.Errorf("map category fail: %w", err)
+	}
+
+	formTemplateResponse.Version = formTemplate.Version.Version
+
+	fieldsResponse := [][]responses.FormTemplateFieldsFindAll{}
+	for _, formformTemplateField := range formTemplate.Fields {
 
 		colIndex := formformTemplateField.ColNum
 

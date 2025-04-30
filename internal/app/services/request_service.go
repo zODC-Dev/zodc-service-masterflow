@@ -1258,7 +1258,7 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 				requestCompletedFormRes.Key = strconv.Itoa(int(nodeForm.Node.Key))
 			}
 
-			formTemplateNodeForm, err := s.FormRepo.FindOneFormTemplateByFormTemplateId(ctx, s.DB, nodeForm.FormData.FormTemplate.ID)
+			formTemplateNodeForm, err := s.FormRepo.FindOneFormTemplateByFormTemplateVersionId(ctx, s.DB, nodeForm.FormData.FormTemplateVersionID)
 			if err != nil {
 				return paginatedResponse, err
 			}
@@ -1279,7 +1279,7 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 			requestCompletedFormRes.FormData = formData
 
 			//
-			formTemplate, err := s.FormService.FindOneFormTemplateDetailByFormTemplateId(ctx, nodeForm.TemplateID)
+			formTemplate, err := s.FormService.FindOneFormTemplateDetailByFormTemplateVersionId(ctx, nodeForm.TemplateVersionID)
 			if err != nil {
 				return paginatedResponse, err
 			}

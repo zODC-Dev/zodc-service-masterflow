@@ -207,7 +207,36 @@ func (r *FormRepository) FindOneFormTemplateByFormTemplateId(ctx context.Context
 			LEFT_JOIN(FormTemplateFields, FormTemplateFields.FormTemplateVersionID.EQ(FormTemplateVersions.ID)).
 			LEFT_JOIN(Categories, Categories.ID.EQ(FormTemplates.CategoryID)),
 	).WHERE(
-		FormTemplates.ID.EQ(postgres.Int32(formTemplateId)),
+		FormTemplates.ID.EQ(postgres.Int32(formTemplateId)).AND(
+			FormTemplateVersions.Version.EQ(FormTemplates.CurrentVersion),
+		),
+	)
+
+	formTemplate := results.FormResult{}
+
+	err := statement.QueryContext(ctx, db, &formTemplate)
+
+	return formTemplate, err
+}
+
+func (r *FormRepository) FindOneFormTemplateByFormTemplateVersionId(ctx context.Context, db *sql.DB, formTemplateVersionId int32) (results.FormResult, error) {
+	FormTemplates := table.FormTemplates
+	FormTemplateVersions := table.FormTemplateVersions
+	FormTemplateFields := table.FormTemplateFields
+	Categories := table.Categories
+
+	statement := FormTemplates.SELECT(
+		FormTemplates.AllColumns,
+		FormTemplateVersions.AllColumns,
+		FormTemplateFields.AllColumns,
+		Categories.AllColumns,
+	).FROM(
+		FormTemplates.
+			LEFT_JOIN(FormTemplateVersions, FormTemplateVersions.FormTemplateID.EQ(FormTemplates.ID)).
+			LEFT_JOIN(FormTemplateFields, FormTemplateFields.FormTemplateVersionID.EQ(FormTemplateVersions.ID)).
+			LEFT_JOIN(Categories, Categories.ID.EQ(FormTemplates.CategoryID)),
+	).WHERE(
+		FormTemplateVersions.ID.EQ(postgres.Int32(formTemplateVersionId)),
 	)
 
 	formTemplate := results.FormResult{}
