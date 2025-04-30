@@ -36,6 +36,7 @@ type nodeFormsTable struct {
 	LastUpdateUserID         postgres.ColumnInteger
 	DataID                   postgres.ColumnString
 	TemplateID               postgres.ColumnInteger
+	TemplateVersionID        postgres.ColumnInteger
 	NodeID                   postgres.ColumnString
 
 	AllColumns     postgres.ColumnList
@@ -96,9 +97,10 @@ func newNodeFormsTableImpl(schemaName, tableName, alias string) nodeFormsTable {
 		LastUpdateUserIDColumn         = postgres.IntegerColumn("last_update_user_id")
 		DataIDColumn                   = postgres.StringColumn("data_id")
 		TemplateIDColumn               = postgres.IntegerColumn("template_id")
+		TemplateVersionIDColumn        = postgres.IntegerColumn("template_version_id")
 		NodeIDColumn                   = postgres.StringColumn("node_id")
-		allColumns                     = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, LevelColumn, PermissionColumn, KeyColumn, OptionKeyColumn, FromUserIDColumn, FromFormAttachedPositionColumn, IsOriginalColumn, IsApprovedColumn, IsRejectedColumn, IsSubmittedColumn, SubmittedAtColumn, SubmittedByUserIDColumn, LastUpdateUserIDColumn, DataIDColumn, TemplateIDColumn, NodeIDColumn}
-		mutableColumns                 = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, LevelColumn, PermissionColumn, KeyColumn, OptionKeyColumn, FromUserIDColumn, FromFormAttachedPositionColumn, IsOriginalColumn, IsApprovedColumn, IsRejectedColumn, IsSubmittedColumn, SubmittedAtColumn, SubmittedByUserIDColumn, LastUpdateUserIDColumn, DataIDColumn, TemplateIDColumn, NodeIDColumn}
+		allColumns                     = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, LevelColumn, PermissionColumn, KeyColumn, OptionKeyColumn, FromUserIDColumn, FromFormAttachedPositionColumn, IsOriginalColumn, IsApprovedColumn, IsRejectedColumn, IsSubmittedColumn, SubmittedAtColumn, SubmittedByUserIDColumn, LastUpdateUserIDColumn, DataIDColumn, TemplateIDColumn, TemplateVersionIDColumn, NodeIDColumn}
+		mutableColumns                 = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, LevelColumn, PermissionColumn, KeyColumn, OptionKeyColumn, FromUserIDColumn, FromFormAttachedPositionColumn, IsOriginalColumn, IsApprovedColumn, IsRejectedColumn, IsSubmittedColumn, SubmittedAtColumn, SubmittedByUserIDColumn, LastUpdateUserIDColumn, DataIDColumn, TemplateIDColumn, TemplateVersionIDColumn, NodeIDColumn}
 	)
 
 	return nodeFormsTable{
@@ -124,6 +126,7 @@ func newNodeFormsTableImpl(schemaName, tableName, alias string) nodeFormsTable {
 		LastUpdateUserID:         LastUpdateUserIDColumn,
 		DataID:                   DataIDColumn,
 		TemplateID:               TemplateIDColumn,
+		TemplateVersionID:        TemplateVersionIDColumn,
 		NodeID:                   NodeIDColumn,
 
 		AllColumns:     allColumns,

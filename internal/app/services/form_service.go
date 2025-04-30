@@ -141,6 +141,7 @@ func (s *FormService) FindAllFormTemplate(ctx context.Context, queryParam queryp
 		}
 
 		formTemplateResponse.Version = formTemplate.Version.Version
+		formTemplateResponse.VersionId = formTemplate.Version.ID
 
 		formTemplatesResponse = append(formTemplatesResponse, formTemplateResponse)
 	}

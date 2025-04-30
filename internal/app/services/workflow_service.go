@@ -356,6 +356,10 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			TaskCompletedRequester:    storyReq.Node.Data.TaskCompleted.Requester,
 			TaskCompletedAssignee:     storyReq.Node.Data.TaskCompleted.Assignee,
 			TaskCompletedParticipants: storyReq.Node.Data.TaskCompleted.Participants,
+
+			//
+			Description: storyReq.Node.Data.Description,
+			AttachFile:  storyReq.Node.Data.AttachFile,
 		}
 
 		// For Update
@@ -469,6 +473,10 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 				TaskCompletedRequester:    storyNodeReq.Data.TaskCompleted.Requester,
 				TaskCompletedAssignee:     storyNodeReq.Data.TaskCompleted.Assignee,
 				TaskCompletedParticipants: storyNodeReq.Data.TaskCompleted.Participants,
+
+				//
+				Description: storyNodeReq.Data.Description,
+				AttachFile:  storyNodeReq.Data.AttachFile,
 			}
 
 			// For Update
@@ -642,6 +650,10 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			TaskCompletedRequester:    workflowNodeReq.Data.TaskCompleted.Requester,
 			TaskCompletedAssignee:     workflowNodeReq.Data.TaskCompleted.Assignee,
 			TaskCompletedParticipants: workflowNodeReq.Data.TaskCompleted.Participants,
+
+			//
+			Description: workflowNodeReq.Data.Description,
+			AttachFile:  workflowNodeReq.Data.AttachFile,
 		}
 
 		// For Update
@@ -777,6 +789,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 				Permission:               formAttached.Permission,
 				IsOriginal:               formAttached.IsOriginal,
 				TemplateID:               formAttached.FormTemplateId,
+				TemplateVersionID:        formAttached.FormTemplateVersionId,
 				NodeID:                   workflowNodeReq.Id,
 				Level:                    formAttached.Level,
 			}

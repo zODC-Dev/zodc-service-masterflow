@@ -189,6 +189,7 @@ CREATE TABLE node_forms (
     -- Form
     data_id TEXT REFERENCES form_data (id) ON DELETE CASCADE,
     template_id INT NOT NULL REFERENCES form_templates (id) ON DELETE CASCADE,
+    template_version_id INT NOT NULL REFERENCES form_template_versions (id) ON DELETE CASCADE,
 
     node_id TEXT NOT NULL REFERENCES nodes (id) ON DELETE CASCADE
 );

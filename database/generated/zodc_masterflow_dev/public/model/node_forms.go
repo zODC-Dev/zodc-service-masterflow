@@ -31,5 +31,6 @@ type NodeForms struct {
 	LastUpdateUserID         *int32
 	DataID                   *string
 	TemplateID               int32
+	TemplateVersionID        int32
 	NodeID                   string
 }

@@ -28,7 +28,8 @@ type FormTemplateFindAll struct {
 	Title     string          `json:"title"`
 	Category  CategoryFindAll `json:"category"`
 
-	Version int32 `json:"version"`
+	Version   int32 `json:"version"`
+	VersionId int32 `json:"versionId"`
 
 	TemplateID  *int32                  `json:"templateId"`
 	DataSheet   *map[string]interface{} `json:"dataSheet"`

@@ -22,6 +22,7 @@ type NodeDataFormAttachedApprovalOrRejectUsers struct {
 type NodeDataFormAttached struct {
 	Key                           string
 	FormTemplateId                int32
+	FormTemplateVersionId         int32
 	DataId                        string
 	OptionKey                     *string
 	FromUserId                    *int32
@@ -83,6 +84,10 @@ type NodeData struct {
 	PlannedEndTime   *time.Time
 	ActualStartTime  *time.Time
 	ActualEndTime    *time.Time
+
+	//
+	Description *string
+	AttachFile  *string
 }
 
 type NodeForm struct {
