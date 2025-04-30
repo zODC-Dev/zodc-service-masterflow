@@ -2,6 +2,7 @@ package externals
 
 import (
 	"github.com/go-resty/resty/v2"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/configs"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/results"
 )
 
@@ -26,7 +27,7 @@ func (u *UserAPI) FindUsersByUserIds(userIds []int32) (results.UserApiResult, er
 		SetHeader("Content-Type", "application/json").
 		SetBody(body).
 		SetResult(&result).
-		Post("https://zodc-api.thanhf.dev/auth/internal/users")
+		Post(configs.Env.BE_HOST + "/auth/internal/users")
 
 	if err != nil {
 		return result, err

@@ -784,7 +784,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			if _, exist := existedFormTemplateMap[formAttached.FormTemplateId]; !exist {
 				formTemplate, err := s.FormRepo.FindOneFormTemplateByFormTemplateId(ctx, s.DB, formAttached.FormTemplateId)
 				if err != nil {
-					return fmt.Errorf("%w", err)
+					return fmt.Errorf("form Template error %w", err)
 				}
 
 				existedFormTemplateMap[formAttached.FormTemplateId] = formTemplate.Version.ID
