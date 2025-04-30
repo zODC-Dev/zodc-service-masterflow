@@ -146,45 +146,54 @@ const docTemplate = `{
                 }
             }
         },
-        "/forms/templates/{formTemplateId}/fields": {
+        "/history/{requestId}": {
             "get": {
-                "description": "Retrieves all fields associated with a given form template ID.",
+                "description": "Find all history by request id",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Forms"
+                    "History"
                 ],
-                "summary": "Find all fields for a specific form template",
+                "summary": "Find all history by request id",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Form Template ID",
-                        "name": "formTemplateId",
+                        "description": "Request ID",
+                        "name": "requestId",
                         "in": "path",
                         "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "History",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/responses.FormTemplateFieldsFindAll"
+                                "$ref": "#/definitions/responses.HistoryResponse"
                             }
                         }
                     },
                     "400": {
-                        "description": "Error message for invalid form template ID",
+                        "description": "Bad Request",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "500": {
-                        "description": "Error message for internal server error",
+                        "description": "Internal Server Error",
                         "schema": {
-                            "type": "string"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -521,6 +530,48 @@ const docTemplate = `{
                 }
             }
         },
+        "/requests/report/mid-sprint-tasks": {
+            "get": {
+                "description": "Report mid sprint tasks",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Requests"
+                ],
+                "summary": "Report mid sprint tasks",
+                "responses": {
+                    "200": {
+                        "description": "Request Task Response",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/responses.RequestTaskResponse"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Error message for internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/requests/retrospective/report": {
+            "get": {
+                "description": "Get retrospective report",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Requests"
+                ],
+                "summary": "Get retrospective report",
+                "responses": {}
+            }
+        },
         "/requests/tasks/by-project": {
             "get": {
                 "security": [
@@ -759,6 +810,176 @@ const docTemplate = `{
                 }
             }
         },
+        "/requests/{id}/cancel": {
+            "put": {
+                "description": "Cancels a request identified by its ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Requests"
+                ],
+                "summary": "Cancel a request",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success message: Request canceled successfully: {id}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Error message for invalid request ID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Error message for internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/requests/{id}/completed-form": {
+            "get": {
+                "description": "Retrieves the completed form for a specific request ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Requests"
+                ],
+                "summary": "Get completed form for a request",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/responses.RequestCompletedFormInputResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error message for invalid request ID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Error message for internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/requests/{id}/completed-form/approval": {
+            "get": {
+                "description": "Retrieves the completed form approval for a specific request ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Requests"
+                ],
+                "summary": "Get completed form approval for a request",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/responses.RequestCompletedFormApprovalOverviewResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error message for invalid request ID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Error message for internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/requests/{id}/file-manager": {
+            "get": {
+                "description": "Retrieves the file manager for a specific request ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Requests"
+                ],
+                "summary": "Get file manager for a request",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.RequestFileManagerResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Error message for invalid request ID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Error message for internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/requests/{id}/overview": {
             "get": {
                 "description": "Retrieves overview information (like counts, statuses) for a specific request ID.",
@@ -845,7 +1066,10 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/responses.RequestSubRequest"
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/responses.RequestResponse"
+                                            }
                                         }
                                     }
                                 }
@@ -1205,6 +1429,59 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Updates a workflow definition based on the provided request details. Requires user authentication.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Workflows"
+                ],
+                "summary": "Update a workflow",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Workflow ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update Workflow Request",
+                        "name": "workflow",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.UpdateWorkflow"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "message: Workflow updated successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Error message for invalid ID or internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
             }
         },
         "/workflows/{id}/archive": {
@@ -1255,6 +1532,9 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "string"
+                },
+                "isCompleted": {
+                    "type": "boolean"
                 },
                 "text": {
                     "type": "string"
@@ -1318,9 +1598,6 @@ const docTemplate = `{
                 "data": {
                     "$ref": "#/definitions/requests.NodeData"
                 },
-                "estimatePoint": {
-                    "type": "integer"
-                },
                 "form": {
                     "type": "array",
                     "items": {
@@ -1330,8 +1607,17 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "isCurrent": {
+                    "type": "boolean"
+                },
                 "jiraKey": {
                     "type": "string"
+                },
+                "lastSyncedAt": {
+                    "type": "string"
+                },
+                "level": {
+                    "type": "integer"
                 },
                 "parentId": {
                     "type": "string"
@@ -1342,6 +1628,9 @@ const docTemplate = `{
                 "size": {
                     "$ref": "#/definitions/types.Size"
                 },
+                "status": {
+                    "type": "string"
+                },
                 "type": {
                     "type": "string"
                 }
@@ -1350,17 +1639,35 @@ const docTemplate = `{
         "requests.NodeData": {
             "type": "object",
             "properties": {
+                "actualEndTime": {
+                    "type": "string"
+                },
+                "actualStartTime": {
+                    "type": "string"
+                },
                 "assignee": {
                     "$ref": "#/definitions/requests.NodeDataAssignee"
+                },
+                "attachFile": {
+                    "type": "string"
                 },
                 "condition": {
                     "$ref": "#/definitions/requests.NodeDataCondition"
                 },
-                "dueIn": {
-                    "type": "integer"
+                "description": {
+                    "type": "string"
+                },
+                "editorContent": {
+                    "$ref": "#/definitions/requests.NodeDataEditorContent"
+                },
+                "endDate": {
+                    "type": "string"
                 },
                 "endType": {
                     "type": "string"
+                },
+                "estimatePoint": {
+                    "type": "number"
                 },
                 "formAttached": {
                     "type": "array",
@@ -1371,8 +1678,24 @@ const docTemplate = `{
                 "jiraKey": {
                     "type": "string"
                 },
+                "jiraLinkUrl": {
+                    "type": "string"
+                },
+                "plannedEndTime": {
+                    "type": "string"
+                },
+                "plannedStartTime": {
+                    "description": "Add for update request",
+                    "type": "string"
+                },
                 "subRequestID": {
                     "type": "integer"
+                },
+                "taskCompleted": {
+                    "$ref": "#/definitions/requests.TaskConfigNotification"
+                },
+                "taskStarted": {
+                    "$ref": "#/definitions/requests.TaskConfigNotification"
                 },
                 "title": {
                     "type": "string"
@@ -1407,19 +1730,51 @@ const docTemplate = `{
                 }
             }
         },
+        "requests.NodeDataEditorContent": {
+            "type": "object",
+            "properties": {
+                "bcc": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "body": {
+                    "type": "string"
+                },
+                "cc": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "isSendApprovedForm": {
+                    "type": "boolean"
+                },
+                "isSendRejectedForm": {
+                    "type": "boolean"
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "to": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "requests.NodeDataFormAttached": {
             "type": "object",
             "properties": {
-                "approveUserIds": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
                 "dataId": {
                     "type": "string"
                 },
                 "formTemplateId": {
+                    "type": "integer"
+                },
+                "formTemplateVersionId": {
                     "type": "integer"
                 },
                 "fromFormAttachedPosition": {
@@ -1434,11 +1789,31 @@ const docTemplate = `{
                 "key": {
                     "type": "string"
                 },
-                "optionId": {
+                "level": {
+                    "type": "integer"
+                },
+                "nodeFormApprovalOrRejectUsers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/requests.NodeDataFormAttachedApprovalOrRejectUsers"
+                    }
+                },
+                "optionKey": {
                     "type": "string"
                 },
                 "permission": {
                     "type": "string"
+                }
+            }
+        },
+        "requests.NodeDataFormAttachedApprovalOrRejectUsers": {
+            "type": "object",
+            "properties": {
+                "assignee": {
+                    "$ref": "#/definitions/types.Assignee"
+                },
+                "isApproved": {
+                    "type": "boolean"
                 }
             }
         },
@@ -1450,6 +1825,30 @@ const docTemplate = `{
                 },
                 "value": {
                     "type": "string"
+                }
+            }
+        },
+        "requests.NodesConnectionsStories": {
+            "type": "object",
+            "properties": {
+                "connections": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/requests.Connection"
+                    }
+                },
+                "nodes": {
+                    "description": "ko chứa story",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/requests.Node"
+                    }
+                },
+                "stories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/requests.Story"
+                    }
                 }
             }
         },
@@ -1508,6 +1907,9 @@ const docTemplate = `{
                         "$ref": "#/definitions/requests.Story"
                     }
                 },
+                "template": {
+                    "$ref": "#/definitions/requests.NodesConnectionsStories"
+                },
                 "title": {
                     "type": "string"
                 }
@@ -1528,8 +1930,48 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "isSystemLinked": {
+                    "type": "boolean"
+                },
                 "node": {
                     "$ref": "#/definitions/requests.Node"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "requests.TaskConfigNotification": {
+            "type": "object",
+            "properties": {
+                "assignee": {
+                    "type": "boolean"
+                },
+                "participants": {
+                    "type": "boolean"
+                },
+                "requester": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "requests.UpdateWorkflow": {
+            "type": "object",
+            "properties": {
+                "categoryId": {
+                    "type": "integer"
+                },
+                "decoration": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "projectKey": {
+                    "type": "string"
                 },
                 "title": {
                     "type": "string"
@@ -1610,6 +2052,34 @@ const docTemplate = `{
                 },
                 "updatedAt": {
                     "type": "string"
+                }
+            }
+        },
+        "responses.FormDataResponse": {
+            "type": "object",
+            "properties": {
+                "fieldId": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "responses.FormTemplateDetails": {
+            "type": "object",
+            "properties": {
+                "fields": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/responses.FormTemplateFieldsFindAll"
+                        }
+                    }
+                },
+                "template": {
+                    "$ref": "#/definitions/responses.FormTemplateFindAll"
                 }
             }
         },
@@ -1700,6 +2170,45 @@ const docTemplate = `{
                 },
                 "version": {
                     "type": "integer"
+                },
+                "versionId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "responses.HistoryNodeResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "responses.HistoryResponse": {
+            "type": "object",
+            "properties": {
+                "assignee": {
+                    "$ref": "#/definitions/types.Assignee"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "from": {},
+                "id": {
+                    "type": "integer"
+                },
+                "node": {
+                    "$ref": "#/definitions/responses.HistoryNodeResponse"
+                },
+                "to": {},
+                "type": {
+                    "type": "string"
                 }
             }
         },
@@ -1715,7 +2224,10 @@ const docTemplate = `{
                 "fields": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/responses.FormTemplateFieldsFindAll"
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/responses.FormTemplateFieldsFindAll"
+                        }
                     }
                 },
                 "template": {
@@ -1723,23 +2235,62 @@ const docTemplate = `{
                 }
             }
         },
+        "responses.NodeDataConditionResponse": {
+            "type": "object",
+            "properties": {
+                "falseDestinations": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "trueDestinations": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "responses.NodeDataResponse": {
             "type": "object",
             "properties": {
+                "actualEndTime": {
+                    "type": "string"
+                },
+                "actualStartTime": {
+                    "type": "string"
+                },
                 "assignee": {
                     "$ref": "#/definitions/types.Assignee"
+                },
+                "condition": {
+                    "$ref": "#/definitions/responses.NodeDataConditionResponse"
+                },
+                "editorContent": {
+                    "$ref": "#/definitions/responses.NodeDataResponseEditorContent"
                 },
                 "endType": {
                     "type": "string"
                 },
                 "estimatePoint": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "formAttached": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/responses.NodeFormResponse"
                     }
+                },
+                "jiraLinkUrl": {
+                    "type": "string"
+                },
+                "plannedEndTime": {
+                    "type": "string"
+                },
+                "plannedStartTime": {
+                    "description": "Add for update request",
+                    "type": "string"
                 },
                 "subRequestId": {
                     "type": "integer"
@@ -1749,6 +2300,46 @@ const docTemplate = `{
                 },
                 "type": {
                     "type": "string"
+                }
+            }
+        },
+        "responses.NodeDataResponseEditorContent": {
+            "type": "object",
+            "properties": {
+                "bcc": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "body": {
+                    "type": "string"
+                },
+                "cc": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "to": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "responses.NodeFormApprovalOrRejectUsersResponse": {
+            "type": "object",
+            "properties": {
+                "assignee": {
+                    "$ref": "#/definitions/types.Assignee"
+                },
+                "isApproved": {
+                    "type": "boolean"
                 }
             }
         },
@@ -1766,16 +2357,13 @@ const docTemplate = `{
         "responses.NodeFormResponse": {
             "type": "object",
             "properties": {
-                "approveUserIds": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
                 "dataId": {
                     "type": "string"
                 },
                 "formTemplateId": {
+                    "type": "integer"
+                },
+                "formTemplateVersionId": {
                     "type": "integer"
                 },
                 "fromFormAttachedPosition": {
@@ -1789,6 +2377,15 @@ const docTemplate = `{
                 },
                 "key": {
                     "type": "string"
+                },
+                "level": {
+                    "type": "integer"
+                },
+                "nodeFormApprovalOrRejectUsers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/responses.NodeFormApprovalOrRejectUsersResponse"
+                    }
                 },
                 "optionKey": {
                     "type": "string"
@@ -1822,6 +2419,9 @@ const docTemplate = `{
                 "jiraKey": {
                     "type": "string"
                 },
+                "level": {
+                    "type": "integer"
+                },
                 "parentId": {
                     "type": "string"
                 },
@@ -1836,6 +2436,67 @@ const docTemplate = `{
                 },
                 "status": {
                     "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "responses.RequestCompletedFormApprovalOverviewResponse": {
+            "type": "object",
+            "properties": {
+                "assignee": {
+                    "$ref": "#/definitions/types.Assignee"
+                },
+                "isApproved": {
+                    "type": "boolean"
+                },
+                "isRejected": {
+                    "type": "boolean"
+                },
+                "key": {
+                    "type": "integer"
+                },
+                "taskTitle": {
+                    "type": "string"
+                }
+            }
+        },
+        "responses.RequestCompletedFormInputResponse": {
+            "type": "object",
+            "properties": {
+                "dataId": {
+                    "type": "string"
+                },
+                "formData": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/responses.FormDataResponse"
+                    }
+                },
+                "key": {
+                    "type": "string"
+                },
+                "lastUpdate": {
+                    "$ref": "#/definitions/types.Assignee"
+                },
+                "parent": {
+                    "$ref": "#/definitions/responses.TaskRelated"
+                },
+                "submittedAt": {
+                    "type": "string"
+                },
+                "submitter": {
+                    "$ref": "#/definitions/types.Assignee"
+                },
+                "taskRelated": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/responses.TaskRelated"
+                    }
+                },
+                "template": {
+                    "$ref": "#/definitions/responses.FormTemplateDetails"
                 },
                 "type": {
                     "type": "string"
@@ -1882,7 +2543,10 @@ const docTemplate = `{
                     }
                 },
                 "progress": {
-                    "type": "integer"
+                    "type": "number"
+                },
+                "projectKey": {
+                    "type": "string"
                 },
                 "requestedBy": {
                     "$ref": "#/definitions/types.Assignee"
@@ -1892,6 +2556,9 @@ const docTemplate = `{
                 },
                 "startedAt": {
                     "type": "string"
+                },
+                "starterId": {
+                    "type": "integer"
                 },
                 "status": {
                     "type": "string"
@@ -1907,11 +2574,28 @@ const docTemplate = `{
                 }
             }
         },
+        "responses.RequestFileManagerResponse": {
+            "type": "object",
+            "properties": {
+                "assignee": {
+                    "$ref": "#/definitions/types.Assignee"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "submittedAt": {
+                    "type": "string"
+                }
+            }
+        },
         "responses.RequestOverviewResponse": {
             "type": "object",
             "properties": {
                 "category": {
-                    "$ref": "#/definitions/responses.CategoryResponse"
+                    "$ref": "#/definitions/responses.CategoryFindAll"
                 },
                 "connections": {
                     "type": "array",
@@ -2000,7 +2684,10 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "progress": {
-                    "type": "integer"
+                    "type": "number"
+                },
+                "projectKey": {
+                    "type": "string"
                 },
                 "sprintId": {
                     "type": "integer"
@@ -2019,45 +2706,22 @@ const docTemplate = `{
                 }
             }
         },
-        "responses.RequestSubRequest": {
-            "type": "object",
-            "properties": {
-                "assignee": {
-                    "$ref": "#/definitions/types.Assignee"
-                },
-                "canceledAt": {
-                    "type": "string"
-                },
-                "completedAt": {
-                    "type": "string"
-                },
-                "key": {
-                    "type": "integer"
-                },
-                "startedAt": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                },
-                "taskTitle": {
-                    "type": "string"
-                },
-                "terminatedAt": {
-                    "type": "string"
-                },
-                "workflowTitle": {
-                    "type": "string"
-                }
-            }
-        },
         "responses.RequestTaskCountResponse": {
             "type": "object",
             "properties": {
                 "completedCount": {
                     "type": "integer"
                 },
+                "inComingCount": {
+                    "type": "integer"
+                },
+                "inProgressCount": {
+                    "type": "integer"
+                },
                 "overdueCount": {
+                    "type": "integer"
+                },
+                "todayCount": {
                     "type": "integer"
                 },
                 "todoCount": {
@@ -2081,13 +2745,22 @@ const docTemplate = `{
                     "$ref": "#/definitions/types.Assignee"
                 },
                 "estimatePoint": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "id": {
                     "type": "string"
                 },
+                "isApproved": {
+                    "type": "boolean"
+                },
                 "isCurrent": {
                     "type": "boolean"
+                },
+                "isRejected": {
+                    "type": "boolean"
+                },
+                "jiraLinkUrl": {
+                    "type": "string"
                 },
                 "key": {
                     "type": "string"
@@ -2096,6 +2769,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "plannedStartTime": {
+                    "type": "string"
+                },
+                "projectKey": {
                     "type": "string"
                 },
                 "requestId": {
@@ -2139,8 +2815,14 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "isSystemLinked": {
+                    "type": "boolean"
+                },
                 "node": {
                     "$ref": "#/definitions/responses.NodeResponse"
+                },
+                "progress": {
+                    "type": "number"
                 },
                 "title": {
                     "type": "string"
@@ -2163,7 +2845,7 @@ const docTemplate = `{
                     "$ref": "#/definitions/types.Assignee"
                 },
                 "estimatePoint": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "id": {
                     "type": "string"
@@ -2171,17 +2853,38 @@ const docTemplate = `{
                 "isApproval": {
                     "type": "boolean"
                 },
+                "isApproved": {
+                    "type": "boolean"
+                },
                 "isCurrent": {
                     "type": "boolean"
                 },
+                "isRejected": {
+                    "type": "boolean"
+                },
+                "jiraLinkUrl": {
+                    "type": "string"
+                },
                 "key": {
                     "type": "string"
+                },
+                "parent": {
+                    "$ref": "#/definitions/responses.TaskRelated"
                 },
                 "plannedEndTime": {
                     "type": "string"
                 },
                 "plannedStartTime": {
                     "type": "string"
+                },
+                "projectKey": {
+                    "type": "string"
+                },
+                "related": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/responses.TaskRelated"
+                    }
                 },
                 "requestId": {
                     "type": "integer"
@@ -2195,6 +2898,9 @@ const docTemplate = `{
                 "requestTitle": {
                     "type": "string"
                 },
+                "sprintId": {
+                    "type": "integer"
+                },
                 "status": {
                     "type": "string"
                 },
@@ -2205,6 +2911,26 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "responses.TaskRelated": {
+            "type": "object",
+            "properties": {
+                "assignee": {
+                    "$ref": "#/definitions/types.Assignee"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "type": {
                     "type": "string"
                 }
             }

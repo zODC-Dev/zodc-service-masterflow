@@ -65,34 +65,6 @@ func (r *FormRepository) FindAllFormTemplate(ctx context.Context, db *sql.DB, qu
 	return results, err
 }
 
-func (r *FormRepository) FindAllFormTemplateFieldsByFormTemplateId(ctx context.Context, db *sql.DB, formTemplateId int32) ([]model.FormTemplateFields, error) {
-	FormTemplateFields := table.FormTemplateFields
-	FormTemplateVersions := table.FormTemplateVersions
-	FormTemplates := table.FormTemplates
-
-	statement := postgres.SELECT(
-		FormTemplateFields.AllColumns,
-	).FROM(
-		FormTemplateFields.LEFT_JOIN(
-			FormTemplateVersions,
-			FormTemplateVersions.FormTemplateID.EQ(FormTemplateFields.FormTemplateVersionID),
-		).LEFT_JOIN(
-			FormTemplates,
-			FormTemplates.ID.EQ(FormTemplateVersions.FormTemplateID),
-		),
-	).WHERE(
-		FormTemplates.ID.EQ(postgres.Int32(formTemplateId)).AND(
-			FormTemplateVersions.Version.EQ(FormTemplates.CurrentVersion),
-		),
-	)
-
-	results := []model.FormTemplateFields{}
-
-	err := statement.QueryContext(ctx, db, &results)
-
-	return results, err
-}
-
 func (r *FormRepository) CreateFormTemplate(ctx context.Context, tx *sql.Tx, formTemplate model.FormTemplates) (model.FormTemplates, error) {
 	FormTemplates := table.FormTemplates
 

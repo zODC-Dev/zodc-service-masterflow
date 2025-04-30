@@ -149,40 +149,6 @@ func (s *FormService) FindAllFormTemplate(ctx context.Context, queryParam queryp
 	return formTemplatesResponse, nil
 }
 
-func (s *FormService) FindAllFormTemplateFieldsByFormTemplateId(ctx context.Context, formTemplateId int32) ([][]responses.FormTemplateFieldsFindAll, error) {
-	fieldsResponse := [][]responses.FormTemplateFieldsFindAll{}
-
-	formTemplateFields, err := s.formRepo.FindAllFormTemplateFieldsByFormTemplateId(ctx, s.db, formTemplateId)
-	if err != nil {
-		return fieldsResponse, err
-	}
-
-	for _, formformTemplateField := range formTemplateFields {
-
-		colIndex := formformTemplateField.ColNum
-
-		for len(fieldsResponse) <= int(colIndex) {
-			fieldsResponse = append(fieldsResponse, []responses.FormTemplateFieldsFindAll{})
-		}
-
-		fieldResponse := responses.FormTemplateFieldsFindAll{}
-
-		//Mapping AdvancedOptions
-		var advancedOptions map[string]interface{}
-		if err := json.Unmarshal([]byte(*formformTemplateField.AdvancedOptions), &advancedOptions); err != nil {
-			return fieldsResponse, err
-		}
-		fieldResponse.AdvancedOptions = advancedOptions
-		if err := utils.Mapper(formformTemplateField, &fieldResponse); err != nil {
-			return fieldsResponse, err
-		}
-
-		fieldsResponse[colIndex] = append(fieldsResponse[colIndex], fieldResponse)
-	}
-
-	return fieldsResponse, nil
-}
-
 func (s *FormService) FindOneFormTemplateDetailByFormTemplateId(ctx context.Context, formTemplateId int32) (responses.FormTemplateDetails, error) {
 	formTemplateDetails := responses.FormTemplateDetails{}
 

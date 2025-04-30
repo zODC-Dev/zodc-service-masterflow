@@ -286,7 +286,7 @@ func (c *RequestController) GetRequestOverview(e echo.Context) error {
 // @Param        id path int true "Parent Request ID"
 // @Param        page query int false "Page number for pagination" default(1)
 // @Param        pageSize query int false "Number of items per page" default(10)
-// @Success      200 {object} responses.Response{data=responses.RequestSubRequest} // Assuming appropriate response structure
+// @Success      200 {object} responses.Response{data=[]responses.RequestResponse} // Assuming appropriate response structure
 // @Failure      400 {object} string "Error message for invalid request ID"
 // @Failure      500 {object} string "Error message for internal server error"
 // @Router       /requests/{id}/sub-requests [get]
@@ -403,7 +403,7 @@ func (c *RequestController) GetRequestTasksCount(e echo.Context) error {
 // @Tags         Requests
 // @Produce      json
 // @Param        id path int true "Request ID"
-// @Success      200 {object} responses.RequestCompletedFormResponse // Assuming responses.RequestCompletedFormResponse exists
+// @Success      200 {object} []responses.RequestCompletedFormInputResponse // Assuming responses.RequestCompletedFormResponse exists
 // @Failure      400 {object} string "Error message for invalid request ID"
 // @Failure      500 {object} string "Error message for internal server error"
 // @Router       /requests/{id}/completed-form [get]
@@ -501,7 +501,7 @@ func (c *RequestController) GetRequestFileManager(e echo.Context) error {
 // @Tags         Requests
 // @Produce      json
 // @Param        id path int true "Request ID"
-// @Success      200 {object} responses.RequestCompletedFormApprovalResponse // Assuming responses.RequestCompletedFormApprovalResponse exists
+// @Success      200 {object} []responses.RequestCompletedFormApprovalOverviewResponse // Assuming responses.RequestCompletedFormApprovalResponse exists
 // @Failure      400 {object} string "Error message for invalid request ID"
 // @Failure      500 {object} string "Error message for internal server error"
 // @Router       /requests/{id}/completed-form/approval [get]

@@ -21,7 +21,6 @@ func FormRoute(group *echo.Group, db *sql.DB) {
 	{
 		formRoute.POST("/templates/create", formController.CreateFormTemplate)
 		formRoute.GET("/templates/all", formController.FindAllFormTemplate)
-		formRoute.GET("/templates/:formTemplateId/fields", formController.FindAllFormTemplateFieldsByFormTemplateId)
 
 		formRoute.PUT("/templates/:formTemplateId/edit", formController.UpdateFormTemplate)
 		formRoute.PUT("/templates/:formTemplateId/config", formController.ConfigFormTemplate)

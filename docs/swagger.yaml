@@ -7,6 +7,8 @@ definitions:
         type: string
       id:
         type: string
+      isCompleted:
+        type: boolean
       text:
         type: string
       to:
@@ -48,43 +50,72 @@ definitions:
     properties:
       data:
         $ref: '#/definitions/requests.NodeData'
-      estimatePoint:
-        type: integer
       form:
         items:
           $ref: '#/definitions/requests.NodeForm'
         type: array
       id:
         type: string
+      isCurrent:
+        type: boolean
       jiraKey:
         type: string
+      lastSyncedAt:
+        type: string
+      level:
+        type: integer
       parentId:
         type: string
       position:
         $ref: '#/definitions/types.Position'
       size:
         $ref: '#/definitions/types.Size'
+      status:
+        type: string
       type:
         type: string
     type: object
   requests.NodeData:
     properties:
+      actualEndTime:
+        type: string
+      actualStartTime:
+        type: string
       assignee:
         $ref: '#/definitions/requests.NodeDataAssignee'
+      attachFile:
+        type: string
       condition:
         $ref: '#/definitions/requests.NodeDataCondition'
-      dueIn:
-        type: integer
+      description:
+        type: string
+      editorContent:
+        $ref: '#/definitions/requests.NodeDataEditorContent'
+      endDate:
+        type: string
       endType:
         type: string
+      estimatePoint:
+        type: number
       formAttached:
         items:
           $ref: '#/definitions/requests.NodeDataFormAttached'
         type: array
       jiraKey:
         type: string
+      jiraLinkUrl:
+        type: string
+      plannedEndTime:
+        type: string
+      plannedStartTime:
+        description: Add for update request
+        type: string
       subRequestID:
         type: integer
+      taskCompleted:
+        $ref: '#/definitions/requests.TaskConfigNotification'
+      taskStarted:
+        $ref: '#/definitions/requests.TaskConfigNotification'
       title:
         type: string
       type:
@@ -106,15 +137,36 @@ definitions:
           type: string
         type: array
     type: object
+  requests.NodeDataEditorContent:
+    properties:
+      bcc:
+        items:
+          type: string
+        type: array
+      body:
+        type: string
+      cc:
+        items:
+          type: string
+        type: array
+      isSendApprovedForm:
+        type: boolean
+      isSendRejectedForm:
+        type: boolean
+      subject:
+        type: string
+      to:
+        items:
+          type: string
+        type: array
+    type: object
   requests.NodeDataFormAttached:
     properties:
-      approveUserIds:
-        items:
-          type: integer
-        type: array
       dataId:
         type: string
       formTemplateId:
+        type: integer
+      formTemplateVersionId:
         type: integer
       fromFormAttachedPosition:
         type: integer
@@ -124,10 +176,23 @@ definitions:
         type: boolean
       key:
         type: string
-      optionId:
+      level:
+        type: integer
+      nodeFormApprovalOrRejectUsers:
+        items:
+          $ref: '#/definitions/requests.NodeDataFormAttachedApprovalOrRejectUsers'
+        type: array
+      optionKey:
         type: string
       permission:
         type: string
+    type: object
+  requests.NodeDataFormAttachedApprovalOrRejectUsers:
+    properties:
+      assignee:
+        $ref: '#/definitions/types.Assignee'
+      isApproved:
+        type: boolean
     type: object
   requests.NodeForm:
     properties:
@@ -135,6 +200,22 @@ definitions:
         type: string
       value:
         type: string
+    type: object
+  requests.NodesConnectionsStories:
+    properties:
+      connections:
+        items:
+          $ref: '#/definitions/requests.Connection'
+        type: array
+      nodes:
+        description: ko chứa story
+        items:
+          $ref: '#/definitions/requests.Node'
+        type: array
+      stories:
+        items:
+          $ref: '#/definitions/requests.Story'
+        type: array
     type: object
   requests.RequestUpdateRequest:
     properties:
@@ -173,6 +254,8 @@ definitions:
         items:
           $ref: '#/definitions/requests.Story'
         type: array
+      template:
+        $ref: '#/definitions/requests.NodesConnectionsStories'
       title:
         type: string
     type: object
@@ -186,8 +269,34 @@ definitions:
         type: string
       description:
         type: string
+      isSystemLinked:
+        type: boolean
       node:
         $ref: '#/definitions/requests.Node'
+      title:
+        type: string
+      type:
+        type: string
+    type: object
+  requests.TaskConfigNotification:
+    properties:
+      assignee:
+        type: boolean
+      participants:
+        type: boolean
+      requester:
+        type: boolean
+    type: object
+  requests.UpdateWorkflow:
+    properties:
+      categoryId:
+        type: integer
+      decoration:
+        type: string
+      description:
+        type: string
+      projectKey:
+        type: string
       title:
         type: string
       type:
@@ -240,6 +349,24 @@ definitions:
         type: string
       updatedAt:
         type: string
+    type: object
+  responses.FormDataResponse:
+    properties:
+      fieldId:
+        type: string
+      value:
+        type: string
+    type: object
+  responses.FormTemplateDetails:
+    properties:
+      fields:
+        items:
+          items:
+            $ref: '#/definitions/responses.FormTemplateFieldsFindAll'
+          type: array
+        type: array
+      template:
+        $ref: '#/definitions/responses.FormTemplateFindAll'
     type: object
   responses.FormTemplateFieldsFindAll:
     properties:
@@ -300,6 +427,32 @@ definitions:
         type: string
       version:
         type: integer
+      versionId:
+        type: integer
+    type: object
+  responses.HistoryNodeResponse:
+    properties:
+      id:
+        type: string
+      key:
+        type: string
+      title:
+        type: string
+    type: object
+  responses.HistoryResponse:
+    properties:
+      assignee:
+        $ref: '#/definitions/types.Assignee'
+      createdAt:
+        type: string
+      from: {}
+      id:
+        type: integer
+      node:
+        $ref: '#/definitions/responses.HistoryNodeResponse'
+      to: {}
+      type:
+        type: string
     type: object
   responses.JiraFormDetailResponse:
     properties:
@@ -309,29 +462,83 @@ definitions:
         type: array
       fields:
         items:
-          $ref: '#/definitions/responses.FormTemplateFieldsFindAll'
+          items:
+            $ref: '#/definitions/responses.FormTemplateFieldsFindAll'
+          type: array
         type: array
       template:
         $ref: '#/definitions/responses.FormTemplateFindAll'
     type: object
+  responses.NodeDataConditionResponse:
+    properties:
+      falseDestinations:
+        items:
+          type: string
+        type: array
+      trueDestinations:
+        items:
+          type: string
+        type: array
+    type: object
   responses.NodeDataResponse:
     properties:
+      actualEndTime:
+        type: string
+      actualStartTime:
+        type: string
       assignee:
         $ref: '#/definitions/types.Assignee'
+      condition:
+        $ref: '#/definitions/responses.NodeDataConditionResponse'
+      editorContent:
+        $ref: '#/definitions/responses.NodeDataResponseEditorContent'
       endType:
         type: string
       estimatePoint:
-        type: integer
+        type: number
       formAttached:
         items:
           $ref: '#/definitions/responses.NodeFormResponse'
         type: array
+      jiraLinkUrl:
+        type: string
+      plannedEndTime:
+        type: string
+      plannedStartTime:
+        description: Add for update request
+        type: string
       subRequestId:
         type: integer
       title:
         type: string
       type:
         type: string
+    type: object
+  responses.NodeDataResponseEditorContent:
+    properties:
+      bcc:
+        items:
+          type: string
+        type: array
+      body:
+        type: string
+      cc:
+        items:
+          type: string
+        type: array
+      subject:
+        type: string
+      to:
+        items:
+          type: string
+        type: array
+    type: object
+  responses.NodeFormApprovalOrRejectUsersResponse:
+    properties:
+      assignee:
+        $ref: '#/definitions/types.Assignee'
+      isApproved:
+        type: boolean
     type: object
   responses.NodeFormDataResponse:
     properties:
@@ -342,13 +549,11 @@ definitions:
     type: object
   responses.NodeFormResponse:
     properties:
-      approveUserIds:
-        items:
-          type: integer
-        type: array
       dataId:
         type: string
       formTemplateId:
+        type: integer
+      formTemplateVersionId:
         type: integer
       fromFormAttachedPosition:
         type: integer
@@ -358,6 +563,12 @@ definitions:
         type: boolean
       key:
         type: string
+      level:
+        type: integer
+      nodeFormApprovalOrRejectUsers:
+        items:
+          $ref: '#/definitions/responses.NodeFormApprovalOrRejectUsersResponse'
+        type: array
       optionKey:
         type: string
       permission:
@@ -379,6 +590,8 @@ definitions:
         type: boolean
       jiraKey:
         type: string
+      level:
+        type: integer
       parentId:
         type: string
       position:
@@ -389,6 +602,46 @@ definitions:
         type: string
       status:
         type: string
+      type:
+        type: string
+    type: object
+  responses.RequestCompletedFormApprovalOverviewResponse:
+    properties:
+      assignee:
+        $ref: '#/definitions/types.Assignee'
+      isApproved:
+        type: boolean
+      isRejected:
+        type: boolean
+      key:
+        type: integer
+      taskTitle:
+        type: string
+    type: object
+  responses.RequestCompletedFormInputResponse:
+    properties:
+      dataId:
+        type: string
+      formData:
+        items:
+          $ref: '#/definitions/responses.FormDataResponse'
+        type: array
+      key:
+        type: string
+      lastUpdate:
+        $ref: '#/definitions/types.Assignee'
+      parent:
+        $ref: '#/definitions/responses.TaskRelated'
+      submittedAt:
+        type: string
+      submitter:
+        $ref: '#/definitions/types.Assignee'
+      taskRelated:
+        items:
+          $ref: '#/definitions/responses.TaskRelated'
+        type: array
+      template:
+        $ref: '#/definitions/responses.FormTemplateDetails'
       type:
         type: string
     type: object
@@ -419,13 +672,17 @@ definitions:
           $ref: '#/definitions/types.Assignee'
         type: array
       progress:
-        type: integer
+        type: number
+      projectKey:
+        type: string
       requestedBy:
         $ref: '#/definitions/types.Assignee'
       sprintId:
         type: integer
       startedAt:
         type: string
+      starterId:
+        type: integer
       status:
         type: string
       terminatedAt:
@@ -435,10 +692,21 @@ definitions:
       workflow:
         $ref: '#/definitions/responses.WorkflowResponse'
     type: object
+  responses.RequestFileManagerResponse:
+    properties:
+      assignee:
+        $ref: '#/definitions/types.Assignee'
+      data:
+        items:
+          type: string
+        type: array
+      submittedAt:
+        type: string
+    type: object
   responses.RequestOverviewResponse:
     properties:
       category:
-        $ref: '#/definitions/responses.CategoryResponse'
+        $ref: '#/definitions/responses.CategoryFindAll'
       connections:
         items:
           $ref: '#/definitions/responses.ConnectionResponse'
@@ -497,7 +765,9 @@ definitions:
       parentKey:
         type: integer
       progress:
-        type: integer
+        type: number
+      projectKey:
+        type: string
       sprintId:
         type: integer
       startedAt:
@@ -509,32 +779,17 @@ definitions:
       title:
         type: string
     type: object
-  responses.RequestSubRequest:
-    properties:
-      assignee:
-        $ref: '#/definitions/types.Assignee'
-      canceledAt:
-        type: string
-      completedAt:
-        type: string
-      key:
-        type: integer
-      startedAt:
-        type: string
-      status:
-        type: string
-      taskTitle:
-        type: string
-      terminatedAt:
-        type: string
-      workflowTitle:
-        type: string
-    type: object
   responses.RequestTaskCountResponse:
     properties:
       completedCount:
         type: integer
+      inComingCount:
+        type: integer
+      inProgressCount:
+        type: integer
       overdueCount:
+        type: integer
+      todayCount:
         type: integer
       todoCount:
         type: integer
@@ -550,16 +805,24 @@ definitions:
       assignee:
         $ref: '#/definitions/types.Assignee'
       estimatePoint:
-        type: integer
+        type: number
       id:
         type: string
+      isApproved:
+        type: boolean
       isCurrent:
         type: boolean
+      isRejected:
+        type: boolean
+      jiraLinkUrl:
+        type: string
       key:
         type: string
       plannedEndTime:
         type: string
       plannedStartTime:
+        type: string
+      projectKey:
         type: string
       requestId:
         type: integer
@@ -588,8 +851,12 @@ definitions:
         type: string
       description:
         type: string
+      isSystemLinked:
+        type: boolean
       node:
         $ref: '#/definitions/responses.NodeResponse'
+      progress:
+        type: number
       title:
         type: string
       type:
@@ -604,19 +871,33 @@ definitions:
       assignee:
         $ref: '#/definitions/types.Assignee'
       estimatePoint:
-        type: integer
+        type: number
       id:
         type: string
       isApproval:
         type: boolean
+      isApproved:
+        type: boolean
       isCurrent:
         type: boolean
+      isRejected:
+        type: boolean
+      jiraLinkUrl:
+        type: string
       key:
         type: string
+      parent:
+        $ref: '#/definitions/responses.TaskRelated'
       plannedEndTime:
         type: string
       plannedStartTime:
         type: string
+      projectKey:
+        type: string
+      related:
+        items:
+          $ref: '#/definitions/responses.TaskRelated'
+        type: array
       requestId:
         type: integer
       requestProgress:
@@ -625,6 +906,8 @@ definitions:
         $ref: '#/definitions/types.Assignee'
       requestTitle:
         type: string
+      sprintId:
+        type: integer
       status:
         type: string
       title:
@@ -632,6 +915,19 @@ definitions:
       type:
         type: string
       updatedAt:
+        type: string
+    type: object
+  responses.TaskRelated:
+    properties:
+      assignee:
+        $ref: '#/definitions/types.Assignee'
+      key:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+      type:
         type: string
     type: object
   responses.WorkflowDetailResponse:
@@ -829,35 +1125,41 @@ paths:
       summary: Create a new form template
       tags:
       - Forms
-  /forms/templates/{formTemplateId}/fields:
+  /history/{requestId}:
     get:
-      description: Retrieves all fields associated with a given form template ID.
+      consumes:
+      - application/json
+      description: Find all history by request id
       parameters:
-      - description: Form Template ID
+      - description: Request ID
         in: path
-        name: formTemplateId
+        name: requestId
         required: true
         type: integer
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: History
           schema:
             items:
-              $ref: '#/definitions/responses.FormTemplateFieldsFindAll'
+              $ref: '#/definitions/responses.HistoryResponse'
             type: array
         "400":
-          description: Error message for invalid form template ID
+          description: Bad Request
           schema:
-            type: string
+            additionalProperties:
+              type: string
+            type: object
         "500":
-          description: Error message for internal server error
+          description: Internal Server Error
           schema:
-            type: string
-      summary: Find all fields for a specific form template
+            additionalProperties:
+              type: string
+            type: object
+      summary: Find all history by request id
       tags:
-      - Forms
+      - History
   /nodes/{id}/complete:
     patch:
       description: Marks a specific node as completed by the logged-in user.
@@ -1125,6 +1427,118 @@ paths:
       summary: Update a request
       tags:
       - Requests
+  /requests/{id}/cancel:
+    put:
+      description: Cancels a request identified by its ID.
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'Success message: Request canceled successfully: {id}'
+          schema:
+            type: string
+        "400":
+          description: Error message for invalid request ID
+          schema:
+            type: string
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      summary: Cancel a request
+      tags:
+      - Requests
+  /requests/{id}/completed-form:
+    get:
+      description: Retrieves the completed form for a specific request ID.
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/responses.RequestCompletedFormInputResponse'
+            type: array
+        "400":
+          description: Error message for invalid request ID
+          schema:
+            type: string
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      summary: Get completed form for a request
+      tags:
+      - Requests
+  /requests/{id}/completed-form/approval:
+    get:
+      description: Retrieves the completed form approval for a specific request ID.
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/responses.RequestCompletedFormApprovalOverviewResponse'
+            type: array
+        "400":
+          description: Error message for invalid request ID
+          schema:
+            type: string
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      summary: Get completed form approval for a request
+      tags:
+      - Requests
+  /requests/{id}/file-manager:
+    get:
+      description: Retrieves the file manager for a specific request ID.
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.RequestFileManagerResponse'
+        "400":
+          description: Error message for invalid request ID
+          schema:
+            type: string
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      summary: Get file manager for a request
+      tags:
+      - Requests
   /requests/{id}/overview:
     get:
       description: Retrieves overview information (like counts, statuses) for a specific
@@ -1183,7 +1597,9 @@ paths:
             - $ref: '#/definitions/responses.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/responses.RequestSubRequest'
+                  items:
+                    $ref: '#/definitions/responses.RequestResponse'
+                  type: array
               type: object
         "400":
           description: Error message for invalid request ID
@@ -1257,6 +1673,34 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Get request counts
+      tags:
+      - Requests
+  /requests/report/mid-sprint-tasks:
+    get:
+      description: Report mid sprint tasks
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Request Task Response
+          schema:
+            items:
+              $ref: '#/definitions/responses.RequestTaskResponse'
+            type: array
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      summary: Report mid sprint tasks
+      tags:
+      - Requests
+  /requests/retrospective/report:
+    get:
+      description: Get retrospective report
+      produces:
+      - application/json
+      responses: {}
+      summary: Get retrospective report
       tags:
       - Requests
   /requests/tasks/by-project:
@@ -1484,6 +1928,41 @@ paths:
           schema:
             type: string
       summary: Find workflow detail by version ID
+      tags:
+      - Workflows
+    put:
+      consumes:
+      - application/json
+      description: Updates a workflow definition based on the provided request details.
+        Requires user authentication.
+      parameters:
+      - description: Workflow ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update Workflow Request
+        in: body
+        name: workflow
+        required: true
+        schema:
+          $ref: '#/definitions/requests.UpdateWorkflow'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: Workflow updated successfully'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Error message for invalid ID or internal server error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Update a workflow
       tags:
       - Workflows
   /workflows/{id}/archive:
