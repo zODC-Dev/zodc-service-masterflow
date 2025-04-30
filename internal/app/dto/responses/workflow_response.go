@@ -60,6 +60,7 @@ type NodeFormApprovalOrRejectUsersResponse struct {
 type NodeFormResponse struct {
 	Key                           string                                  `json:"key"`
 	FormTemplateId                int32                                   `json:"formTemplateId"`
+	FormTemplateVersionId         int32                                   `json:"formTemplateVersionId"`
 	DataId                        string                                  `json:"dataId"`
 	OptionKey                     *string                                 `json:"optionKey"`
 	FromUserId                    *int32                                  `json:"fromUserId"`

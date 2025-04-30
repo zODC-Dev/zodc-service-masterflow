@@ -1134,6 +1134,7 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 				Permission:                    nodeForm.Permission,
 				IsOriginal:                    nodeForm.IsOriginal,
 				FormTemplateId:                nodeForm.TemplateID,
+				FormTemplateVersionId:         nodeForm.TemplateVersionID,
 				NodeFormApprovalOrRejectUsers: approveUserIds,
 				Level:                         nodeForm.Level,
 			}
