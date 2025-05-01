@@ -116,8 +116,8 @@ type RequestCompletedFormApprovalOverviewResponse struct {
 }
 
 type RequestRetrospectiveReportResponse struct {
-	Assignee types.Assignee     `json:"assignee"`
-	Data     []FormDataResponse `json:"data"`
-	Id       int32              `json:"id"`
-	Title    string
+	Assignee     types.Assignee     `json:"assignee"`
+	Data         []FormDataResponse `json:"data"`
+	RequestId    int32              `json:"requestId"`
+	RequestTitle string             `json:"requestTitle"`
 }

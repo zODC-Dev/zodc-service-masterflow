@@ -1781,10 +1781,10 @@ func (s *RequestService) GetRetrospectiveReportHandler(ctx context.Context, quer
 		}
 
 		retrospectiveReportResponse = append(retrospectiveReportResponse, responses.RequestRetrospectiveReportResponse{
-			Assignee: mapUser(node.AssigneeID),
-			Data:     formFieldData,
-			Id:       node.Request.ID,
-			Title:    node.Request.Title,
+			Assignee:     mapUser(node.AssigneeID),
+			Data:         formFieldData,
+			RequestId:    node.Request.ID,
+			RequestTitle: node.Request.Title,
 		})
 	}
 
