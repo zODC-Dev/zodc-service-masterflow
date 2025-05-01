@@ -293,16 +293,16 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 							return err
 						}
 
-						notification.Body += "\n\n\n"
+						notification.Body += "<br><br><br>"
 						for _, nodeRequest := range request.Nodes {
 							for _, nodeForm := range nodeRequest.NodeForms {
 								formDataUrl := configs.Env.FE_HOST + "/form-management/review/" + *nodeForm.DataID
 								if nodeForm.IsApproved && node.IsSendApprovedForm {
-									notification.Body += "\n" + "<a href=\"" + formDataUrl + "\">" + formDataUrl + "</a>"
+									notification.Body += fmt.Sprintf("<br><br><a href=\"%s\">%s</a>", formDataUrl, formDataUrl)
 								}
 
 								if nodeForm.IsRejected && node.IsSendRejectedForm {
-									notification.Body += "\n" + "<a href=\"" + formDataUrl + "\">" + formDataUrl + "</a>"
+									notification.Body += fmt.Sprintf("<br><br><a href=\"%s\">%s</a>", formDataUrl, formDataUrl)
 								}
 							}
 						}
