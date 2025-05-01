@@ -505,9 +505,10 @@ func (r *NodeRepository) FindAllNodeRetrospectiveReport(ctx context.Context, db 
 		Nodes.AllColumns,
 		FormFieldData.AllColumns,
 		FormTemplateFields.AllColumns,
+		Requests.AllColumns,
 	).FROM(
 		Nodes.
-			LEFT_JOIN(Requests, Nodes.SubRequestID.EQ(Requests.ID)).
+			LEFT_JOIN(Requests, Nodes.RequestID.EQ(Requests.ID)).
 			LEFT_JOIN(WorkflowVersions, Requests.WorkflowVersionID.EQ(WorkflowVersions.ID)).
 			LEFT_JOIN(Workflows, WorkflowVersions.WorkflowID.EQ(Workflows.ID)).
 			LEFT_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)).

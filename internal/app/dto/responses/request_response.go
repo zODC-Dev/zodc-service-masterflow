@@ -118,4 +118,6 @@ type RequestCompletedFormApprovalOverviewResponse struct {
 type RequestRetrospectiveReportResponse struct {
 	Assignee types.Assignee     `json:"assignee"`
 	Data     []FormDataResponse `json:"data"`
+	Id       int32              `json:"id"`
+	Title    string
 }

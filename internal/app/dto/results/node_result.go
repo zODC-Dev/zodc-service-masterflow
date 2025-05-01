@@ -49,6 +49,7 @@ type NodeFormCompletedResult struct {
 
 type NodeRetrospectiveReportResult struct {
 	model.Nodes
+	Request            model.Requests
 	FormFieldData      []model.FormFieldData
 	FormTemplateFields []model.FormTemplateFields
 }
