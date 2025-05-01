@@ -37,6 +37,7 @@ type NodeService struct {
 	RequestService      *RequestService
 	NotificationService *NotificationService
 	HistoryService      *HistoryService
+	CommentRepository   *repositories.CommentRepository
 }
 
 func NewNodeService(cfg NodeService) *NodeService {
@@ -54,6 +55,7 @@ func NewNodeService(cfg NodeService) *NodeService {
 		RequestService:      cfg.RequestService,
 		NotificationService: cfg.NotificationService,
 		HistoryService:      cfg.HistoryService,
+		CommentRepository:   cfg.CommentRepository,
 	}
 	return &nodeService
 }
@@ -1478,4 +1480,74 @@ func (s *NodeService) GetNodeTaskCount(ctx context.Context, userId int32) (respo
 	response.ProjectTasks = int32(projectTasks)
 
 	return response, nil
+}
+
+func (s *NodeService) CreateComment(ctx context.Context, req *requests.CreateComment, nodeId string, userId int32) error {
+	tx, err := s.DB.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	commentModel := model.Comments{}
+	if err := utils.Mapper(req, &commentModel); err != nil {
+		return fmt.Errorf("mapping comment failed: %w", err)
+	}
+
+	commentModel.UserID = userId
+	commentModel.NodeID = nodeId
+
+	if err := s.CommentRepository.CreateComment(ctx, tx, commentModel); err != nil {
+		return fmt.Errorf("create comment failed: %w", err)
+	}
+
+	return nil
+}
+
+func (s *NodeService) GetAllComments(ctx context.Context, nodeId string) ([]responses.CommentResponse, error) {
+	commentResponse := []responses.CommentResponse{}
+
+	comments, err := s.CommentRepository.FindAllCommentByNodeId(ctx, s.DB, nodeId)
+	if err != nil {
+		return commentResponse, err
+	}
+
+	userIds := []int32{}
+	existedUserIds := make(map[int32]bool)
+	for _, comment := range comments {
+		if existedUserIds[comment.UserID] {
+			continue
+		}
+		userIds = append(userIds, comment.UserID)
+		existedUserIds[comment.UserID] = true
+	}
+
+	results, err := s.UserAPI.FindUsersByUserIds(userIds)
+	if err != nil {
+		return commentResponse, err
+	}
+
+	userMap := make(map[int32]types.Assignee)
+	for _, user := range results.Data {
+		userMap[user.ID] = types.Assignee{
+			Id:           user.ID,
+			Name:         user.Name,
+			Email:        user.Email,
+			AvatarUrl:    user.AvatarUrl,
+			IsSystemUser: user.IsSystemUser,
+		}
+	}
+
+	for _, comment := range comments {
+		commentRes := responses.CommentResponse{
+			CreatedAt: comment.CreatedAt,
+			Assignee:  userMap[comment.UserID],
+			Content:   comment.Content,
+		}
+
+		commentResponse = append(commentResponse, commentRes)
+	}
+
+	return commentResponse, err
+
 }

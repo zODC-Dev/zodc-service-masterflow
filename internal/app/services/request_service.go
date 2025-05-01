@@ -1723,10 +1723,10 @@ func (s *RequestService) CancelRequestHandler(ctx context.Context, requestId int
 	return nil
 }
 
-func (s *RequestService) GetRetrospectiveReportHandler(ctx context.Context, queryParams queryparams.RetrospectiveReportQueryParam) ([]responses.RequestRetrospectiveReportResponse, error) {
+func (s *RequestService) GetRetrospectiveReportHandler(ctx context.Context, sprintId string) ([]responses.RequestRetrospectiveReportResponse, error) {
 	retrospectiveReportResponse := []responses.RequestRetrospectiveReportResponse{}
 
-	nodes, err := s.NodeRepo.FindAllNodeRetrospectiveReport(ctx, s.DB, queryParams)
+	nodes, err := s.NodeRepo.FindAllNodeRetrospectiveReport(ctx, s.DB, sprintId)
 	if err != nil {
 		return nil, err
 	}

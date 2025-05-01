@@ -488,7 +488,7 @@ func (r *NodeRepository) CreateApproveOrRejectUser(ctx context.Context, tx *sql.
 	return err
 }
 
-func (r *NodeRepository) FindAllNodeRetrospectiveReport(ctx context.Context, db *sql.DB, queryParams queryparams.RetrospectiveReportQueryParam) ([]results.NodeRetrospectiveReportResult, error) {
+func (r *NodeRepository) FindAllNodeRetrospectiveReport(ctx context.Context, db *sql.DB, sprintId string) ([]results.NodeRetrospectiveReportResult, error) {
 	Nodes := table.Nodes
 	NodeForms := table.NodeForms
 	FormData := table.FormData
@@ -499,7 +499,7 @@ func (r *NodeRepository) FindAllNodeRetrospectiveReport(ctx context.Context, db 
 	Categories := table.Categories
 	FormTemplateFields := table.FormTemplateFields
 
-	sprintIdInt, _ := strconv.Atoi(queryParams.SprintId)
+	sprintIdInt, _ := strconv.Atoi(sprintId)
 
 	statement := postgres.SELECT(
 		Nodes.AllColumns,
@@ -517,9 +517,13 @@ func (r *NodeRepository) FindAllNodeRetrospectiveReport(ctx context.Context, db 
 			LEFT_JOIN(FormFieldData, FormData.ID.EQ(FormFieldData.FormDataID)).
 			LEFT_JOIN(FormTemplateFields, FormFieldData.FormTemplateFieldID.EQ(FormTemplateFields.ID)),
 	).WHERE(
-		Requests.SprintID.EQ(postgres.Int64(int64(sprintIdInt))).AND(
-			Categories.Key.EQ(postgres.String(queryParams.CategoryKey)),
-		),
+		Requests.SprintID.EQ(postgres.Int64(int64(sprintIdInt))).
+			AND(
+				Categories.Key.EQ(postgres.String("RETROSPECTIVE")),
+			).
+			AND(
+				Nodes.Type.EQ(postgres.String(string(constants.NodeTypeInput))),
+			),
 	)
 
 	result := []results.NodeRetrospectiveReportResult{}

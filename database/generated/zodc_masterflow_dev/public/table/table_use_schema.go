@@ -11,6 +11,7 @@ package table
 // this method only once at the beginning of the program.
 func UseSchema(schema string) {
 	Categories = Categories.FromSchema(schema)
+	Comments = Comments.FromSchema(schema)
 	Connections = Connections.FromSchema(schema)
 	FormData = FormData.FromSchema(schema)
 	FormFieldData = FormFieldData.FromSchema(schema)

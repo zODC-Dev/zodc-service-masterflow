@@ -315,3 +315,34 @@ func (c *NodeController) GetNodeTaskCount(e echo.Context) error {
 
 	return e.JSON(http.StatusOK, count)
 }
+
+func (c *NodeController) CreateComment(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	nodeId := e.Param("id")
+	userId, _ := middlewares.GetUserID(e)
+
+	req := new(requests.CreateComment)
+	if err := e.Bind(req); err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	if err := c.nodeService.CreateComment(ctx, req, nodeId, userId); err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, map[string]string{"message": "Comment created successfully"})
+}
+
+func (c *NodeController) GetAllComments(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	nodeId := e.Param("id")
+
+	comments, err := c.nodeService.GetAllComments(ctx, nodeId)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, comments)
+}

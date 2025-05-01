@@ -31,8 +31,3 @@ type RequestMidSprintReportQueryParam struct {
 	SprintId   string
 	ProjectKey string
 }
-
-type RetrospectiveReportQueryParam struct {
-	CategoryKey string
-	SprintId    string
-}

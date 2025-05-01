@@ -20,6 +20,7 @@ func NodeRoute(group *echo.Group, db *sql.DB) {
 	connectionRepo := repositories.NewConnectionRepository()
 	nodeRepo := repositories.NewNodeRepository()
 	historyRepo := repositories.NewHistoryRepository()
+	commentRepo := repositories.NewCommentRepository()
 
 	// Nats
 	natsClient := nats.GetNATSClient()
@@ -57,6 +58,7 @@ func NodeRoute(group *echo.Group, db *sql.DB) {
 		FormService:         formService,
 		NotificationService: notificationService,
 		HistoryService:      historyService,
+		CommentRepository:   commentRepo,
 	})
 
 	workflowService := services.NewWorkflowService(services.WorkflowService{
@@ -100,5 +102,8 @@ func NodeRoute(group *echo.Group, db *sql.DB) {
 		nodeRoute.GET("/stories", nodeController.GetNodeStoryByAssignee)
 
 		nodeRoute.GET("/tasks/count", nodeController.GetNodeTaskCount)
+
+		nodeRoute.POST("/:id/comments/create", nodeController.CreateComment)
+		nodeRoute.GET("/:id/comments", nodeController.GetAllComments)
 	}
 }

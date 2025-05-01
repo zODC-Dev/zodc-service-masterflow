@@ -623,15 +623,9 @@ func (c *RequestController) CancelRequest(e echo.Context) error {
 func (c *RequestController) GetRetrospectiveReport(e echo.Context) error {
 	ctx := e.Request().Context()
 
-	categoryKey := e.QueryParam("categoryKey")
-	sprintId := e.QueryParam("sprintId")
+	sprintId := e.Param("sprintId")
 
-	queryParams := queryparams.RetrospectiveReportQueryParam{
-		CategoryKey: categoryKey,
-		SprintId:    sprintId,
-	}
-
-	retrospectiveReportResponse, err := c.requestService.GetRetrospectiveReportHandler(ctx, queryParams)
+	retrospectiveReportResponse, err := c.requestService.GetRetrospectiveReportHandler(ctx, sprintId)
 	if err != nil {
 		return e.JSON(http.StatusInternalServerError, err.Error())
 	}
