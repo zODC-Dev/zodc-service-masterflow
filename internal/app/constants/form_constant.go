@@ -3,7 +3,7 @@ package constants
 const (
 	FormTemplateIDJiraSystemForm      int32 = 1
 	FormTemplateIDEditProfileForm     int32 = 2
-	FormTemplateIDPerformanceEvaluate int32 = 3
+	FormTemplateIDPerformanceEvaluate int32 = 7
 )
 
 type NodeFormPermission string
