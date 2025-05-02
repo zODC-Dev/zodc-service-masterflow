@@ -399,6 +399,11 @@ func (s *NodeService) CompleteNodeLogic(ctx context.Context, tx *sql.Tx, nodeId 
 			}
 		}
 		if isUpdateNodeStatus {
+			nextNode.IsCurrent = true
+			if err := s.NodeRepo.UpdateNode(ctx, tx, nextNode); err != nil {
+				return err
+			}
+
 			users, err := s.UserAPI.FindUsersByUserIds([]int32{*nextNode.AssigneeID})
 			if err != nil {
 				return err
