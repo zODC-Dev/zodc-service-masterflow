@@ -93,7 +93,7 @@ func (s *NodeService) CompleteNodeSwitchCaseLogic(ctx context.Context, tx *sql.T
 		}
 
 		// Check End Node Type For Status Request
-		if *nextNode.EndType == string(constants.NodeEndTypeTerminate) {
+		if nextNode.EndType != nil && *nextNode.EndType == string(constants.NodeEndTypeTerminate) {
 			endNodeRequest.TerminatedAt = &now
 			endNodeRequest.Status = string(constants.RequestStatusTerminated)
 
@@ -355,7 +355,7 @@ func (s *NodeService) CompleteNodeLogic(ctx context.Context, tx *sql.Tx, nodeId 
 	now := time.Now().UTC().Add(7 * time.Hour)
 
 	//
-	node.ActualStartTime = &now
+	node.ActualEndTime = &now
 	node.Status = string(constants.NodeStatusCompleted)
 
 	//
