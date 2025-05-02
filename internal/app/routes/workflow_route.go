@@ -28,12 +28,28 @@ func WorkflowRoute(group *echo.Group, db *sql.DB) {
 	userApi := externals.NewUserAPI()
 
 	// External Services
+	historyService := services.NewHistoryService(db, historyRepo, userApi)
+	notificationService := services.NewNotificationService(db, natsClient, userApi, requestRepo, historyService)
+
+	requestService := services.NewRequestService(services.RequestService{
+		DB:             db,
+		RequestRepo:    requestRepo,
+		UserAPI:        userApi,
+		ConnectionRepo: connectionRepo,
+		NodeRepo:       nodeRepo,
+		FormRepo:       formRepo,
+		HistoryRepo:    historyRepo,
+		HistoryService: historyService,
+	})
+
 	nodeService := services.NewNodeService(services.NodeService{
 		DB:             db,
 		NodeRepo:       nodeRepo,
 		ConnectionRepo: connectionRepo,
 		RequestRepo:    requestRepo,
 		FormRepo:       formRepo,
+		HistoryService: historyService,
+		RequestService: requestService,
 	})
 
 	natsService := services.NewNatsService(services.NatsService{
@@ -42,9 +58,6 @@ func WorkflowRoute(group *echo.Group, db *sql.DB) {
 		RequestRepo: requestRepo,
 		FormRepo:    formRepo,
 	})
-
-	historyService := services.NewHistoryService(db, historyRepo, userApi)
-	notificationService := services.NewNotificationService(db, natsClient, userApi, requestRepo, historyService)
 
 	workflowService := services.NewWorkflowService(services.WorkflowService{
 		DB:                  db,
