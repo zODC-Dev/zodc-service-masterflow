@@ -20,7 +20,7 @@ func (r *CommentRepository) CreateComment(ctx context.Context, tx *sql.Tx, comme
 
 	columns := Comments.AllColumns.Except(Comments.ID, Comments.CreatedAt, Comments.UpdatedAt, Comments.DeletedAt)
 
-	statement := Comments.INSERT(columns).MODEL(comment)
+	statement := Comments.INSERT(columns).MODEL(comment).RETURNING(Comments.ID)
 
 	return statement.QueryContext(ctx, tx, &comment)
 }
