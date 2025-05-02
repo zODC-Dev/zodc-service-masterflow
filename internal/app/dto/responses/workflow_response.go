@@ -124,6 +124,7 @@ type StoryResponse struct {
 
 type WorkflowDetailResponse struct {
 	WorkflowResponse
+	IsTemplate   bool                 `json:"isTemplate"`
 	LastAssignee types.Assignee       `json:"lastAssignee"`
 	Nodes        []NodeResponse       `json:"nodes"`
 	Stories      []StoryResponse      `json:"stories"`

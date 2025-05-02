@@ -780,6 +780,17 @@ func (s *RequestService) UpdateRequestHandler(ctx context.Context, requestId int
 					// For now, we return the error.
 					return fmt.Errorf("remove nodes connections stories for original subrequest %d fail: %w", *node.SubRequestID, err)
 				}
+
+				if req.IsTemplate {
+					request, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, *node.SubRequestID)
+					if err != nil {
+						return err
+					}
+
+					if err := s.WorkflowService.WorkflowRepo.DeleteWorkflow(ctx, tx, request.Workflow.ID); err != nil {
+						return err
+					}
+				}
 			}
 		}
 	}
@@ -862,7 +873,7 @@ func (s *RequestService) UpdateRequestHandler(ctx context.Context, requestId int
 
 	// Create the new structure using the combined nodes and connections
 	// Pass the originalRequest.WorkflowVersionID, not the potentially different one from the fetched subRequest
-	err = s.WorkflowService.CreateNodesConnectionsStories(ctx, tx, &nodesConnectionsStories, requestId, originalRequest.Workflow.ProjectKey, userId, originalRequest.SprintID, false)
+	err = s.WorkflowService.CreateNodesConnectionsStories(ctx, tx, &nodesConnectionsStories, requestId, originalRequest.Workflow.ProjectKey, userId, originalRequest.SprintID, req.IsTemplate)
 	if err != nil {
 		return fmt.Errorf("create nodes connections stories fail: %w", err)
 	}

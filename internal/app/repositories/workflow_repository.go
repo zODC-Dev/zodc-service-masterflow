@@ -166,3 +166,15 @@ func (r *WorkflowRepository) UpdateWorkflow(ctx context.Context, tx *sql.Tx, wor
 
 	return err
 }
+
+func (r *WorkflowRepository) DeleteWorkflow(ctx context.Context, tx *sql.Tx, workflowId int32) error {
+	Workflows := table.Workflows
+
+	statement := Workflows.DELETE().WHERE(
+		Workflows.ID.EQ(postgres.Int32(workflowId)),
+	)
+
+	_, err := statement.ExecContext(ctx, tx)
+
+	return err
+}

@@ -1035,6 +1035,7 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 
 	workflowResponse.RequestId = requestId
 	workflowResponse.Title = request.Title
+	workflowResponse.IsTemplate = request.IsTemplate
 
 	if request.Workflow.ProjectKey != nil {
 		workflowResponse.ProjectKey = *request.Workflow.ProjectKey
