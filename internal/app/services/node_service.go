@@ -62,6 +62,10 @@ func NewNodeService(cfg NodeService) *NodeService {
 
 // Function
 func (s *NodeService) CompleteNodeSwitchCaseLogic(ctx context.Context, tx *sql.Tx, node results.NodeResult, nextNode model.Nodes, userId int32, users results.UserApiResult) error {
+	nextNode.IsCurrent = true
+	if err := s.NodeRepo.UpdateNode(ctx, tx, nextNode); err != nil {
+		return err
+	}
 
 	now := time.Now().UTC().Add(7 * time.Hour)
 
@@ -214,7 +218,7 @@ func (s *NodeService) CompleteNodeSwitchCaseLogic(ctx context.Context, tx *sql.T
 
 			isNodeIsCurrentNode := true
 			for _, connectionConditionDestination := range connectionConditionDestinations {
-				if !connectionConditionDestination.IsCompleted {
+				if connectionConditionDestination.FromNodeID == node.ID && !connectionConditionDestination.IsCompleted {
 					isNodeIsCurrentNode = false
 					break
 				}
@@ -386,7 +390,7 @@ func (s *NodeService) CompleteNodeLogic(ctx context.Context, tx *sql.Tx, nodeId 
 	}
 
 	// Connections
-	connectionsToNode, err := s.ConnectionRepo.FindConnectionsWithToNodesByFromNodeId(ctx, s.DB, node.ID)
+	connectionsToNode, err := s.ConnectionRepo.FindConnectionsWithToNodesByFromNodeIdTx(ctx, tx, node.ID)
 	if err != nil {
 		return err
 	}
@@ -415,11 +419,6 @@ func (s *NodeService) CompleteNodeLogic(ctx context.Context, tx *sql.Tx, nodeId 
 			}
 		}
 		if isUpdateNodeStatus {
-			nextNode.IsCurrent = true
-			if err := s.NodeRepo.UpdateNode(ctx, tx, nextNode); err != nil {
-				return err
-			}
-
 			users, err := s.UserAPI.FindUsersByUserIds([]int32{*nextNode.AssigneeID})
 			if err != nil {
 				return err

@@ -59,6 +59,26 @@ func (r *ConnectionRepository) FindConnectionsWithToNodesByFromNodeId(ctx contex
 	return result, err
 }
 
+func (r *ConnectionRepository) FindConnectionsWithToNodesByFromNodeIdTx(ctx context.Context, tx *sql.Tx, fromNodeId string) ([]results.ConnectionWithNode, error) {
+	Connections := table.Connections
+	Nodes := table.Nodes
+
+	statement := postgres.SELECT(
+		Connections.AllColumns,
+		Nodes.AllColumns,
+	).FROM(
+		Connections.
+			INNER_JOIN(
+				Nodes, Connections.ToNodeID.EQ(Nodes.ID),
+			),
+	).WHERE(Connections.FromNodeID.EQ(postgres.String(fromNodeId)))
+
+	result := []results.ConnectionWithNode{}
+	err := statement.QueryContext(ctx, tx, &result)
+
+	return result, err
+}
+
 func (r *ConnectionRepository) UpdateConnection(ctx context.Context, tx *sql.Tx, connection model.Connections) error {
 	Connections := table.Connections
 

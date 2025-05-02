@@ -43,13 +43,14 @@ func WorkflowRoute(group *echo.Group, db *sql.DB) {
 	})
 
 	nodeService := services.NewNodeService(services.NodeService{
-		DB:             db,
-		NodeRepo:       nodeRepo,
-		ConnectionRepo: connectionRepo,
-		RequestRepo:    requestRepo,
-		FormRepo:       formRepo,
-		HistoryService: historyService,
-		RequestService: requestService,
+		DB:                  db,
+		NodeRepo:            nodeRepo,
+		ConnectionRepo:      connectionRepo,
+		RequestRepo:         requestRepo,
+		FormRepo:            formRepo,
+		HistoryService:      historyService,
+		RequestService:      requestService,
+		NotificationService: notificationService,
 	})
 
 	natsService := services.NewNatsService(services.NatsService{
