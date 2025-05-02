@@ -175,6 +175,27 @@ func (r *RequestRepository) FindRequestByNodeId(ctx context.Context, db *sql.DB,
 	return result, err
 }
 
+func (r *RequestRepository) FindOneRequestByNodeId(ctx context.Context, db *sql.DB, nodeId string) (results.Request, error) {
+	Nodes := table.Nodes
+	Requests := table.Requests
+
+	statement := postgres.SELECT(
+		Requests.AllColumns,
+		Nodes.AllColumns,
+	).FROM(
+		Requests.LEFT_JOIN(
+			Nodes, Nodes.RequestID.EQ(Requests.ID),
+		),
+	).WHERE(
+		Nodes.ID.EQ(postgres.String(nodeId)),
+	)
+
+	result := results.Request{}
+	err := statement.QueryContext(ctx, db, &result)
+
+	return result, err
+}
+
 func (r *RequestRepository) FindOneRequestByRequestId(ctx context.Context, db *sql.DB, requestId int32) (results.RequestDetail, error) {
 	Workflows := table.Workflows
 	WorkflowVersions := table.WorkflowVersions

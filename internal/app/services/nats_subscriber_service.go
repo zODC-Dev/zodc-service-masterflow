@@ -87,7 +87,7 @@ func (s *NatsSubscriberService) handleMessage(msg *natslib.Msg) {
 		slog.Error("Failed to start transaction", "error", err)
 		return
 	}
-	
+
 	// Use a flag to track if we've committed the transaction
 	var committed bool
 	defer func() {
@@ -368,7 +368,7 @@ func (s *NatsSubscriberService) handleJiraIssueUpdate(tx *sql.Tx, data []byte) (
 					// Add CompleteNodeHandler to post-commit actions
 					postCommitActions = append(postCommitActions, func() {
 						ctx := context.Background()
-						if err := s.NodeService.CompleteNodeHandler(ctx, nodeId, assigneeId, false); err != nil {
+						if err := s.NodeService.CompleteNodeLogic(ctx, tx, nodeId, assigneeId); err != nil {
 							slog.Error("Failed to complete node", "nodeId", nodeId, "error", err)
 						}
 					})

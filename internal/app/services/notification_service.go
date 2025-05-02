@@ -210,3 +210,17 @@ func (s *NotificationService) NotifyNodeApproveNeeded(ctx context.Context, reque
 	}
 	return s.SendNotification(ctx, notification)
 }
+
+func (s *NotificationService) NotifyComment(ctx context.Context, nodeTitle string, userId int32) error {
+	users, err := s.UserAPI.FindUsersByUserIds([]int32{userId})
+	if err != nil {
+		return err
+	}
+
+	notification := types.Notification{
+		ToUserIds: []string{strconv.Itoa(int(userId))},
+		Subject:   "New Comment on Your Task",
+		Body:      fmt.Sprintf("%s commented on \"%s\"", users.Data[0].Name, nodeTitle),
+	}
+	return s.SendNotification(ctx, notification)
+}
