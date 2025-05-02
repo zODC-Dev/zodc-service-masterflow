@@ -351,7 +351,7 @@ func (s *NodeService) CompleteNodeLogic(ctx context.Context, tx *sql.Tx, nodeId 
 		return err
 	}
 
-	if !node.IsCurrent {
+	if node.Type != string(constants.NodeTypeStart) && !node.IsCurrent {
 		return fmt.Errorf("this node is not eligible to complete the node")
 	}
 
