@@ -260,22 +260,22 @@ func (s *NodeService) CompleteNodeSwitchCaseLogic(ctx context.Context, tx *sql.T
 	case string(constants.NodeTypeNotification):
 		// Send Notification
 		var cc []string
-		if node.CcEmails != nil {
-			err := json.Unmarshal([]byte(*node.CcEmails), &cc)
+		if nextNode.CcEmails != nil {
+			err := json.Unmarshal([]byte(*nextNode.CcEmails), &cc)
 			if err != nil {
 				return err
 			}
 		}
 		var to []string
-		if node.ToEmails != nil {
-			err := json.Unmarshal([]byte(*node.ToEmails), &to)
+		if nextNode.ToEmails != nil {
+			err := json.Unmarshal([]byte(*nextNode.ToEmails), &to)
 			if err != nil {
 				return err
 			}
 		}
 		var bcc []string
-		if node.BccEmails != nil {
-			err := json.Unmarshal([]byte(*node.BccEmails), &bcc)
+		if nextNode.BccEmails != nil {
+			err := json.Unmarshal([]byte(*nextNode.BccEmails), &bcc)
 			if err != nil {
 				return err
 			}
@@ -285,32 +285,32 @@ func (s *NodeService) CompleteNodeSwitchCaseLogic(ctx context.Context, tx *sql.T
 			ToCcEmails:  cc,
 			ToBccEmails: bcc,
 		}
-		if node.Subject != nil {
-			notification.Subject = *node.Subject
+		if nextNode.Subject != nil {
+			notification.Subject = *nextNode.Subject
 		}
-		if node.Body != nil {
-			notification.Body = *node.Body
+		if nextNode.Body != nil {
+			notification.Body = *nextNode.Body
 		}
-		if node.Subject != nil {
-			notification.Subject = *node.Subject
+		if nextNode.Subject != nil {
+			notification.Subject = *nextNode.Subject
 		}
 
 		// Is Send Form
-		if node.IsSendApprovedForm || node.IsSendRejectedForm {
-			request, err := s.RequestRepo.FindOneRequestByRequestIdTx(ctx, tx, node.RequestID)
+		if nextNode.IsSendApprovedForm || nextNode.IsSendRejectedForm {
+			request, err := s.RequestRepo.FindOneRequestByRequestIdTx(ctx, tx, nextNode.RequestID)
 			if err != nil {
 				return err
 			}
 
 			notification.Body += "<br><br>"
-			for _, nodeRequest := range request.Nodes {
-				for _, nodeForm := range nodeRequest.NodeForms {
-					formDataUrl := configs.Env.FE_HOST + "/form-management/review/" + *nodeForm.DataID
-					if nodeForm.IsApproved && node.IsSendApprovedForm {
+			for _, nextNodeRequest := range request.Nodes {
+				for _, nextNodeForm := range nextNodeRequest.NodeForms {
+					formDataUrl := configs.Env.FE_HOST + "/form-management/review/" + *nextNodeForm.DataID
+					if nextNodeForm.IsApproved && nextNode.IsSendApprovedForm {
 						notification.Body += fmt.Sprintf("<br><a href=\"%s\">%s</a>", formDataUrl, formDataUrl)
 					}
 
-					if nodeForm.IsRejected && node.IsSendRejectedForm {
+					if nextNodeForm.IsRejected && nextNode.IsSendRejectedForm {
 						notification.Body += fmt.Sprintf("<br><a href=\"%s\">%s</a>", formDataUrl, formDataUrl)
 					}
 				}
