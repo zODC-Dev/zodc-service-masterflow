@@ -6,6 +6,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/requests"
+	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/dto/responses"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/middlewares"
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/services"
 )
@@ -344,5 +345,8 @@ func (c *NodeController) GetAllComments(e echo.Context) error {
 		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	return e.JSON(http.StatusOK, comments)
+	return e.JSON(http.StatusOK, responses.Response{
+		Message: "Success",
+		Data:    comments,
+	})
 }
