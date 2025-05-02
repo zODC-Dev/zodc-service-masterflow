@@ -1731,6 +1731,10 @@ func (s *NodeService) CreateComment(ctx context.Context, req *requests.CreateCom
 		return fmt.Errorf("create comment failed: %w", err)
 	}
 
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit fail: %w", err)
+	}
+
 	return nil
 }
 
