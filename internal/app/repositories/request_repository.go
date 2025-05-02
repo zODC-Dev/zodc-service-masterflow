@@ -392,6 +392,7 @@ func (r *RequestRepository) CountRequestTaskByStatusAndUserIdAndQueryParams(ctx 
 		Nodes.Type.NOT_EQ(postgres.String(string(constants.NodeTypeStart))),
 		Nodes.Type.NOT_EQ(postgres.String(string(constants.NodeTypeEnd))),
 		Nodes.Type.NOT_EQ(postgres.String(string(constants.NodeTypeStory))),
+		Nodes.Type.NOT_EQ(postgres.String(string(constants.NodeTypeSubWorkflow))),
 		Requests.Progress.NOT_EQ(postgres.Float(100)),
 		Requests.Status.NOT_EQ(postgres.String(string(constants.RequestStatusCanceled))),
 	}
@@ -609,7 +610,11 @@ func (r *RequestRepository) FindAllSubRequestByParentId(ctx context.Context, db 
 			LEFT_JOIN(WorkflowVersions, WorkflowVersions.ID.EQ(Requests.WorkflowVersionID)).
 			LEFT_JOIN(Workflows, WorkflowVersions.WorkflowID.EQ(Workflows.ID)),
 	).WHERE(
-		Requests.ParentID.EQ(postgres.Int32(parentId)).AND(Nodes.Type.IN(postgres.String(string(constants.NodeTypeTask)), postgres.String(string(constants.NodeTypeStory)))),
+		Requests.ParentID.EQ(postgres.Int32(parentId)).AND(Nodes.Type.IN(
+			postgres.String(string(constants.NodeTypeTask)),
+			postgres.String(string(constants.NodeTypeStory)),
+			postgres.String(string(constants.NodeTypeBug)),
+			postgres.String(string(constants.NodeTypeSubWorkflow)))),
 	).LIMIT(int64(queryparams.PageSize)).OFFSET(int64(queryparams.Page - 1))
 
 	requests := []results.RequestSubRequest{}

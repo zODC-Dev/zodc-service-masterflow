@@ -92,6 +92,10 @@ func (s *NodeService) CheckIfAllNodeFormIsApprovedOrRejected(ctx context.Context
 	return true, nil
 }
 
+func LogicForNotificationNode() {
+
+}
+
 func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nodeId string, isTrue bool, userId int32) error {
 	// Update Node Form
 	node, err := s.NodeRepo.FindOneNodeByNodeIdTx(ctx, tx, nodeId)
@@ -410,31 +414,257 @@ func (s *NodeService) LogicForConditionNode(ctx context.Context, tx *sql.Tx, nod
 						}
 					}
 				}
-				nodeModel := model.Nodes{}
-				utils.Mapper(node, &nodeModel)
-				nodeModel.IsCurrent = true
-				nodeModel.Status = string(constants.NodeStatusInProgress)
-				now := time.Now().UTC().Add(7 * time.Hour)
-				nodeModel.ActualStartTime = &now
-				if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
-					return err
+			}
+		} else if mainConnection.Node.Type == string(constants.NodeTypeEnd) {
+			now := time.Now().UTC().Add(7 * time.Hour)
+
+			nodeModel := model.Nodes{}
+			utils.Mapper(node, &nodeModel)
+			nodeModel.IsCurrent = true
+			nodeModel.Status = string(constants.NodeStatusCompleted)
+
+			nodeModel.ActualStartTime = &now
+			nodeModel.ActualEndTime = &now
+			if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
+				return err
+			}
+
+			// Update Request
+			request, err := s.RequestRepo.FindOneRequestByRequestIdTx(ctx, tx, node.RequestID)
+			if err != nil {
+				return err
+			}
+
+			requestModel := model.Requests{}
+			utils.Mapper(request, &requestModel)
+
+			// Notify
+			userIds := []string{}
+			existingUserIds := map[string]bool{}
+			for _, node := range request.Nodes {
+				if node.AssigneeID != nil {
+					if !existingUserIds[strconv.Itoa(int(*node.AssigneeID))] {
+						userIds = append(userIds, strconv.Itoa(int(*node.AssigneeID)))
+						existingUserIds[strconv.Itoa(int(*node.AssigneeID))] = true
+					}
 				}
+			}
+
+			if *node.EndType == string(constants.NodeEndTypeTerminate) {
+				requestModel.Status = string(constants.RequestStatusTerminated)
+				requestModel.TerminatedAt = &now
 
 				// Notify
-				users, err := s.UserAPI.FindUsersByUserIds([]int32{*node.AssigneeID})
+				s.NotificationService.NotifyRequestTerminated(ctx, request.Title, userIds)
+
+				// History
+				if err := s.HistoryService.HistoryTerminateRequest(ctx, tx, request.ID, node.ID); err != nil {
+					return err
+				}
+			} else {
+				requestModel.Status = string(constants.RequestStatusCompleted)
+				requestModel.CompletedAt = &now
+
+				s.NotificationService.NotifyRequestCompleted(ctx, request.Title, userIds)
+
+				// History
+				if err := s.HistoryService.HistoryEndRequest(ctx, tx, request.ID, node.ID); err != nil {
+					return err
+				}
+			}
+
+			requestModel.CompletedAt = &now
+			requestModel.Progress = 100
+
+			if err := s.RequestRepo.UpdateRequest(ctx, tx, requestModel); err != nil {
+				return err
+			}
+
+			return nil
+		} else if mainConnection.Node.Type == string(constants.NodeTypeNotification) {
+			// Send Notification
+			var cc []string
+			if node.CcEmails != nil {
+				err := json.Unmarshal([]byte(*node.CcEmails), &cc)
+				if err != nil {
+					return err
+				}
+			}
+			var to []string
+			if node.ToEmails != nil {
+				err := json.Unmarshal([]byte(*node.ToEmails), &to)
+				if err != nil {
+					return err
+				}
+			}
+			var bcc []string
+			if node.BccEmails != nil {
+				err := json.Unmarshal([]byte(*node.BccEmails), &bcc)
+				if err != nil {
+					return err
+				}
+			}
+			notification := types.Notification{
+				ToEmails:    to,
+				ToCcEmails:  cc,
+				ToBccEmails: bcc,
+			}
+			if node.Subject != nil {
+				notification.Subject = *node.Subject
+			}
+			if node.Body != nil {
+				notification.Body = *node.Body
+			}
+			if node.Subject != nil {
+				notification.Subject = *node.Subject
+			}
+
+			// Is Send Form
+			if node.IsSendApprovedForm || node.IsSendRejectedForm {
+				request, err := s.RequestRepo.FindOneRequestByRequestIdTx(ctx, tx, node.RequestID)
 				if err != nil {
 					return err
 				}
 
-				if err := s.NotificationService.NotifyTaskAvailable(ctx, node.Title, users.Data[0].ID); err != nil {
+				notification.Body += "<br><br>"
+				for _, nodeRequest := range request.Nodes {
+					for _, nodeForm := range nodeRequest.NodeForms {
+						formDataUrl := configs.Env.FE_HOST + "/form-management/review/" + *nodeForm.DataID
+						if nodeForm.IsApproved && node.IsSendApprovedForm {
+							notification.Body += fmt.Sprintf("<br><a href=\"%s\">%s</a>", formDataUrl, formDataUrl)
+						}
+
+						if nodeForm.IsRejected && node.IsSendRejectedForm {
+							notification.Body += fmt.Sprintf("<br><a href=\"%s\">%s</a>", formDataUrl, formDataUrl)
+						}
+					}
+				}
+			}
+
+			notificationBytes, err := json.Marshal(notification)
+			if err != nil {
+				return fmt.Errorf("marshal notification failed: %w", err)
+			}
+			s.NatsClient.Publish("notifications", notificationBytes)
+
+			// Update Node
+			node.Status = string(constants.NodeStatusCompleted)
+			node.IsCurrent = true
+			now := time.Now().UTC().Add(7 * time.Hour)
+			node.ActualStartTime = &now
+			node.ActualEndTime = &now
+
+			nodeModel := model.Nodes{}
+			utils.Mapper(node, &nodeModel)
+			if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
+				return err
+			}
+
+			connectionToNode, err := s.ConnectionRepo.FindConnectionsWithToNodesByFromNodeId(ctx, s.DB, node.ID)
+			if err != nil {
+				return err
+			}
+			for _, connection := range connectionToNode {
+				connection.IsCompleted = true
+				connectionModel := model.Connections{}
+				if err := utils.Mapper(connection, &connectionModel); err != nil {
+					return err
+				}
+				if err := s.ConnectionRepo.UpdateConnection(ctx, tx, connectionModel); err != nil {
 					return err
 				}
 
-				// History
-				if err := s.HistoryService.HistoryNewTask(ctx, tx, node.RequestID, node.ID, *node.AssigneeID); err != nil {
-					return err
+				if connection.Node.Type == string(constants.NodeTypeEnd) {
+					connection.Node.IsCurrent = true
+					now := time.Now().UTC().Add(7 * time.Hour)
+					connection.Node.ActualStartTime = &now
+					connection.Node.ActualEndTime = &now
+					connection.Node.Status = string(constants.NodeStatusCompleted)
+
+					if err := s.NodeRepo.UpdateNode(ctx, tx, connection.Node); err != nil {
+						return err
+					}
+
+					// Update Request
+					request, err := s.RequestRepo.FindOneRequestByRequestIdTx(ctx, tx, node.RequestID)
+					if err != nil {
+						return err
+					}
+
+					requestModel := model.Requests{}
+					utils.Mapper(request, &requestModel)
+
+					// Notify
+					userIds := []string{}
+					existingUserIds := map[string]bool{}
+					for _, node := range request.Nodes {
+						if node.AssigneeID != nil {
+							if !existingUserIds[strconv.Itoa(int(*node.AssigneeID))] {
+								userIds = append(userIds, strconv.Itoa(int(*node.AssigneeID)))
+								existingUserIds[strconv.Itoa(int(*node.AssigneeID))] = true
+							}
+						}
+					}
+
+					if *node.EndType == string(constants.NodeEndTypeTerminate) {
+						requestModel.Status = string(constants.RequestStatusTerminated)
+						requestModel.TerminatedAt = &now
+
+						//Notify
+						s.NotificationService.NotifyRequestTerminated(ctx, request.Title, userIds)
+
+						// History
+
+						if err := s.HistoryService.HistoryTerminateRequest(ctx, tx, request.ID, node.ID); err != nil {
+							return err
+						}
+					} else {
+						requestModel.Status = string(constants.RequestStatusCompleted)
+						requestModel.CompletedAt = &now
+
+						// Notify
+						s.NotificationService.NotifyRequestCompleted(ctx, request.Title, userIds)
+
+						// History
+						if err := s.HistoryService.HistoryEndRequest(ctx, tx, request.ID, node.ID); err != nil {
+							return err
+						}
+					}
+
+					requestModel.Progress = 100
+
+					if err := s.RequestRepo.UpdateRequest(ctx, tx, requestModel); err != nil {
+						return err
+					}
+
+					return nil
 				}
 			}
+		}
+
+		nodeModel := model.Nodes{}
+		utils.Mapper(node, &nodeModel)
+		nodeModel.IsCurrent = true
+		nodeModel.Status = string(constants.NodeStatusInProgress)
+		now := time.Now().UTC().Add(7 * time.Hour)
+		nodeModel.ActualStartTime = &now
+		if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
+			return err
+		}
+
+		// Notify
+		users, err := s.UserAPI.FindUsersByUserIds([]int32{*node.AssigneeID})
+		if err != nil {
+			return err
+		}
+
+		if err := s.NotificationService.NotifyTaskAvailable(ctx, node.Title, users.Data[0].ID); err != nil {
+			return err
+		}
+
+		// History
+		if err := s.HistoryService.HistoryNewTask(ctx, tx, node.RequestID, node.ID, *node.AssigneeID); err != nil {
+			return err
 		}
 	}
 

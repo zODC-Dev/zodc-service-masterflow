@@ -942,7 +942,7 @@ func (s *RequestService) UpdateRequestHandler(ctx context.Context, requestId int
 	}
 
 	for _, node := range requestTx.Nodes {
-		if node.Type != string(constants.NodeTypeStory) && node.Type != string(constants.NodeTypeTask) && node.Type != string(constants.NodeTypeBug) {
+		if node.Type != string(constants.NodeTypeStory) && node.Type != string(constants.NodeTypeTask) && node.Type != string(constants.NodeTypeBug) && node.Type != string(constants.NodeTypeSubWorkflow) {
 			continue
 		}
 
@@ -965,7 +965,7 @@ func (s *RequestService) UpdateRequestHandler(ctx context.Context, requestId int
 				return fmt.Errorf("update node fail: %w", err)
 			}
 
-			if node.Type == string(constants.NodeTypeStory) {
+			if node.Type == string(constants.NodeTypeStory) || node.Type == string(constants.NodeTypeSubWorkflow) {
 				err := s.WorkflowService.RunWorkflow(ctx, tx, *node.SubRequestID)
 				if err != nil {
 					return fmt.Errorf("run workflow fail: %w", err)
@@ -1045,7 +1045,7 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 
 	if request.Workflow.Type == string(constants.WorkflowTypeProject) {
 		for _, node := range request.Nodes {
-			if node.Type == string(constants.NodeTypeTask) || node.Type == string(constants.NodeTypeStory) {
+			if node.Type == string(constants.NodeTypeTask) || node.Type == string(constants.NodeTypeStory) || node.Type == string(constants.NodeTypeBug) || node.Type == string(constants.NodeTypeSubWorkflow) {
 				formData, err := s.NodeRepo.FindOneFormDataByNodeId(ctx, s.DB, node.ID)
 				if err != nil {
 					return paginatedResponse, err
@@ -1101,7 +1101,7 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 						continue
 					}
 
-					if task.Type == string(constants.NodeTypeTask) || task.Type == string(constants.NodeTypeStory) || task.Type == string(constants.NodeTypeSubWorkflow) || task.Type == string(constants.NodeTypeInput) || task.Type == string(constants.NodeTypeApproval) {
+					if task.Type == string(constants.NodeTypeTask) || task.Type == string(constants.NodeTypeBug) || task.Type == string(constants.NodeTypeStory) || task.Type == string(constants.NodeTypeSubWorkflow) || task.Type == string(constants.NodeTypeInput) || task.Type == string(constants.NodeTypeApproval) {
 						taskRelatedRes := responses.TaskRelated{
 							Title:    task.Title,
 							Type:     task.Type,
@@ -1152,7 +1152,7 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 				}
 
 				for _, subNode := range subRequest.Nodes {
-					if subNode.Type == string(constants.NodeTypeTask) || subNode.Type == string(constants.NodeTypeStory) {
+					if subNode.Type == string(constants.NodeTypeTask) || subNode.Type == string(constants.NodeTypeStory) || subNode.Type == string(constants.NodeTypeBug) || subNode.Type == string(constants.NodeTypeSubWorkflow) {
 						formData, err := s.NodeRepo.FindOneFormDataByNodeId(ctx, s.DB, subNode.ID)
 						if err != nil {
 							return paginatedResponse, err
@@ -1218,7 +1218,7 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 								continue
 							}
 
-							if subTask.Type == string(constants.NodeTypeTask) || subTask.Type == string(constants.NodeTypeStory) || subTask.Type == string(constants.NodeTypeSubWorkflow) || subTask.Type == string(constants.NodeTypeInput) || subTask.Type == string(constants.NodeTypeApproval) {
+							if subTask.Type == string(constants.NodeTypeTask) || subTask.Type == string(constants.NodeTypeBug) || subTask.Type == string(constants.NodeTypeStory) || subTask.Type == string(constants.NodeTypeSubWorkflow) || subTask.Type == string(constants.NodeTypeInput) || subTask.Type == string(constants.NodeTypeApproval) {
 								taskRelatedRes := responses.TaskRelated{
 									Title:    subTask.Title,
 									Type:     subTask.Type,
@@ -1305,7 +1305,7 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 					continue
 				}
 
-				if task.Type == string(constants.NodeTypeTask) || task.Type == string(constants.NodeTypeStory) || task.Type == string(constants.NodeTypeSubWorkflow) || task.Type == string(constants.NodeTypeInput) || task.Type == string(constants.NodeTypeApproval) {
+				if task.Type == string(constants.NodeTypeTask) || task.Type == string(constants.NodeTypeBug) || task.Type == string(constants.NodeTypeStory) || task.Type == string(constants.NodeTypeSubWorkflow) || task.Type == string(constants.NodeTypeInput) || task.Type == string(constants.NodeTypeApproval) {
 					taskRelatedRes := responses.TaskRelated{
 						Title:    task.Title,
 						Type:     task.Type,
@@ -1664,7 +1664,7 @@ func (s *RequestService) ReportMidSprintTasks(ctx context.Context, queryParams q
 
 	for _, request := range requests {
 		for _, node := range request.Nodes {
-			if node.Type == string(constants.NodeTypeTask) {
+			if node.Type == string(constants.NodeTypeTask) || node.Type == string(constants.NodeTypeBug) {
 				taskRes := responses.RequestTaskResponse{
 					Id:               node.ID,
 					Title:            node.Title,

@@ -438,7 +438,7 @@ func (r *NodeRepository) FindAllNodeStoryByAssigneeId(ctx context.Context, db *s
 			LEFT_JOIN(Categories, Workflows.CategoryID.EQ(Categories.ID)),
 	).WHERE(
 		Nodes.AssigneeID.EQ(postgres.Int32(userId)).
-			AND(Nodes.Type.EQ(postgres.String(string(constants.NodeTypeStory)))).
+			AND((Nodes.Type.EQ(postgres.String(string(constants.NodeTypeStory)))).OR(Nodes.Type.EQ(postgres.String(string(constants.NodeTypeSubWorkflow))))).
 			AND(Workflows.IsArchived.EQ(postgres.Bool(false))),
 	)
 

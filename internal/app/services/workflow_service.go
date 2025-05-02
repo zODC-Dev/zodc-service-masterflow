@@ -712,7 +712,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			workflowNode.ParentID = &parentId
 		}
 
-		if workflowNodeReq.Type == string(constants.NodeTypeTask) {
+		if workflowNodeReq.Type == string(constants.NodeTypeTask) || workflowNodeReq.Type == string(constants.NodeTypeBug) {
 			formTemplateId := int32(1)
 			workflowNode.FormTemplateID = &formTemplateId
 		}
@@ -1434,7 +1434,7 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 			}
 		}
 
-		if node.Type == string(constants.NodeTypeTask) {
+		if node.Type == string(constants.NodeTypeTask) || node.Type == string(constants.NodeTypeBug) {
 			uuid := uuid.New()
 
 			formData := model.FormData{
@@ -1546,7 +1546,7 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 
 	userTasks := map[int32][]requests.Node{}
 	for _, node := range req.Nodes {
-		if node.Type == string(constants.NodeTypeTask) || node.Type == string(constants.NodeTypeInput) || node.Type == string(constants.NodeTypeApproval) {
+		if node.Type == string(constants.NodeTypeTask) || node.Type == string(constants.NodeTypeBug) || node.Type == string(constants.NodeTypeInput) || node.Type == string(constants.NodeTypeApproval) {
 			userTasks[node.Data.Assignee.Id] = append(userTasks[node.Data.Assignee.Id], node)
 		}
 	}
