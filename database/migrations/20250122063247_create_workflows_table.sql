@@ -214,8 +214,8 @@ CREATE TABLE connections (
     updated_at TIMESTAMP DEFAULT now () NOT NULL,
     deleted_at TIMESTAMP,
 
-    from_node_id TEXT NOT NULL REFERENCES nodes (id),
-    to_node_id TEXT NOT NULL REFERENCES nodes (id),
+    from_node_id TEXT NOT NULL REFERENCES nodes (id) ON DELETE CASCADE,
+    to_node_id TEXT NOT NULL REFERENCES nodes (id) ON DELETE CASCADE,
 
     text TEXT,
 

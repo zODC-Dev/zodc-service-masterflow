@@ -1096,9 +1096,9 @@ func (s *WorkflowService) FindOneWorkflowDetailHandler(ctx context.Context, requ
 		story := responses.StoryResponse{
 			Node: nodeResponse,
 
-			Type:        request.Workflow.Type,
-			Decoration:  request.Workflow.Decoration,
-			Description: request.Workflow.Description,
+			Type:        storyRequest.Workflow.Type,
+			Decoration:  storyRequest.Workflow.Decoration,
+			Description: storyRequest.Workflow.Description,
 			Title:       node.Title,
 			CategoryKey: storyRequest.Category.Key,
 
