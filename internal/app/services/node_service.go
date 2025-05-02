@@ -182,7 +182,9 @@ func (s *NodeService) CompleteNodeSwitchCaseLogic(ctx context.Context, tx *sql.T
 		conditionNode.ActualStartTime = &now
 		conditionNode.ActualEndTime = &now
 
-		if err := s.NodeRepo.UpdateNode(ctx, tx, nextNode); err != nil {
+		conditionNodeModel := model.Nodes{}
+		utils.Mapper(conditionNode, &conditionNodeModel)
+		if err := s.NodeRepo.UpdateNode(ctx, tx, conditionNodeModel); err != nil {
 			return err
 		}
 
@@ -199,6 +201,17 @@ func (s *NodeService) CompleteNodeSwitchCaseLogic(ctx context.Context, tx *sql.T
 				return fmt.Errorf("find connections by to node id fail: %w", err)
 			}
 
+			for _, connectionConditionDestination := range connectionConditionDestinations {
+				conditionNode.Status = string(constants.NodeStatusCompleted)
+				if connectionConditionDestination.FromNodeID == conditionNode.ID {
+					connectionConditionDestination.IsCompleted = true
+					if err := s.ConnectionRepo.UpdateConnection(ctx, tx, connectionConditionDestination); err != nil {
+						return err
+					}
+					break
+				}
+			}
+
 			isNodeIsCurrentNode := true
 			for _, connectionConditionDestination := range connectionConditionDestinations {
 				if !connectionConditionDestination.IsCompleted {
@@ -208,14 +221,13 @@ func (s *NodeService) CompleteNodeSwitchCaseLogic(ctx context.Context, tx *sql.T
 			}
 
 			if isNodeIsCurrentNode {
-				destinationNode, _ := s.NodeRepo.FindOneNodeByNodeIdTx(ctx, tx, nodeConditionDestination.DestinationNodeID)
-
-				destinationNodeModel := model.Nodes{}
-				utils.Mapper(destinationNode, destinationNodeModel)
-				if err := s.NodeRepo.UpdateNode(ctx, tx, destinationNodeModel); err != nil {
+				destinationNode, err := s.NodeRepo.FindOneNodeByNodeIdTx(ctx, tx, nodeConditionDestination.DestinationNodeID)
+				if err != nil {
 					return err
 				}
 
+				destinationNodeModel := model.Nodes{}
+				utils.Mapper(destinationNode, &destinationNodeModel)
 				if err := s.CompleteNodeSwitchCaseLogic(ctx, tx, node, destinationNodeModel, userId, users); err != nil {
 					return err
 				}
