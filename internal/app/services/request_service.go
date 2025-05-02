@@ -966,7 +966,7 @@ func (s *RequestService) UpdateRequestHandler(ctx context.Context, requestId int
 			}
 
 			if node.Type == string(constants.NodeTypeStory) || node.Type == string(constants.NodeTypeSubWorkflow) {
-				err := s.WorkflowService.RunWorkflow(ctx, tx, *node.SubRequestID)
+				err := s.WorkflowService.RunWorkflow(ctx, tx, *node.SubRequestID, userId)
 				if err != nil {
 					return fmt.Errorf("run workflow fail: %w", err)
 				}

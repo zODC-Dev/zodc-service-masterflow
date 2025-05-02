@@ -335,7 +335,7 @@ func (s *NodeService) CompleteNodeSwitchCaseLogic(ctx context.Context, tx *sql.T
 			return fmt.Errorf("update node status to in processing fail: %w", err)
 		}
 
-		if err := s.WorkflowService.RunWorkflow(ctx, tx, *nextNode.SubRequestID); err != nil {
+		if err := s.WorkflowService.RunWorkflow(ctx, tx, *nextNode.SubRequestID, userId); err != nil {
 			return err
 		}
 	default:
@@ -349,6 +349,10 @@ func (s *NodeService) CompleteNodeLogic(ctx context.Context, tx *sql.Tx, nodeId 
 	node, err := s.NodeRepo.FindOneNodeByNodeIdTx(ctx, tx, nodeId)
 	if err != nil {
 		return err
+	}
+
+	if !node.IsCurrent {
+		return fmt.Errorf("this node is not eligible to complete the node")
 	}
 
 	// Get Current Time
@@ -446,6 +450,10 @@ func (s *NodeService) StartNodeHandler(ctx context.Context, userId int32, nodeId
 	nodeResult, err := s.NodeRepo.FindOneNodeByNodeId(ctx, s.DB, nodeId)
 	if err != nil {
 		return fmt.Errorf("find node by node id fail: %w", err)
+	}
+
+	if !nodeResult.IsCurrent {
+		return fmt.Errorf("this node is not eligible to start the node")
 	}
 
 	node := model.Nodes{}

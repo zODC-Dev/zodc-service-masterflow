@@ -155,13 +155,13 @@ func (s *WorkflowService) MapToWorkflowNodeResponse(node model.Nodes) (responses
 	return nodeResponse, nil
 }
 
-func (s *WorkflowService) RunWorkflowIfItStoryOrSubWorkflow(ctx context.Context, tx *sql.Tx, node model.Nodes) error {
+func (s *WorkflowService) RunWorkflowIfItStoryOrSubWorkflow(ctx context.Context, tx *sql.Tx, node model.Nodes, userId int32) error {
 	if node.Type == string(constants.NodeTypeStory) || node.Type == string(constants.NodeTypeSubWorkflow) {
 		if node.SubRequestID == nil {
 			return fmt.Errorf("sub request not found")
 		}
 
-		if err := s.RunWorkflow(ctx, tx, *node.SubRequestID); err != nil {
+		if err := s.RunWorkflow(ctx, tx, *node.SubRequestID, userId); err != nil {
 			return err
 		}
 	}
@@ -169,7 +169,7 @@ func (s *WorkflowService) RunWorkflowIfItStoryOrSubWorkflow(ctx context.Context,
 	return nil
 }
 
-func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId int32) error {
+func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId int32, userId int32) error {
 	request, err := s.RequestRepo.FindOneRequestByRequestIdTx(ctx, tx, requestId)
 	if err != nil {
 		return fmt.Errorf("request not found")
@@ -189,72 +189,11 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 		return fmt.Errorf("update request fail: %w", err)
 	}
 
-	// Store Next Node For Update status to processing
-	nextNodeIds := make(map[string]bool)
-	for i := range request.Nodes {
-		if request.Nodes[i].Type == string(constants.NodeTypeStart) {
-			currentTime := time.Now().UTC().Add(7 * time.Hour)
-
-			request.Nodes[i].Status = string(constants.NodeStatusCompleted)
-			request.Nodes[i].IsCurrent = true
-			request.Nodes[i].ActualEndTime = &currentTime
-			request.Nodes[i].ActualStartTime = &currentTime
-
-			nodeModel := model.Nodes{}
-			if err := utils.Mapper(request.Nodes[i], &nodeModel); err != nil {
-				return fmt.Errorf("map node fail: %w", err)
+	for _, node := range request.Nodes {
+		if node.Type == string(constants.NodeTypeStart) {
+			if err := s.NodeService.CompleteNodeLogic(ctx, tx, node.ID, userId); err != nil {
+				return err
 			}
-			err = s.NodeRepo.UpdateNode(ctx, tx, nodeModel)
-			if err != nil {
-				return fmt.Errorf("update node status to completed fail: %w", err)
-			}
-
-			for j := range request.Connections {
-				if request.Connections[j].FromNodeID == request.Nodes[i].ID {
-
-					// Update connection
-					request.Connections[j].IsCompleted = true
-					if err := s.ConnectionRepo.UpdateConnection(ctx, tx, request.Connections[j]); err != nil {
-						return fmt.Errorf("update connection fail: %w", err)
-					}
-
-					nextNodeIds[request.Connections[j].ToNodeID] = true
-				}
-			}
-		}
-	}
-
-	for i := range request.Nodes {
-		if nextNodeIds[request.Nodes[i].ID] {
-
-			nodeModel := model.Nodes{}
-			if err := utils.Mapper(request.Nodes[i], &nodeModel); err != nil {
-				return fmt.Errorf("map node fail: %w", err)
-			}
-
-			nodeModel.IsCurrent = true
-			if request.Workflow.Type == string(constants.WorkflowTypeGeneral) {
-				nodeModel.Status = string(constants.NodeStatusInProgress)
-
-				currentTime := time.Now().UTC().Add(7 * time.Hour)
-				nodeModel.ActualStartTime = &currentTime
-			}
-
-			if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
-				return fmt.Errorf("update node status to in processing fail: %w", err)
-			}
-
-			if nodeModel.Type == string(constants.NodeTypeStory) || nodeModel.Type == string(constants.NodeTypeSubWorkflow) {
-
-				currentTime := time.Now().UTC().Add(7 * time.Hour)
-				nodeModel.ActualStartTime = &currentTime
-				if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
-					return fmt.Errorf("update node status to in processing fail: %w", err)
-				}
-
-				s.RunWorkflow(ctx, tx, *nodeModel.SubRequestID)
-			}
-
 		}
 	}
 
@@ -1477,7 +1416,7 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 	}
 
 	// Run Workflow
-	if err := s.RunWorkflow(ctx, tx, newRequest.ID); err != nil {
+	if err := s.RunWorkflow(ctx, tx, newRequest.ID, userId); err != nil {
 		return 0, fmt.Errorf("run workflow fail: %w", err)
 	}
 
