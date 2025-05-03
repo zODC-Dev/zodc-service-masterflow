@@ -87,7 +87,7 @@ type NodeData struct {
 
 	//
 	Description *string
-	AttachFile  *string
+	AttachFiles *string
 }
 
 type NodeForm struct {

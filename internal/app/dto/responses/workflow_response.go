@@ -52,6 +52,11 @@ type NodeDataResponse struct {
 	PlannedEndTime   *time.Time `json:"plannedEndTime"`
 	ActualStartTime  *time.Time `json:"actualStartTime"`
 	ActualEndTime    *time.Time `json:"actualEndTime"`
+
+	//
+	//
+	Description *string `json:"description"`
+	AttachFiles *string `json:"attachFiles"`
 }
 
 type NodeFormApprovalOrRejectUsersResponse struct {

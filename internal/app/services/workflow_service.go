@@ -300,7 +300,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 			//
 			Description: storyReq.Node.Data.Description,
-			AttachFile:  storyReq.Node.Data.AttachFile,
+			AttachFile:  storyReq.Node.Data.AttachFiles,
 		}
 
 		// For Update
@@ -417,7 +417,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 				//
 				Description: storyNodeReq.Data.Description,
-				AttachFile:  storyNodeReq.Data.AttachFile,
+				AttachFile:  storyNodeReq.Data.AttachFiles,
 			}
 
 			// For Update
@@ -594,7 +594,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 			//
 			Description: workflowNodeReq.Data.Description,
-			AttachFile:  workflowNodeReq.Data.AttachFile,
+			AttachFile:  workflowNodeReq.Data.AttachFiles,
 		}
 
 		// For Update
