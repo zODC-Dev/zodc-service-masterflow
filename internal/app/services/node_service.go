@@ -126,8 +126,6 @@ func (s *NodeService) CompleteNodeSwitchCaseLogic(ctx context.Context, tx *sql.T
 
 		}
 
-		endNodeRequest.Progress = 100
-
 		endNodeRequestModel := model.Requests{}
 		utils.Mapper(endNodeRequest, &endNodeRequestModel)
 		if err := s.RequestRepo.UpdateRequest(ctx, tx, endNodeRequestModel); err != nil {
@@ -803,8 +801,10 @@ func (s *NodeService) SubmitNodeForm(ctx context.Context, userId int32, nodeId s
 			FormDataID:          formDataId,
 		})
 	}
-	if err := s.FormRepo.CreateFormFieldDatas(ctx, tx, formFieldData); err != nil {
-		return fmt.Errorf("create form field data fail: %w", err)
+	if len(formFieldData) > 0 {
+		if err := s.FormRepo.CreateFormFieldDatas(ctx, tx, formFieldData); err != nil {
+			return fmt.Errorf("create form field data fail: %w", err)
+		}
 	}
 
 	nodeForm, err := s.NodeRepo.FindOneNodeFormByNodeIdAndFormId(ctx, s.DB, nodeId, formDataId)

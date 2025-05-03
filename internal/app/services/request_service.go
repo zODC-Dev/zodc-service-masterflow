@@ -59,21 +59,26 @@ func (s *RequestService) UpdateCalculateRequestProgress(ctx context.Context, tx 
 		return fmt.Errorf("find request by request id fail: %w", err)
 	}
 
-	totalCompletedNode := 0
-	totalNode := len(request.Nodes)
-	for _, requestNode := range request.Nodes {
-		if requestNode.Type == string(constants.NodeTypeStart) || requestNode.Type == string(constants.NodeTypeEnd) || requestNode.Type == string(constants.NodeTypeCondition) {
-			totalNode--
-		} else if requestNode.Status == string(constants.NodeStatusCompleted) {
-			totalCompletedNode++
+	if request.Status != string(constants.RequestStatusCompleted) {
+		totalCompletedNode := 0
+		totalNode := len(request.Nodes)
+		for _, requestNode := range request.Nodes {
+			if requestNode.Type == string(constants.NodeTypeStart) || requestNode.Type == string(constants.NodeTypeEnd) || requestNode.Type == string(constants.NodeTypeCondition) {
+				totalNode--
+			} else if requestNode.Status == string(constants.NodeStatusCompleted) {
+				totalCompletedNode++
+			}
 		}
+
+		if totalNode == 0 {
+			request.Progress = 100
+		} else {
+			request.Progress = float32(float64(totalCompletedNode) / float64(totalNode) * 100)
+		}
+	} else {
+		request.Progress = 100
 	}
 
-	if totalNode == 0 {
-		request.Progress = 100
-	} else {
-		request.Progress = float32(float64(totalCompletedNode) / float64(totalNode) * 100)
-	}
 	requestModel := model.Requests{}
 	if err := utils.Mapper(request, &requestModel); err != nil {
 		return err
