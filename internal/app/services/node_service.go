@@ -62,12 +62,13 @@ func NewNodeService(cfg NodeService) *NodeService {
 
 // Function
 func (s *NodeService) CompleteNodeSwitchCaseLogic(ctx context.Context, tx *sql.Tx, node results.NodeResult, nextNode model.Nodes, userId int32, users results.UserApiResult) error {
+
+	now := time.Now().UTC().Add(7 * time.Hour)
+
 	nextNode.IsCurrent = true
 	if err := s.NodeRepo.UpdateNode(ctx, tx, nextNode); err != nil {
 		return err
 	}
-
-	now := time.Now().UTC().Add(7 * time.Hour)
 
 	switch nextNode.Type {
 	case string(constants.NodeTypeEnd):
@@ -237,7 +238,9 @@ func (s *NodeService) CompleteNodeSwitchCaseLogic(ctx context.Context, tx *sql.T
 		}
 	case string(constants.NodeTypeApproval):
 		request, _ := s.RequestRepo.FindOneRequestByNodeId(ctx, s.DB, nextNode.ID)
-		s.NotificationService.NotifyNodeApproveNeeded(ctx, request.Title, *nextNode.AssigneeID)
+		if err := s.NotificationService.NotifyNodeApproveNeeded(ctx, request.Title, *nextNode.AssigneeID); err != nil {
+			return err
+		}
 		fallthrough
 	case string(constants.NodeTypeInput):
 		nextNode.Status = string(constants.NodeStatusInProgress)
@@ -260,6 +263,12 @@ func (s *NodeService) CompleteNodeSwitchCaseLogic(ctx context.Context, tx *sql.T
 			return err
 		}
 	case string(constants.NodeTypeNotification):
+		// Update Node
+		nextNode.ActualStartTime = &now
+		if err := s.NodeRepo.UpdateNode(ctx, tx, nextNode); err != nil {
+			return err
+		}
+
 		// Send Notification
 		var cc []string
 		if nextNode.CcEmails != nil {
@@ -304,17 +313,17 @@ func (s *NodeService) CompleteNodeSwitchCaseLogic(ctx context.Context, tx *sql.T
 				return err
 			}
 
-			notification.Body += "<br><br>"
+			existedFormDataUrls := map[string]bool{}
+			notification.Body += "<br>"
 			for _, nextNodeRequest := range request.Nodes {
 				for _, nextNodeForm := range nextNodeRequest.NodeForms {
 					if nextNodeRequest.Type == string(constants.NodeTypeApproval) {
 						formDataUrl := configs.Env.FE_HOST + "/form-management/review/" + *nextNodeForm.DataID
-						if nextNodeForm.IsApproved && nextNode.IsSendApprovedForm {
-							notification.Body += fmt.Sprintf("<br><a href=\"%s\">%s</a>", formDataUrl, formDataUrl)
-						}
-
-						if nextNodeForm.IsRejected && nextNode.IsSendRejectedForm {
-							notification.Body += fmt.Sprintf("<br><a href=\"%s\">%s</a>", formDataUrl, formDataUrl)
+						if nextNodeForm.IsApproved && nextNode.IsSendApprovedForm || nextNodeForm.IsRejected && nextNode.IsSendRejectedForm {
+							if !existedFormDataUrls[formDataUrl] {
+								existedFormDataUrls[formDataUrl] = true
+								notification.Body += fmt.Sprintf("<br><a href=\"%s\">%s</a>", formDataUrl, formDataUrl)
+							}
 						}
 					}
 				}
@@ -365,11 +374,6 @@ func (s *NodeService) CompleteNodeLogic(ctx context.Context, tx *sql.Tx, nodeId 
 	//
 	node.ActualEndTime = &now
 	node.Status = string(constants.NodeStatusCompleted)
-
-	//
-	if node.ActualStartTime != nil {
-		node.ActualStartTime = &now
-	}
 
 	// Update
 	nodeModel := model.Nodes{}
@@ -1108,12 +1112,16 @@ func (s *NodeService) GetNodeTaskDetail(ctx context.Context, nodeId string) (res
 		SprintId:            request.SprintID,
 	}
 
+	taskDetail.EstimatePoint = node.EstimatePoint
+
 	if parentNode != nil {
 		taskDetail.Parent = &responses.TaskRelated{
-			Title:    parentNode.Title,
-			Type:     parentNode.Type,
-			Status:   parentNode.Status,
-			Assignee: mapUser(parentNode.AssigneeID),
+			Id:           parentNode.ID,
+			SubRequestId: parentNode.SubRequestID,
+			Title:        parentNode.Title,
+			Type:         parentNode.Type,
+			Status:       parentNode.Status,
+			Assignee:     mapUser(parentNode.AssigneeID),
 		}
 		if parentNode.JiraKey != nil {
 			taskDetail.Parent.Key = *parentNode.JiraKey
@@ -1135,10 +1143,12 @@ func (s *NodeService) GetNodeTaskDetail(ctx context.Context, nodeId string) (res
 		assigneeResponse := mapUser(nodeTaskRelated.AssigneeID)
 
 		nodeTaskRelatedResponse := responses.TaskRelated{
-			Title:    nodeTaskRelated.Title,
-			Type:     nodeTaskRelated.Type,
-			Status:   nodeTaskRelated.Status,
-			Assignee: assigneeResponse,
+			Id:           nodeTaskRelated.ID,
+			SubRequestId: nodeTaskRelated.SubRequestID,
+			Title:        nodeTaskRelated.Title,
+			Type:         nodeTaskRelated.Type,
+			Status:       nodeTaskRelated.Status,
+			Assignee:     assigneeResponse,
 		}
 
 		if nodeTaskRelated.JiraKey != nil {

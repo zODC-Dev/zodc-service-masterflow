@@ -981,6 +981,9 @@ func (s *RequestService) UpdateRequestHandler(ctx context.Context, requestId int
 	}
 
 	// --- End Logic for Update Request ---
+	if err := s.UpdateCalculateRequestProgress(ctx, tx, requestId); err != nil {
+		return err
+	}
 
 	//Commit
 	if err := tx.Commit(); err != nil {
@@ -1109,10 +1112,12 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 
 					if task.Type == string(constants.NodeTypeTask) || task.Type == string(constants.NodeTypeBug) || task.Type == string(constants.NodeTypeStory) || task.Type == string(constants.NodeTypeSubWorkflow) || task.Type == string(constants.NodeTypeInput) || task.Type == string(constants.NodeTypeApproval) {
 						taskRelatedRes := responses.TaskRelated{
-							Title:    task.Title,
-							Type:     task.Type,
-							Status:   task.Status,
-							Assignee: mapUser(task.AssigneeID),
+							Id:           task.ID,
+							SubRequestId: task.SubRequestID,
+							Title:        task.Title,
+							Type:         task.Type,
+							Status:       task.Status,
+							Assignee:     mapUser(task.AssigneeID),
 						}
 
 						if task.JiraKey != nil {
@@ -1135,10 +1140,12 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 					}
 
 					requestCompletedFormRes.Parent = &responses.TaskRelated{
-						Title:    parentTask.Title,
-						Type:     parentTask.Type,
-						Status:   parentTask.Status,
-						Assignee: mapUser(parentTask.AssigneeID),
+						Id:           parentTask.ID,
+						SubRequestId: parentTask.SubRequestID,
+						Title:        parentTask.Title,
+						Type:         parentTask.Type,
+						Status:       parentTask.Status,
+						Assignee:     mapUser(parentTask.AssigneeID),
 					}
 
 					if parentTask.JiraKey != nil {
@@ -1226,10 +1233,12 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 
 							if subTask.Type == string(constants.NodeTypeTask) || subTask.Type == string(constants.NodeTypeBug) || subTask.Type == string(constants.NodeTypeStory) || subTask.Type == string(constants.NodeTypeSubWorkflow) || subTask.Type == string(constants.NodeTypeInput) || subTask.Type == string(constants.NodeTypeApproval) {
 								taskRelatedRes := responses.TaskRelated{
-									Title:    subTask.Title,
-									Type:     subTask.Type,
-									Status:   subTask.Status,
-									Assignee: mapUser(subTask.AssigneeID),
+									Id:           subTask.ID,
+									SubRequestId: subTask.SubRequestID,
+									Title:        subTask.Title,
+									Type:         subTask.Type,
+									Status:       subTask.Status,
+									Assignee:     mapUser(subTask.AssigneeID),
 								}
 
 								if subTask.JiraKey != nil {
@@ -1313,10 +1322,12 @@ func (s *RequestService) GetRequestCompletedFormHandler(ctx context.Context, req
 
 				if task.Type == string(constants.NodeTypeTask) || task.Type == string(constants.NodeTypeBug) || task.Type == string(constants.NodeTypeStory) || task.Type == string(constants.NodeTypeSubWorkflow) || task.Type == string(constants.NodeTypeInput) || task.Type == string(constants.NodeTypeApproval) {
 					taskRelatedRes := responses.TaskRelated{
-						Title:    task.Title,
-						Type:     task.Type,
-						Status:   task.Status,
-						Assignee: mapUser(task.AssigneeID),
+						Id:           task.ID,
+						SubRequestId: task.SubRequestID,
+						Title:        task.Title,
+						Type:         task.Type,
+						Status:       task.Status,
+						Assignee:     mapUser(task.AssigneeID),
 					}
 
 					if task.JiraKey != nil {

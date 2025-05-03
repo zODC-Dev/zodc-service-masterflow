@@ -20,14 +20,20 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 	nodeRepo := repositories.NewNodeRepository()
 	historyRepo := repositories.NewHistoryRepository()
 
-	nodeService := services.NewNodeService(services.NodeService{
-		DB:       db,
-		NodeRepo: nodeRepo,
-		FormRepo: formRepo,
-	})
-
 	natsClient := nats.GetNATSClient()
 	userApi := externals.NewUserAPI()
+
+	formService := services.NewFormService(db, formRepo, natsClient)
+	historyService := services.NewHistoryService(db, historyRepo, userApi)
+	notificationService := services.NewNotificationService(db, natsClient, userApi, requestRepo, historyService)
+
+	nodeService := services.NewNodeService(services.NodeService{
+		DB:                  db,
+		NodeRepo:            nodeRepo,
+		FormRepo:            formRepo,
+		HistoryService:      historyService,
+		NotificationService: notificationService,
+	})
 
 	natsService := services.NewNatsService(services.NatsService{
 		NatsClient:  natsClient,
@@ -37,21 +43,20 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 	})
 
 	workflowService := services.NewWorkflowService(services.WorkflowService{
-		DB:             db,
-		WorkflowRepo:   workflowRepo,
-		FormRepo:       formRepo,
-		CategoryRepo:   categoryRepo,
-		UserAPI:        userApi,
-		RequestRepo:    requestRepo,
-		ConnectionRepo: connectionRepo,
-		NodeRepo:       nodeRepo,
-		NodeService:    nodeService,
-		NatsClient:     natsClient,
-		NatsService:    natsService,
+		DB:                  db,
+		WorkflowRepo:        workflowRepo,
+		FormRepo:            formRepo,
+		CategoryRepo:        categoryRepo,
+		UserAPI:             userApi,
+		RequestRepo:         requestRepo,
+		ConnectionRepo:      connectionRepo,
+		NodeRepo:            nodeRepo,
+		NodeService:         nodeService,
+		NatsClient:          natsClient,
+		NatsService:         natsService,
+		HistoryService:      historyService,
+		NotificationService: notificationService,
 	})
-
-	formService := services.NewFormService(db, formRepo, natsClient)
-	historyService := services.NewHistoryService(db, historyRepo, userApi)
 
 	requestService := services.NewRequestService(services.RequestService{
 		DB:              db,
@@ -67,6 +72,8 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 		HistoryRepo:     historyRepo,
 		HistoryService:  historyService,
 	})
+
+	nodeService.RequestService = requestService
 
 	requestController := controllers.NewRequestController(requestService)
 

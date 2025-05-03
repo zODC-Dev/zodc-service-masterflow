@@ -23,11 +23,13 @@ type JiraFormDetailResponse struct {
 }
 
 type TaskRelated struct {
-	Key      string         `json:"key"`
-	Title    string         `json:"title"`
-	Type     string         `json:"type"`
-	Status   string         `json:"status"`
-	Assignee types.Assignee `json:"assignee"`
+	Id           string         `json:"id"`
+	SubRequestId *int32         `json:"subRequestId"`
+	Key          string         `json:"key"`
+	Title        string         `json:"title"`
+	Type         string         `json:"type"`
+	Status       string         `json:"status"`
+	Assignee     types.Assignee `json:"assignee"`
 }
 
 type TaskDetail struct {
