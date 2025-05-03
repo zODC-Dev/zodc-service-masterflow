@@ -1067,33 +1067,45 @@ func (s *NodeService) GetNodeTaskDetail(ctx context.Context, nodeId string) (res
 		return assignee
 	}
 
-	taskDetail := responses.TaskDetail{
-		RequestTaskResponse: responses.RequestTaskResponse{
-			Id:               nodeId,
-			Title:            node.Title,
-			Type:             node.Type,
-			RequestID:        node.RequestID,
-			RequestTitle:     request.Title,
-			RequestProgress:  request.Progress,
-			Assignee:         mapUser(node.AssigneeID),
-			PlannedStartTime: node.PlannedStartTime,
-			PlannedEndTime:   node.PlannedEndTime,
-			ActualStartTime:  node.ActualStartTime,
-			ActualEndTime:    node.ActualEndTime,
-			EstimatePoint:    node.EstimatePoint,
-			Status:           node.Status,
-			IsCurrent:        node.IsCurrent,
-			IsApproved:       node.IsApproved,
-			IsRejected:       node.IsRejected,
-			ProjectKey:       request.Workflow.ProjectKey,
-			JiraLinkUrl:      node.JiraLinkURL,
-		},
-		RequestRequestBy: mapUser(&request.UserID),
-		IsApproval:       node.IsApproved,
-		UpdatedAt:        node.UpdatedAt,
-		JiraLinkURL:      node.JiraLinkURL,
+	requestTaskRes := responses.RequestTaskResponse{
+		Id:               nodeId,
+		Title:            node.Title,
+		Type:             node.Type,
+		RequestID:        node.RequestID,
+		RequestTitle:     request.Title,
+		RequestProgress:  request.Progress,
+		Assignee:         mapUser(node.AssigneeID),
+		PlannedStartTime: node.PlannedStartTime,
+		PlannedEndTime:   node.PlannedEndTime,
+		ActualStartTime:  node.ActualStartTime,
+		ActualEndTime:    node.ActualEndTime,
+		EstimatePoint:    node.EstimatePoint,
+		Status:           node.Status,
+		IsCurrent:        node.IsCurrent,
+		IsApproved:       node.IsApproved,
+		IsRejected:       node.IsRejected,
 		ProjectKey:       request.Workflow.ProjectKey,
-		SprintId:         request.SprintID,
+		JiraLinkUrl:      node.JiraLinkURL,
+		Description:      node.Description,
+	}
+
+	if node.AttachFile != nil {
+		var attachFiles map[string]interface{}
+		if err := json.Unmarshal([]byte(*node.AttachFile), &attachFiles); err != nil {
+			return responses.TaskDetail{}, err
+		}
+
+		requestTaskRes.AttachFiles = &attachFiles
+	}
+
+	taskDetail := responses.TaskDetail{
+		RequestTaskResponse: requestTaskRes,
+		RequestRequestBy:    mapUser(&request.UserID),
+		IsApproval:          node.IsApproved,
+		UpdatedAt:           node.UpdatedAt,
+		JiraLinkURL:         node.JiraLinkURL,
+		ProjectKey:          request.Workflow.ProjectKey,
+		SprintId:            request.SprintID,
 	}
 
 	if parentNode != nil {
