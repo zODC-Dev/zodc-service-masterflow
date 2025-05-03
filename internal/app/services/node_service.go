@@ -309,13 +309,15 @@ func (s *NodeService) CompleteNodeSwitchCaseLogic(ctx context.Context, tx *sql.T
 			notification.Body += "<br><br>"
 			for _, nextNodeRequest := range request.Nodes {
 				for _, nextNodeForm := range nextNodeRequest.NodeForms {
-					formDataUrl := configs.Env.FE_HOST + "/form-management/review/" + *nextNodeForm.DataID
-					if nextNodeForm.IsApproved && nextNode.IsSendApprovedForm {
-						notification.Body += fmt.Sprintf("<br><a href=\"%s\">%s</a>", formDataUrl, formDataUrl)
-					}
+					if nextNodeRequest.Type == string(constants.NodeTypeApproval) {
+						formDataUrl := configs.Env.FE_HOST + "/form-management/review/" + *nextNodeForm.DataID
+						if nextNodeForm.IsApproved && nextNode.IsSendApprovedForm {
+							notification.Body += fmt.Sprintf("<br><a href=\"%s\">%s</a>", formDataUrl, formDataUrl)
+						}
 
-					if nextNodeForm.IsRejected && nextNode.IsSendRejectedForm {
-						notification.Body += fmt.Sprintf("<br><a href=\"%s\">%s</a>", formDataUrl, formDataUrl)
+						if nextNodeForm.IsRejected && nextNode.IsSendRejectedForm {
+							notification.Body += fmt.Sprintf("<br><a href=\"%s\">%s</a>", formDataUrl, formDataUrl)
+						}
 					}
 				}
 			}
