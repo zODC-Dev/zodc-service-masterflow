@@ -437,6 +437,7 @@ func (s *RequestService) GetRequestTasksHandler(ctx context.Context, requestId i
 			Id:               node.ID,
 			Title:            node.Title,
 			Status:           node.Status,
+			Type:             node.Type,
 			PlannedStartTime: node.PlannedStartTime,
 			PlannedEndTime:   node.PlannedEndTime,
 			ActualStartTime:  node.ActualStartTime,
