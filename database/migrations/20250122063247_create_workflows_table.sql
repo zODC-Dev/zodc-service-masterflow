@@ -102,7 +102,7 @@ CREATE TABLE nodes (
 
     -- Document
     description TEXT,
-    attach_file TEXT,
+    attach_file JSONB,
 
     -- estimate
     estimate_point REAL,

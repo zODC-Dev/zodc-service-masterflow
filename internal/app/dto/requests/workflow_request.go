@@ -1,6 +1,7 @@
 package requests
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/zODC-Dev/zodc-service-masterflow/internal/app/types"
@@ -87,7 +88,7 @@ type NodeData struct {
 
 	//
 	Description *string
-	AttachFiles *string
+	AttachFiles *json.RawMessage
 }
 
 type NodeForm struct {

@@ -55,8 +55,8 @@ type NodeDataResponse struct {
 
 	//
 	//
-	Description *string `json:"description"`
-	AttachFiles *string `json:"attachFiles"`
+	Description *string                 `json:"description"`
+	AttachFiles *map[string]interface{} `json:"attachFiles"`
 }
 
 type NodeFormApprovalOrRejectUsersResponse struct {

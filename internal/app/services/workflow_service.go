@@ -152,6 +152,15 @@ func (s *WorkflowService) MapToWorkflowNodeResponse(node model.Nodes) (responses
 		IsCurrent: node.IsCurrent,
 	}
 
+	if node.AttachFile != nil {
+		var attachFiles map[string]interface{}
+		if err := json.Unmarshal([]byte(*node.AttachFile), &attachFiles); err != nil {
+			return nodeResponse, fmt.Errorf("unmarshal attach files fail: %w", err)
+		}
+
+		nodeResponse.Data.AttachFiles = &attachFiles
+	}
+
 	return nodeResponse, nil
 }
 
@@ -300,7 +309,11 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 			//
 			Description: storyReq.Node.Data.Description,
-			AttachFile:  storyReq.Node.Data.AttachFiles,
+		}
+
+		if storyReq.Node.Data.AttachFiles != nil {
+			attachFiles := string(*storyReq.Node.Data.AttachFiles)
+			storyNode.AttachFile = &attachFiles
 		}
 
 		// For Update
@@ -417,7 +430,11 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 				//
 				Description: storyNodeReq.Data.Description,
-				AttachFile:  storyNodeReq.Data.AttachFiles,
+			}
+
+			if storyNodeReq.Data.AttachFiles != nil {
+				attachFiles := string(*storyNodeReq.Data.AttachFiles)
+				storyNode.AttachFile = &attachFiles
 			}
 
 			// For Update
@@ -594,7 +611,11 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 			//
 			Description: workflowNodeReq.Data.Description,
-			AttachFile:  workflowNodeReq.Data.AttachFiles,
+		}
+
+		if workflowNodeReq.Data.AttachFiles != nil {
+			attachFiles := string(*workflowNodeReq.Data.AttachFiles)
+			workflowNode.AttachFile = &attachFiles
 		}
 
 		// For Update
