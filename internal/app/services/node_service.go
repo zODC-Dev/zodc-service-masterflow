@@ -1090,7 +1090,7 @@ func (s *NodeService) GetNodeTaskDetail(ctx context.Context, nodeId string) (res
 	}
 
 	if node.AttachFile != nil {
-		var attachFiles map[string]interface{}
+		var attachFiles []string
 		if err := json.Unmarshal([]byte(*node.AttachFile), &attachFiles); err != nil {
 			return responses.TaskDetail{}, err
 		}

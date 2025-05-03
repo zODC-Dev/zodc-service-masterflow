@@ -46,27 +46,27 @@ type RequestDetailResponse struct {
 }
 
 type RequestTaskResponse struct {
-	Id               string                  `json:"id"`
-	Key              string                  `json:"key"`
-	Title            string                  `json:"title"`
-	Type             string                  `json:"type"`
-	RequestID        int32                   `json:"requestId"`
-	RequestTitle     string                  `json:"requestTitle"`
-	RequestProgress  float32                 `json:"requestProgress"`
-	ProjectKey       *string                 `json:"projectKey"`
-	JiraLinkUrl      *string                 `json:"jiraLinkUrl"`
-	Assignee         types.Assignee          `json:"assignee"`
-	Status           string                  `json:"status"`
-	PlannedStartTime *time.Time              `json:"plannedStartTime"`
-	PlannedEndTime   *time.Time              `json:"plannedEndTime"`
-	ActualStartTime  *time.Time              `json:"actualStartTime"`
-	ActualEndTime    *time.Time              `json:"actualEndTime"`
-	EstimatePoint    *float32                `json:"estimatePoint"`
-	IsCurrent        bool                    `json:"isCurrent"`
-	IsApproved       bool                    `json:"isApproved"`
-	IsRejected       bool                    `json:"isRejected"`
-	Description      *string                 `json:"description"`
-	AttachFiles      *map[string]interface{} `json:"attachFiles"`
+	Id               string         `json:"id"`
+	Key              string         `json:"key"`
+	Title            string         `json:"title"`
+	Type             string         `json:"type"`
+	RequestID        int32          `json:"requestId"`
+	RequestTitle     string         `json:"requestTitle"`
+	RequestProgress  float32        `json:"requestProgress"`
+	ProjectKey       *string        `json:"projectKey"`
+	JiraLinkUrl      *string        `json:"jiraLinkUrl"`
+	Assignee         types.Assignee `json:"assignee"`
+	Status           string         `json:"status"`
+	PlannedStartTime *time.Time     `json:"plannedStartTime"`
+	PlannedEndTime   *time.Time     `json:"plannedEndTime"`
+	ActualStartTime  *time.Time     `json:"actualStartTime"`
+	ActualEndTime    *time.Time     `json:"actualEndTime"`
+	EstimatePoint    *float32       `json:"estimatePoint"`
+	IsCurrent        bool           `json:"isCurrent"`
+	IsApproved       bool           `json:"isApproved"`
+	IsRejected       bool           `json:"isRejected"`
+	Description      *string        `json:"description"`
+	AttachFiles      *[]string      `json:"attachFiles"`
 }
 
 type RequestTaskCountResponse struct {

@@ -153,7 +153,7 @@ func (s *WorkflowService) MapToWorkflowNodeResponse(node model.Nodes) (responses
 	}
 
 	if node.AttachFile != nil {
-		var attachFiles map[string]interface{}
+		var attachFiles []string
 		if err := json.Unmarshal([]byte(*node.AttachFile), &attachFiles); err != nil {
 			return nodeResponse, fmt.Errorf("unmarshal attach files fail: %w", err)
 		}
