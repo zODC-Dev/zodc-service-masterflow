@@ -200,6 +200,15 @@ func (s *WorkflowService) RunWorkflow(ctx context.Context, tx *sql.Tx, requestId
 
 	for _, node := range request.Nodes {
 		if node.Type == string(constants.NodeTypeStart) {
+			node.ActualStartTime = &currentTime
+
+			nodeModel := model.Nodes{}
+			utils.Mapper(node, &nodeModel)
+			if err := s.NodeRepo.UpdateNode(ctx, tx, nodeModel); err != nil {
+				return err
+			}
+
+			// Complete node
 			if err := s.NodeService.CompleteNodeLogic(ctx, tx, node.ID, userId); err != nil {
 				return err
 			}

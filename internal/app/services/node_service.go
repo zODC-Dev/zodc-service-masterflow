@@ -382,15 +382,17 @@ func (s *NodeService) CompleteNodeLogic(ctx context.Context, tx *sql.Tx, nodeId 
 		return err
 	}
 
-	// History
-	oldStatus := string(constants.NodeStatusInProgress)
-	if err := s.HistoryService.HistoryChangeNodeStatus(ctx, tx, userId, node.RequestID, nodeId, &oldStatus, string(constants.NodeStatusCompleted)); err != nil {
-		return err
-	}
+	if node.Type != string(constants.NodeTypeStart) {
+		// History
+		oldStatus := string(constants.NodeStatusInProgress)
+		if err := s.HistoryService.HistoryChangeNodeStatus(ctx, tx, userId, node.RequestID, nodeId, &oldStatus, string(constants.NodeStatusCompleted)); err != nil {
+			return err
+		}
 
-	// Notify
-	if err := s.NotificationService.NotifyTaskCompleted(ctx, tx, nodeModel); err != nil {
-		return err
+		// Notify
+		if err := s.NotificationService.NotifyTaskCompleted(ctx, tx, nodeModel); err != nil {
+			return err
+		}
 	}
 
 	// Connections
