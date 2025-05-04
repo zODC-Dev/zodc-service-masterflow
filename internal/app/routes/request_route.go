@@ -62,6 +62,7 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 		DB:              db,
 		RequestRepo:     requestRepo,
 		UserAPI:         userApi,
+		WorkflowRepo:    workflowRepo,
 		WorkflowService: workflowService,
 		ConnectionRepo:  connectionRepo,
 		NodeRepo:        nodeRepo,

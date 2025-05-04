@@ -12,6 +12,10 @@ import (
 func ExtractUserMiddleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
+			if strings.Contains(c.Path(), "/forms/data/") {
+				return next(c)
+			}
+
 			var userID int32
 			var err error
 

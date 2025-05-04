@@ -316,13 +316,19 @@ func (s *NodeService) CompleteNodeSwitchCaseLogic(ctx context.Context, tx *sql.T
 			existedFormDataUrls := map[string]bool{}
 			notification.Body += "<br>"
 			for _, nextNodeRequest := range request.Nodes {
-				for _, nextNodeForm := range nextNodeRequest.NodeForms {
-					if nextNodeRequest.Type == string(constants.NodeTypeApproval) {
-						formDataUrl := configs.Env.FE_HOST + "/form-management/review/" + *nextNodeForm.DataID
-						if (nextNodeForm.IsApproved && nextNode.IsSendApprovedForm) || (nextNodeForm.IsRejected && nextNode.IsSendRejectedForm) {
+				if nextNodeRequest.Type == string(constants.NodeTypeApproval) && nextNodeRequest.IsCurrent && (nextNodeRequest.IsApproved || nextNodeRequest.IsRejected) {
+					for _, nextNodeForm := range nextNodeRequest.NodeForms {
+						if ((nextNodeForm.IsApproved && nextNode.IsSendApprovedForm) || (nextNodeForm.IsRejected && nextNode.IsSendRejectedForm)) && nextNodeForm.Permission != string(constants.NodeFormPermissionHidden) {
+							formDataUrl := configs.Env.FE_HOST + "/form-review/" + *nextNodeForm.DataID
 							if !existedFormDataUrls[formDataUrl] {
 								existedFormDataUrls[formDataUrl] = true
-								notification.Body += fmt.Sprintf("<br><a href=\"%s\">%s</a>", formDataUrl, formDataUrl)
+
+								formData, err := s.FormRepo.FindFormDataById(ctx, s.DB, *nextNodeForm.DataID)
+								if err != nil {
+									return err
+								}
+
+								notification.Body += fmt.Sprintf("<br><a href=\"%s\">%s</a>", formDataUrl, formData.FormTemplates.Title)
 							}
 						}
 					}

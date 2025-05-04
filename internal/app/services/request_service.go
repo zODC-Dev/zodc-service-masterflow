@@ -27,6 +27,7 @@ type RequestService struct {
 	UserAPI         *externals.UserAPI
 	NodeRepo        *repositories.NodeRepository
 	ConnectionRepo  *repositories.ConnectionRepository
+	WorkflowRepo    *repositories.WorkflowRepository
 	WorkflowService *WorkflowService
 	NatsService     *NatsService
 	NodeService     *NodeService
@@ -43,6 +44,7 @@ func NewRequestService(cfg RequestService) *RequestService {
 		UserAPI:         cfg.UserAPI,
 		NodeRepo:        cfg.NodeRepo,
 		ConnectionRepo:  cfg.ConnectionRepo,
+		WorkflowRepo:    cfg.WorkflowRepo,
 		WorkflowService: cfg.WorkflowService,
 		NatsService:     cfg.NatsService,
 		NodeService:     cfg.NodeService,
@@ -766,9 +768,32 @@ func (s *RequestService) UpdateRequestHandler(ctx context.Context, requestId int
 	}
 	defer tx.Rollback()
 
-	originalRequest, err := s.RequestRepo.FindOneRequestByRequestId(ctx, s.DB, requestId)
+	originalRequest, err := s.RequestRepo.FindOneRequestByRequestIdTx(ctx, tx, requestId)
 	if err != nil {
 		return fmt.Errorf("find one original request by request id fail: %w", err)
+	}
+
+	// Update Workflow
+	if req.IsTemplate {
+		currentVersion := originalRequest.Workflow.CurrentVersion + 1
+		originalRequest.Workflow.CurrentVersion = currentVersion
+
+		if err := s.WorkflowRepo.UpdateWorkflow(ctx, tx, originalRequest.Workflow); err != nil {
+			return fmt.Errorf("update workflow fail: %w", err)
+		}
+
+		workflowVersion, err := s.WorkflowService.CreateWorkFlowVersion(ctx, tx, originalRequest.Workflow.ID, originalRequest.Version.HasSubWorkflow, currentVersion)
+		if err != nil {
+			return err
+		}
+
+		originalRequest.WorkflowVersionID = workflowVersion.ID
+
+		originalRequestModel := model.Requests{}
+		utils.Mapper(originalRequest, &originalRequestModel)
+		if err := s.RequestRepo.UpdateRequest(ctx, tx, originalRequestModel); err != nil {
+			return err
+		}
 	}
 
 	// Get original nodes and connections for Jira sync

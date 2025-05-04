@@ -9,9 +9,10 @@ const (
 type NodeFormPermission string
 
 const (
-	NodeFormPermissionInput NodeFormPermission = "INPUT"
-	NodeFormPermissionView  NodeFormPermission = "VIEW"
-	NodeFormPermissionEdit  NodeFormPermission = "EDIT"
+	NodeFormPermissionInput  NodeFormPermission = "INPUT"
+	NodeFormPermissionView   NodeFormPermission = "VIEW"
+	NodeFormPermissionEdit   NodeFormPermission = "EDIT"
+	NodeFormPermissionHidden NodeFormPermission = "HIDDEN"
 )
 
 type FormTemplateFieldType string

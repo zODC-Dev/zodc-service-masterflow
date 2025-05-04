@@ -98,6 +98,8 @@ CREATE TABLE nodes (
 
     is_current BOOLEAN NOT NULL DEFAULT false,
 
+    last_synced_at TIMESTAMP,
+
     jira_link_url TEXT,
 
     -- Document
