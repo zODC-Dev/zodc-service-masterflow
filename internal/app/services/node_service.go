@@ -319,7 +319,7 @@ func (s *NodeService) CompleteNodeSwitchCaseLogic(ctx context.Context, tx *sql.T
 				for _, nextNodeForm := range nextNodeRequest.NodeForms {
 					if nextNodeRequest.Type == string(constants.NodeTypeApproval) {
 						formDataUrl := configs.Env.FE_HOST + "/form-management/review/" + *nextNodeForm.DataID
-						if nextNodeForm.IsApproved && nextNode.IsSendApprovedForm || nextNodeForm.IsRejected && nextNode.IsSendRejectedForm {
+						if (nextNodeForm.IsApproved && nextNode.IsSendApprovedForm) || (nextNodeForm.IsRejected && nextNode.IsSendRejectedForm) {
 							if !existedFormDataUrls[formDataUrl] {
 								existedFormDataUrls[formDataUrl] = true
 								notification.Body += fmt.Sprintf("<br><a href=\"%s\">%s</a>", formDataUrl, formDataUrl)
