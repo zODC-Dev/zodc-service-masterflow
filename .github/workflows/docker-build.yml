@@ -41,7 +41,7 @@ jobs:
       - name: Pull In Server
         run: |
           sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_IP }} "
-            docker-compose -f ${{ secrets.SSH_PATH }} pull &&
-            docker-compose -f ${{ secrets.SSH_PATH }} down &&
-            docker-compose -f ${{ secrets.SSH_PATH }} up -d
+            sudo docker-compose -f ${{ secrets.SSH_PATH }} pull &&
+            sudo docker-compose -f ${{ secrets.SSH_PATH }} down &&
+            sudo docker-compose -f ${{ secrets.SSH_PATH }} up -d
           "
