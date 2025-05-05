@@ -101,7 +101,7 @@ func (c *RequestController) GetRequestCount(e echo.Context) error {
 
 	requestOverviewResponse, err := c.requestService.GetRequestCountHandler(ctx, userId)
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, requestOverviewResponse)
@@ -131,7 +131,7 @@ func (c *RequestController) GetRequestDetail(e echo.Context) error {
 
 	requestDetailResponse, err := c.requestService.GetRequestDetailHandler(ctx, userId, int32(requestIdInt))
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, requestDetailResponse)
@@ -183,7 +183,7 @@ func (c *RequestController) GetRequestTasks(e echo.Context) error {
 
 	requestTasksResponse, err := c.requestService.GetRequestTasksHandler(ctx, int32(requestIdInt), requestTaskQueryParam)
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, responses.Response{
@@ -242,7 +242,7 @@ func (c *RequestController) GetRequestTasksByProject(e echo.Context) error {
 
 	requestTasksResponse, err := c.requestService.GetRequestTasksByProjectHandler(ctx, requestTaskProjectQueryParam, userId)
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, responses.Response{
@@ -272,7 +272,7 @@ func (c *RequestController) GetRequestOverview(e echo.Context) error {
 
 	requestOverviewResponse, err := c.requestService.GetRequestOverviewHandler(ctx, int32(requestIdInt))
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, requestOverviewResponse)
@@ -320,7 +320,7 @@ func (c *RequestController) FindAllSubRequestByRequestId(e echo.Context) error {
 
 	subRequests, err := c.requestService.FindAllSubRequestByRequestId(ctx, int32(requestIdInt), requestSubRequestQueryParam)
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, responses.Response{
@@ -360,7 +360,7 @@ func (c *RequestController) UpdateRequest(e echo.Context) error {
 
 	err = c.requestService.UpdateRequestHandler(ctx, int32(requestIdInt), req, userId)
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, fmt.Sprintf("Request updated successfully: %d", requestIdInt))
@@ -391,7 +391,7 @@ func (c *RequestController) GetRequestTasksCount(e echo.Context) error {
 
 	requestTaskCountResponse, err := c.requestService.GetRequestTaskCount(ctx, userId, requestTaskCount)
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, requestTaskCountResponse)
@@ -437,7 +437,7 @@ func (c *RequestController) GetRequestCompletedForm(e echo.Context) error {
 
 	requestCompletedFormResponse, err := c.requestService.GetRequestCompletedFormHandler(ctx, int32(requestIdInt), requestCompletedFormQueryParam)
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, responses.Response{
@@ -486,7 +486,7 @@ func (c *RequestController) GetRequestFileManager(e echo.Context) error {
 
 	requestFileManagerResponse, err := c.requestService.GetRequestFileManagerHandler(ctx, int32(requestIdInt), requestFileManagerQueryParam)
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, responses.Response{
@@ -521,7 +521,7 @@ func (c *RequestController) GetRequestCompletedFormApproval(e echo.Context) erro
 
 	requestCompletedFormApprovalResponse, err := c.requestService.GetRequestCompletedFormApprovalHandler(ctx, int32(requestIdInt), dataId)
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, requestCompletedFormApprovalResponse)
@@ -550,7 +550,7 @@ func (c *RequestController) FindAllHistoryByRequestId(e echo.Context) error {
 
 	history, err := c.requestService.FindAllHistoryByRequestId(ctx, int32(requestIdInt))
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, history)
@@ -581,7 +581,7 @@ func (c *RequestController) ReportMidSprintTasks(e echo.Context) error {
 
 	requestTasksResponse, err := c.requestService.ReportMidSprintTasks(ctx, queryParams)
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, requestTasksResponse)
@@ -608,7 +608,7 @@ func (c *RequestController) CancelRequest(e echo.Context) error {
 
 	err = c.requestService.CancelRequestHandler(ctx, int32(requestIdInt))
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, fmt.Sprintf("Request canceled successfully: %d", requestIdInt))
@@ -627,8 +627,42 @@ func (c *RequestController) GetRetrospectiveReport(e echo.Context) error {
 
 	retrospectiveReportResponse, err := c.requestService.GetRetrospectiveReportHandler(ctx, sprintId)
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, retrospectiveReportResponse)
+}
+
+func (c *RequestController) CompleteRequestHandler(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	requestId := e.Param("id")
+	requestIdInt, err := strconv.Atoi(requestId)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	err = c.requestService.CompleteRequestHandler(ctx, int32(requestIdInt))
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, "Complete request succesfully")
+}
+
+func (c *RequestController) CompleteAllRequestBySprintIdHandler(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	sprintId := e.Param("sprintId")
+	sprintIdInt, err := strconv.Atoi(sprintId)
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	err = c.requestService.CompleteAllRequestBySprintIdHandler(ctx, int32(sprintIdInt))
+	if err != nil {
+		return e.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	return e.JSON(http.StatusOK, "Complete all request succesfully")
 }

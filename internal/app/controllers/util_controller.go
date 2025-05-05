@@ -26,7 +26,7 @@ func ExcelExtract(ctx echo.Context) error {
 
 	result, err := utils.ExcelExtract(file)
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": "Fail extract excel file"})
+		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Fail extract excel file"})
 	}
 
 	return ctx.JSON(http.StatusOK, result)

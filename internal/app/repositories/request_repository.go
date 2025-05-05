@@ -924,3 +924,20 @@ func (r *RequestRepository) FindOneRequestTemplateByWorkflowId(ctx context.Conte
 
 	return result, err
 }
+
+func (r *RequestRepository) FindAllRequestBySprintId(ctx context.Context, db *sql.DB, sprintId int32) ([]model.Requests, error) {
+	Requests := table.Requests
+
+	statement := Requests.SELECT(
+		Requests.AllColumns,
+	).FROM(
+		Requests,
+	).WHERE(
+		Requests.SprintID.EQ(postgres.Int32(sprintId)),
+	)
+
+	results := []model.Requests{}
+	err := statement.QueryContext(ctx, db, &results)
+
+	return results, err
+}

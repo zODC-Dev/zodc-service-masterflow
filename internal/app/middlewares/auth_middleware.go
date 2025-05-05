@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -12,7 +13,8 @@ import (
 func ExtractUserMiddleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			if strings.Contains(c.Path(), "/forms/data/") {
+			path := c.Path()
+			if strings.Contains(path, "/forms/data/") || regexp.MustCompile(`^/requests/\d+/complete$`).MatchString(path) || regexp.MustCompile(`^/sprint/\d+/complete$`).MatchString(path) {
 				return next(c)
 			}
 
@@ -78,7 +80,7 @@ func GetUserID(c echo.Context) (int32, error) {
 	userID, ok := c.Get("userID").(int32)
 
 	if !ok {
-		return 0, echo.NewHTTPError(http.StatusInternalServerError, "User ID not found in context")
+		return 0, echo.NewHTTPError(http.StatusBadRequest, "User ID not found in context")
 	}
 	return userID, nil
 }

@@ -41,7 +41,7 @@ func (c *FormController) CreateFormTemplate(e echo.Context) error {
 	}
 
 	if err := c.formService.CreateFormTemplate(ctx, req); err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusCreated, map[string]string{
@@ -70,7 +70,7 @@ func (c *FormController) FindAllFormTemplate(e echo.Context) error {
 		Search:     search,
 	})
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusCreated, formTemplates)
@@ -91,7 +91,7 @@ func (c *FormController) FindOneFormTemplateDetailByFormTemplateId(e echo.Contex
 
 	formTemplateDetails, err := c.formService.FindOneFormTemplateDetailByFormTemplateId(ctx, int32(formTemplateIdInt))
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, formTemplateDetails)
@@ -117,7 +117,7 @@ func (c *FormController) UpdateFormTemplate(e echo.Context) error {
 	}
 
 	if err := c.formService.UpdateFormTemplate(ctx, req, int32(formTemplateIdInt)); err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, map[string]string{
@@ -144,7 +144,7 @@ func (c *FormController) ConfigFormTemplate(e echo.Context) error {
 	}
 
 	if err := c.formService.ConfigFormTemplate(ctx, int32(formTemplateIdInt), req); err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, map[string]string{
@@ -162,7 +162,7 @@ func (c *FormController) FindOneFormDataByFormDataId(e echo.Context) error {
 
 	formData, err := c.formService.FindOneFormDataByFormDataId(ctx, formDataId)
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, formData)
@@ -173,7 +173,7 @@ func (c *FormController) GetEditProfileFormTemplate(e echo.Context) error {
 
 	formTemplate, err := c.formService.GetEditProfileFormTemplate(ctx)
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, formTemplate)
@@ -184,7 +184,7 @@ func (c *FormController) GetPerformanceEvaluateFormTemplate(e echo.Context) erro
 
 	formTemplate, err := c.formService.GetPerformanceEvaluateFormTemplate(ctx)
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, formTemplate)

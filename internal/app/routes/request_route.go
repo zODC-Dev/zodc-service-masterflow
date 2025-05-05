@@ -107,5 +107,9 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 		requestRoute.PUT("/:id/cancel", requestController.CancelRequest)
 
 		requestRoute.GET("/retrospective/report/:sprintId", requestController.GetRetrospectiveReport)
+
+		requestRoute.POST("/:id/complete", requestController.CompleteRequestHandler)
+
+		requestRoute.POST("/sprint/:sprintId/complete", requestController.CompleteAllRequestBySprintIdHandler)
 	}
 }

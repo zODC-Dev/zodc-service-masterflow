@@ -124,7 +124,6 @@ func (s *NodeService) CompleteNodeSwitchCaseLogic(ctx context.Context, tx *sql.T
 			if err := s.NotificationService.NotifyRequestCompleted(ctx, endNodeRequest.Title, userIds); err != nil {
 				return err
 			}
-
 		}
 
 		endNodeRequestModel := model.Requests{}
@@ -370,7 +369,7 @@ func (s *NodeService) CompleteNodeLogic(ctx context.Context, tx *sql.Tx, nodeId 
 		return err
 	}
 
-	if node.Type != string(constants.NodeTypeStart) && !node.IsCurrent {
+	if node.Workflows.Type != string(constants.WorkflowTypeProject) && node.Type != string(constants.NodeTypeStart) && !node.IsCurrent {
 		return fmt.Errorf("this node is not eligible to complete the node")
 	}
 
@@ -463,7 +462,7 @@ func (s *NodeService) StartNodeHandler(ctx context.Context, userId int32, nodeId
 		return fmt.Errorf("find node by node id fail: %w", err)
 	}
 
-	if !nodeResult.IsCurrent {
+	if nodeResult.Workflows.Type != string(constants.WorkflowTypeProject) && !nodeResult.IsCurrent {
 		return fmt.Errorf("this node is not eligible to start the node")
 	}
 

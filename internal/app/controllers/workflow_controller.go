@@ -48,7 +48,7 @@ func (c *WorkflowController) CreateWorkflow(e echo.Context) error {
 	}
 
 	if err := c.workflowService.CreateWorkflowHandler(ctx, req, userId); err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusCreated, map[string]string{
@@ -87,7 +87,7 @@ func (c *WorkflowController) FindAllWorkflow(e echo.Context) error {
 
 	workflows, err := c.workflowService.FindAllWorkflowHandler(ctx, workflowTemplateQueryParams, userId)
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, workflows)
@@ -107,12 +107,12 @@ func (c *WorkflowController) FindOneWorkflowDetail(e echo.Context) error {
 
 	workflowVersionId, err := strconv.Atoi(e.Param("id"))
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	workflowDetail, err := c.workflowService.FindOneWorkflowDetailHandler(ctx, int32(workflowVersionId))
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, workflowDetail)
@@ -142,7 +142,7 @@ func (c *WorkflowController) StartWorkflow(e echo.Context) error {
 
 	requestId, err := c.workflowService.StartWorkflowHandler(ctx, *req, userId)
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, responses.Response{
@@ -171,12 +171,12 @@ func (c *WorkflowController) ArchiveWorkflow(e echo.Context) error {
 
 	workflowId, err := strconv.Atoi(e.Param("id"))
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	err = c.workflowService.ArchiveWorkflowHandler(ctx, int32(workflowId))
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, map[string]string{
@@ -202,7 +202,7 @@ func (c *WorkflowController) UpdateWorkflow(e echo.Context) error {
 
 	workflowId, err := strconv.Atoi(e.Param("id"))
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	req := new(requests.UpdateWorkflow)
@@ -212,7 +212,7 @@ func (c *WorkflowController) UpdateWorkflow(e echo.Context) error {
 
 	err = c.workflowService.UpdateWorkflowHandler(ctx, req, int32(workflowId))
 	if err != nil {
-		return e.JSON(http.StatusInternalServerError, err.Error())
+		return e.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	return e.JSON(http.StatusOK, map[string]string{

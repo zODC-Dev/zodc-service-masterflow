@@ -22,36 +22,38 @@ import (
 )
 
 type RequestService struct {
-	DB              *sql.DB
-	RequestRepo     *repositories.RequestRepository
-	UserAPI         *externals.UserAPI
-	NodeRepo        *repositories.NodeRepository
-	ConnectionRepo  *repositories.ConnectionRepository
-	WorkflowRepo    *repositories.WorkflowRepository
-	WorkflowService *WorkflowService
-	NatsService     *NatsService
-	NodeService     *NodeService
-	FormService     *FormService
-	FormRepo        *repositories.FormRepository
-	HistoryRepo     *repositories.HistoryRepository
-	HistoryService  *HistoryService
+	DB                  *sql.DB
+	RequestRepo         *repositories.RequestRepository
+	UserAPI             *externals.UserAPI
+	NodeRepo            *repositories.NodeRepository
+	ConnectionRepo      *repositories.ConnectionRepository
+	WorkflowRepo        *repositories.WorkflowRepository
+	WorkflowService     *WorkflowService
+	NatsService         *NatsService
+	NodeService         *NodeService
+	FormService         *FormService
+	FormRepo            *repositories.FormRepository
+	HistoryRepo         *repositories.HistoryRepository
+	HistoryService      *HistoryService
+	NotificationService *NotificationService
 }
 
 func NewRequestService(cfg RequestService) *RequestService {
 	return &RequestService{
-		DB:              cfg.DB,
-		RequestRepo:     cfg.RequestRepo,
-		UserAPI:         cfg.UserAPI,
-		NodeRepo:        cfg.NodeRepo,
-		ConnectionRepo:  cfg.ConnectionRepo,
-		WorkflowRepo:    cfg.WorkflowRepo,
-		WorkflowService: cfg.WorkflowService,
-		NatsService:     cfg.NatsService,
-		NodeService:     cfg.NodeService,
-		FormService:     cfg.FormService,
-		FormRepo:        cfg.FormRepo,
-		HistoryRepo:     cfg.HistoryRepo,
-		HistoryService:  cfg.HistoryService,
+		DB:                  cfg.DB,
+		RequestRepo:         cfg.RequestRepo,
+		UserAPI:             cfg.UserAPI,
+		NodeRepo:            cfg.NodeRepo,
+		ConnectionRepo:      cfg.ConnectionRepo,
+		WorkflowRepo:        cfg.WorkflowRepo,
+		WorkflowService:     cfg.WorkflowService,
+		NatsService:         cfg.NatsService,
+		NodeService:         cfg.NodeService,
+		FormService:         cfg.FormService,
+		FormRepo:            cfg.FormRepo,
+		HistoryRepo:         cfg.HistoryRepo,
+		HistoryService:      cfg.HistoryService,
+		NotificationService: cfg.NotificationService,
 	}
 }
 
@@ -95,6 +97,58 @@ func (s *RequestService) UpdateCalculateRequestProgress(ctx context.Context, tx 
 		if err := s.UpdateCalculateRequestProgress(ctx, tx, *request.ParentID); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func (s *RequestService) CompleteRequestLogic(ctx context.Context, tx *sql.Tx, requestId int32) error {
+	request, err := s.RequestRepo.FindOneRequestByRequestIdTx(ctx, tx, requestId)
+	if err != nil {
+		return err
+	}
+
+	now := time.Now()
+
+	request.Status = string(constants.RequestStatusCompleted)
+	request.CompletedAt = &now
+	request.Progress = 100
+
+	requestModel := model.Requests{}
+	utils.Mapper(request, &requestModel)
+	err = s.RequestRepo.UpdateRequest(ctx, tx, requestModel)
+	if err != nil {
+		return err
+	}
+
+	// Get All User
+	userIds := []string{}
+	existingUserIds := map[string]bool{}
+	endNodeId := ""
+	for _, node := range request.Nodes {
+		if node.Type == string(constants.NodeTypeEnd) {
+			endNodeId = node.ID
+		}
+		if node.AssigneeID != nil {
+			if !existingUserIds[strconv.Itoa(int(*node.AssigneeID))] {
+				userIds = append(userIds, strconv.Itoa(int(*node.AssigneeID)))
+				existingUserIds[strconv.Itoa(int(*node.AssigneeID))] = true
+			}
+		}
+	}
+	// Avoid bug but never excuting this
+	if endNodeId == "" {
+		endNodeId = request.Nodes[0].ID
+	}
+
+	// History
+	if err := s.HistoryService.HistoryEndRequest(ctx, tx, request.ID, endNodeId); err != nil {
+		return err
+	}
+
+	// Notify
+	if err := s.NotificationService.NotifyRequestCompleted(ctx, request.Title, userIds); err != nil {
+		return err
 	}
 
 	return nil
@@ -1842,4 +1896,35 @@ func (s *RequestService) GetRetrospectiveReportHandler(ctx context.Context, spri
 	}
 
 	return retrospectiveReportResponse, nil
+}
+
+func (s *RequestService) CompleteRequestHandler(ctx context.Context, requestId int32) error {
+	tx, err := s.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	return s.CompleteRequestLogic(ctx, tx, requestId)
+}
+
+func (s *RequestService) CompleteAllRequestBySprintIdHandler(ctx context.Context, sprintId int32) error {
+	tx, err := s.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	requests, err := s.RequestRepo.FindAllRequestBySprintId(ctx, s.DB, sprintId)
+	if err != nil {
+		return err
+	}
+
+	for _, request := range requests {
+		if request.Status != string(constants.RequestStatusCompleted) {
+			if err := s.CompleteRequestLogic(ctx, tx, request.ID); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
