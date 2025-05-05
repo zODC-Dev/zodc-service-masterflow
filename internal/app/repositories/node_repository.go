@@ -65,13 +65,20 @@ func (r *NodeRepository) FindOneNodeByNodeId(ctx context.Context, db *sql.DB, no
 func (r *NodeRepository) FindOneNodeByNodeIdTx(ctx context.Context, tx *sql.Tx, nodeId string) (results.NodeResult, error) {
 	Nodes := table.Nodes
 	NodeForms := table.NodeForms
+	Workflows := table.Workflows
+	WorkflowVersions := table.WorkflowVersions
+	Requests := table.Requests
 
 	statement := postgres.SELECT(
 		Nodes.AllColumns,
 		NodeForms.AllColumns,
+		Workflows.AllColumns,
 	).FROM(
 		Nodes.
-			LEFT_JOIN(NodeForms, Nodes.ID.EQ(NodeForms.NodeID)),
+			LEFT_JOIN(NodeForms, Nodes.ID.EQ(NodeForms.NodeID)).
+			LEFT_JOIN(Requests, Requests.ID.EQ(Nodes.RequestID)).
+			LEFT_JOIN(WorkflowVersions, WorkflowVersions.ID.EQ(Requests.WorkflowVersionID)).
+			LEFT_JOIN(Workflows, Workflows.ID.EQ(WorkflowVersions.WorkflowID)),
 	).WHERE(
 		Nodes.ID.EQ(postgres.String(nodeId)),
 	)
