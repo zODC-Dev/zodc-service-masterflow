@@ -150,6 +150,8 @@ func (s *WorkflowService) MapToWorkflowNodeResponse(node model.Nodes) (responses
 		Level: node.Level,
 
 		IsCurrent: node.IsCurrent,
+
+		LastSyncedAt: node.LastSyncedAt,
 	}
 
 	if node.AttachFile != nil {
@@ -318,6 +320,8 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 			//
 			Description: storyReq.Node.Data.Description,
+
+			LastSyncedAt: storyReq.Node.LastSyncedAt,
 		}
 
 		if storyReq.Node.Data.AttachFiles != nil {
@@ -439,6 +443,8 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 				//
 				Description: storyNodeReq.Data.Description,
+
+				LastSyncedAt: storyNodeReq.LastSyncedAt,
 			}
 
 			if storyNodeReq.Data.AttachFiles != nil {
@@ -620,6 +626,8 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 
 			//
 			Description: workflowNodeReq.Data.Description,
+
+			LastSyncedAt: workflowNodeReq.LastSyncedAt,
 		}
 
 		if workflowNodeReq.Data.AttachFiles != nil {
@@ -914,9 +922,13 @@ func (s *WorkflowService) CreateWorkflowHandler(ctx context.Context, req *reques
 	// Tính toán Gantt Chart nếu có project key
 	if reqClone.ProjectKey != "" && reqClone.SprintId != nil {
 		// Luôn đồng bộ với Jira để thiết lập mối quan hệ giữa các tasks
-		_, err := s.NatsService.PublishWorkflowToJira(ctx, tx, reqClone.Nodes, reqClone.Stories, reqClone.Connections, reqClone.ProjectKey, *reqClone.SprintId)
+		response, err := s.NatsService.PublishWorkflowToJira(ctx, tx, reqClone.Nodes, reqClone.Stories, reqClone.Connections, reqClone.ProjectKey, *reqClone.SprintId)
 		if err != nil {
 			slog.Error("Failed to sync with Jira", "error", err)
+		}
+
+		if !response.Data.Data.Success {
+			return fmt.Errorf("sync workflow to Jira fail: %s", *response.Data.Data.ErrorMessage)
 		}
 	}
 
@@ -1336,11 +1348,15 @@ func (s *WorkflowService) StartWorkflowHandler(ctx context.Context, req requests
 			return 0, fmt.Errorf("nats service is nil")
 		}
 
-		_, err := s.NatsService.PublishWorkflowToJira(ctx, tx, reqClone.Nodes, reqClone.Stories, reqClone.Connections, *reqDetailClone.Workflow.ProjectKey, *reqClone.SprintID)
+		response, err := s.NatsService.PublishWorkflowToJira(ctx, tx, reqClone.Nodes, reqClone.Stories, reqClone.Connections, *reqDetailClone.Workflow.ProjectKey, *reqClone.SprintID)
 		if err != nil {
 			slog.Error("Failed to sync with Jira", "error", err)
 			// Tiếp tục xử lý, không return error
 		} else {
+			if !response.Success {
+				return 0, fmt.Errorf("sync workflow to Jira fail: %s", *response.Data.Data.ErrorMessage)
+			}
+
 			// Dùng lại bản đồ ID -> JiraKey đã có hoặc JiraKey từ database
 			updatedNodes := make([]requests.Node, len(reqClone.Nodes))
 			for i, node := range reqClone.Nodes {

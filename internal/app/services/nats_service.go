@@ -69,6 +69,7 @@ func (s *NatsService) PublishWorkflowToJira(ctx context.Context, tx *sql.Tx, nod
 			Title:         story.Title,
 			AssigneeId:    &story.Node.Data.Assignee.Id,
 			EstimatePoint: story.Node.Data.EstimatePoint,
+			LastSyncedAt:  story.Node.LastSyncedAt,
 			Action:        "create",
 		}
 
@@ -109,6 +110,7 @@ func (s *NatsService) PublishWorkflowToJira(ctx context.Context, tx *sql.Tx, nod
 			Title:         node.Data.Title,
 			AssigneeId:    &node.Data.Assignee.Id,
 			EstimatePoint: node.Data.EstimatePoint,
+			LastSyncedAt:  node.LastSyncedAt,
 			Action:        "create",
 		}
 
@@ -440,7 +442,7 @@ func (s *NatsService) PublishWorkflowToGanttChart(ctx context.Context, tx *sql.T
 			ganttRequest.Issues = append(ganttRequest.Issues, issue)
 		}
 	}
-		
+
 	// Processing Connections
 	processedConnections := make(map[string]bool)
 
@@ -635,6 +637,7 @@ func (s *NatsService) SyncNodeStatusToJira(ctx context.Context, tx *sql.Tx, node
 		JiraKey:       *node.JiraKey,
 		NodeId:        node.ID,
 		Status:        node.Status,
+		LastSyncedAt:  node.LastSyncedAt,
 	}
 
 	// Send to NATS
@@ -717,6 +720,7 @@ func (s *NatsService) PublishWorkflowEditToJira(ctx context.Context, tx *sql.Tx,
 			AssigneeId:    &story.Node.Data.Assignee.Id,
 			EstimatePoint: story.Node.Data.EstimatePoint,
 			Action:        "create",
+			LastSyncedAt:  story.Node.LastSyncedAt,
 		}
 
 		// Check if story existed before
@@ -751,6 +755,7 @@ func (s *NatsService) PublishWorkflowEditToJira(ctx context.Context, tx *sql.Tx,
 			AssigneeId:    &node.Data.Assignee.Id,
 			EstimatePoint: node.Data.EstimatePoint,
 			Action:        "create",
+			LastSyncedAt:  node.LastSyncedAt,
 		}
 
 		// Check if node existed before
@@ -944,7 +949,7 @@ func (s *NatsService) PublishWorkflowEditToJira(ctx context.Context, tx *sql.Tx,
 	}
 
 	// Check response success
-	if !syncResponse.Success || !syncResponse.Data.Success {
+	if !syncResponse.Success || !syncResponse.Data.Success || syncResponse.Data.Data.ErrorMessage != nil {
 		slog.Error("Jira edit synchronization failed",
 			"outerSuccess", syncResponse.Success,
 			"innerSuccess", syncResponse.Data.Success)
@@ -1008,7 +1013,7 @@ func (s *NatsService) SyncJiraWhenReassignNode(node model.Nodes) error {
 	if err := json.Unmarshal(response.Data, &syncResponse); err != nil {
 		return fmt.Errorf("failed to unmarshal Jira reassignment response: %w", err)
 	}
-
+	
 	// Kiểm tra kết quả
 	if !syncResponse.Success {
 		errorMsg := "unknown error"

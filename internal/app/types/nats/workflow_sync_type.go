@@ -1,14 +1,17 @@
 package nats
 
+import "time"
+
 // WorkflowSyncIssue represents an issue to be created/updated in Jira
 type WorkflowSyncIssue struct {
-	NodeId        string   `json:"node_id"`
-	Type          string   `json:"type"`
-	Title         string   `json:"title"`
-	AssigneeId    *int32   `json:"assignee_id,omitempty"`
-	JiraKey       string   `json:"jira_key,omitempty"`
-	EstimatePoint *float32 `json:"estimate_point,omitempty"`
-	Action        string   `json:"action"`
+	NodeId        string     `json:"node_id"`
+	Type          string     `json:"type"`
+	Title         string     `json:"title"`
+	AssigneeId    *int32     `json:"assignee_id,omitempty"`
+	JiraKey       string     `json:"jira_key,omitempty"`
+	EstimatePoint *float32   `json:"estimate_point,omitempty"`
+	LastSyncedAt  *time.Time `json:"last_synced_at,omitempty"`
+	Action        string     `json:"action"`
 }
 
 // JiraSyncLink represents a link between two issues in Jira
@@ -33,9 +36,11 @@ type WorkflowSyncResponse struct {
 	Data    struct {
 		Success bool `json:"success"`
 		Data    struct {
-			Issues []struct {
-				NodeId  string `json:"node_id"`
-				JiraKey string `json:"jira_key"`
+			Success      bool   `json:"success"`
+			ErrorMessage *string `json:"error_message"`
+			Issues       []struct {
+				NodeId      string `json:"node_id"`
+				JiraKey     string `json:"jira_key"`
 				JiraLinkURL string `json:"jira_link_url"`
 			} `json:"issues"`
 		} `json:"data"`

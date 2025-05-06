@@ -446,6 +446,11 @@ func (s *NodeService) CompleteNodeLogic(ctx context.Context, tx *sql.Tx, nodeId 
 		return err
 	}
 
+	// Sync with Jira
+	if err := s.SyncJiraWhenCompleteNode(ctx, tx, nodeModel); err != nil {
+		return fmt.Errorf("sync jira when complete node fail: %w", err)
+	}
+
 	return nil
 }
 

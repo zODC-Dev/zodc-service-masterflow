@@ -105,6 +105,8 @@ type NodeResponse struct {
 	Form []NodeFormDataResponse `json:"form"`
 
 	Level *int32 `json:"level"`
+
+	LastSyncedAt *time.Time `json:"lastSyncedAt"`
 }
 
 type ConnectionResponse struct {

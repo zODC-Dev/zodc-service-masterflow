@@ -29,6 +29,7 @@ type Nodes struct {
 	Type                      string
 	Status                    string
 	IsCurrent                 bool
+	LastSyncedAt              *time.Time
 	JiraLinkURL               *string
 	Description               *string
 	AttachFile                *string
