@@ -1,14 +1,17 @@
 package nats
 
+import "time"
+
 // WorkflowEditIssue represents an issue to be created or updated during workflow edit
 type WorkflowEditIssue struct {
-	NodeId        string   `json:"node_id"`
-	Type          string   `json:"type"` // "Story", "Task", "Bug", etc.
-	Title         string   `json:"title"`
-	AssigneeId    *int32   `json:"assignee_id,omitempty"`
-	JiraKey       string   `json:"jira_key,omitempty"`
-	EstimatePoint *float32 `json:"estimate_point,omitempty"`
-	Action        string   `json:"action"` // "create" or "update"
+	NodeId        string     `json:"node_id"`
+	Type          string     `json:"type"` // "Story", "Task", "Bug", etc.
+	Title         string     `json:"title"`
+	AssigneeId    *int32     `json:"assignee_id,omitempty"`
+	JiraKey       string     `json:"jira_key,omitempty"`
+	EstimatePoint *float32   `json:"estimate_point,omitempty"`
+	LastSyncedAt  *time.Time `json:"last_synced_at,omitempty"`
+	Action        string     `json:"action"` // "create" or "update"
 }
 
 // WorkflowEditConnection represents a connection between issues
@@ -41,9 +44,11 @@ type WorkflowEditResponse struct {
 	Data    struct {
 		Success bool `json:"success"`
 		Data    struct {
+			Success      bool   `json:"success"`
+			ErrorMessage *string `json:"error_message"`
 			Issues []struct {
-				NodeId  string `json:"node_id"`
-				JiraKey string `json:"jira_key"`
+				NodeId      string `json:"node_id"`
+				JiraKey     string `json:"jira_key"`
 				JiraLinkURL string `json:"jira_link_url"`
 			} `json:"issues"`
 		} `json:"data"`
