@@ -7,7 +7,7 @@ on:
       - dev
 env:
   SERVICE_NAME: zodc-service-masterflow
-  VERSION: 1.1.90
+  VERSION: 1.1.91
   REGISTRY_PROJECT: zodc
 
 jobs:
@@ -37,7 +37,7 @@ jobs:
       - name: Push Latest Image
         run: |
           docker push ${{ secrets.REGISTRY_HOST }}/${{ env.REGISTRY_PROJECT }}/${{ env.SERVICE_NAME }}:latest
-      
+
       - name: Pull In Server
         run: |
           sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_IP }} "
