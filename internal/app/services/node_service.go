@@ -521,19 +521,6 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 		return err
 	}
 
-	nodeResult, err := s.NodeRepo.FindOneNodeByNodeIdTx(ctx, tx, nodeId)
-	if err != nil {
-		return fmt.Errorf("find node by node id fail: %w", err)
-	}
-
-	node := model.Nodes{}
-	utils.Mapper(nodeResult, &node)
-
-	// Sync with Jira
-	if err := s.SyncJiraWhenCompleteNode(ctx, tx, node); err != nil {
-		return fmt.Errorf("sync jira when complete node fail: %w", err)
-	}
-
 	// Commit
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit fail: %w", err)
