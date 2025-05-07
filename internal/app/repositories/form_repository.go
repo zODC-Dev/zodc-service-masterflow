@@ -3,7 +3,6 @@ package repositories
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -285,8 +284,6 @@ func (r *FormRepository) UpdateFormFieldDataValueNodeProjectJira(ctx context.Con
 	statement := FormFieldData.UPDATE(FormFieldData.Value).
 		SET(postgres.String(value)).
 		WHERE(FormFieldData.ID.IN(statmentQueryNode))
-
-	fmt.Println(statement.DebugSql())
 
 	_, err := statement.ExecContext(ctx, tx)
 

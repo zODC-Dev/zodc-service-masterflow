@@ -2,7 +2,6 @@ package middlewares
 
 import (
 	"net/http"
-	"regexp"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -14,7 +13,7 @@ func ExtractUserMiddleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			path := c.Path()
-			if strings.Contains(path, "/forms/data/") || regexp.MustCompile(`^/requests/\d+/complete$`).MatchString(path) || regexp.MustCompile(`^/sprint/\d+/complete$`).MatchString(path) {
+			if strings.Contains(path, "/forms/data/") || strings.Contains(path, "/requests/:id/complete") || strings.Contains(path, "/requests/sprint/:sprintId/complete") {
 				return next(c)
 			}
 

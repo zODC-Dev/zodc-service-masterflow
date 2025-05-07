@@ -404,13 +404,7 @@ func (s *NodeService) CompleteNodeLogic(ctx context.Context, tx *sql.Tx, nodeId 
 			if err := s.NotificationService.NotifyTaskCompleted(ctx, tx, nodeModel); err != nil {
 				return err
 			}
-		} else {
-			// History
-			if err := s.HistoryService.HistorySystemNotificationComplete(ctx, tx, node.RequestID, nodeId); err != nil {
-				return err
-			}
 		}
-
 	}
 
 	// Connections
