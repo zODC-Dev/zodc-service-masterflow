@@ -24,8 +24,6 @@ const (
 type FormTemplateFieldFieldId string
 
 const (
-	FormTemplateFieldFieldIdKey             FormTemplateFieldFieldId = "key"
-	FormTemplateFieldFieldIdStatus          FormTemplateFieldFieldId = "status"
-	FormTemplateFieldFieldIdActualStartTime FormTemplateFieldFieldId = "actualStartTime"
-	FormTemplateFieldFieldIdActualEndTime   FormTemplateFieldFieldId = "actualEndTime"
+	FormTemplateFieldFieldIdKey    FormTemplateFieldFieldId = "key"
+	FormTemplateFieldFieldIdStatus FormTemplateFieldFieldId = "status"
 )

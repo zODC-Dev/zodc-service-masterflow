@@ -965,6 +965,11 @@ func (s *NatsService) PublishWorkflowEditToJira(ctx context.Context, tx *sql.Tx,
 		if err := s.NodeRepo.UpdateJiraLinkURL(ctx, tx, issue.NodeId, issue.JiraLinkURL); err != nil {
 			return natsModel.WorkflowEditResponse{}, fmt.Errorf("failed to update JiraLinkURL: %w", err)
 		}
+
+		// Update JiraKey in FormData table
+		if err := s.FormRepo.UpdateFormFieldDataValueNodeProjectJira(ctx, tx, issue.NodeId, string(constants.FormTemplateFieldFieldIdKey), issue.JiraKey); err != nil {
+			return natsModel.WorkflowEditResponse{}, fmt.Errorf("failed to update JiraKey: %w", err)
+		}
 	}
 
 	return syncResponse, nil

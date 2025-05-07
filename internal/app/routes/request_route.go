@@ -59,19 +59,20 @@ func RequestRoute(group *echo.Group, db *sql.DB) {
 	})
 
 	requestService := services.NewRequestService(services.RequestService{
-		DB:              db,
-		RequestRepo:     requestRepo,
-		UserAPI:         userApi,
-		WorkflowRepo:    workflowRepo,
-		WorkflowService: workflowService,
-		ConnectionRepo:  connectionRepo,
-		NodeRepo:        nodeRepo,
-		NatsService:     natsService,
-		NodeService:     nodeService,
-		FormService:     formService,
-		FormRepo:        formRepo,
-		HistoryRepo:     historyRepo,
-		HistoryService:  historyService,
+		DB:                  db,
+		RequestRepo:         requestRepo,
+		UserAPI:             userApi,
+		WorkflowRepo:        workflowRepo,
+		WorkflowService:     workflowService,
+		ConnectionRepo:      connectionRepo,
+		NodeRepo:            nodeRepo,
+		NatsService:         natsService,
+		NodeService:         nodeService,
+		FormService:         formService,
+		FormRepo:            formRepo,
+		HistoryRepo:         historyRepo,
+		HistoryService:      historyService,
+		NotificationService: notificationService,
 	})
 
 	nodeService.RequestService = requestService

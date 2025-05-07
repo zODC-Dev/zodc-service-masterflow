@@ -446,7 +446,7 @@ func (r *NodeRepository) FindAllNodeStoryByAssigneeId(ctx context.Context, db *s
 	).WHERE(
 		Nodes.AssigneeID.EQ(postgres.Int32(userId)).
 			AND((Nodes.Type.EQ(postgres.String(string(constants.NodeTypeStory)))).OR(Nodes.Type.EQ(postgres.String(string(constants.NodeTypeSubWorkflow))))).
-			AND(Workflows.IsArchived.EQ(postgres.Bool(false))),
+			AND(Requests.IsTemplate.EQ(postgres.Bool(true))),
 	)
 
 	results := []results.NodeResult{}

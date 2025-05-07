@@ -461,7 +461,6 @@ func (s *NodeService) CompleteNodeLogic(ctx context.Context, tx *sql.Tx, nodeId 
 
 	// Form Jira Update
 	s.FormRepo.UpdateFormFieldDataValueNodeProjectJira(ctx, tx, nodeId, string(constants.FormTemplateFieldFieldIdStatus), string(constants.NodeStatusCompleted))
-	s.FormRepo.UpdateFormFieldDataValueNodeProjectJira(ctx, tx, nodeId, string(constants.FormTemplateFieldFieldIdActualEndTime), now.Format("2006-01-02T15:04:05Z07:00"))
 
 	// Sync with Jira
 	if err := s.SyncJiraWhenCompleteNode(ctx, tx, nodeModel); err != nil {
@@ -504,7 +503,6 @@ func (s *NodeService) StartNodeHandler(ctx context.Context, userId int32, nodeId
 
 	// Form Jira Status Update
 	s.FormRepo.UpdateFormFieldDataValueNodeProjectJira(ctx, tx, nodeId, string(constants.FormTemplateFieldFieldIdStatus), string(constants.NodeStatusInProgress))
-	s.FormRepo.UpdateFormFieldDataValueNodeProjectJira(ctx, tx, nodeId, string(constants.FormTemplateFieldFieldIdActualEndTime), now.Format("2006-01-02T15:04:05Z07:00"))
 
 	// Sync with Jira
 	if err := s.SyncJiraWhenStartNode(ctx, tx, node); err != nil {
