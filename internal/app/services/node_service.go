@@ -339,6 +339,7 @@ func (s *NodeService) CompleteNodeSwitchCaseLogic(ctx context.Context, tx *sql.T
 			}
 		}
 
+		// Send notification
 		notificationBytes, err := json.Marshal(notification)
 		if err != nil {
 			return fmt.Errorf("marshal notification failed: %w", err)
@@ -392,16 +393,24 @@ func (s *NodeService) CompleteNodeLogic(ctx context.Context, tx *sql.Tx, nodeId 
 	}
 
 	if node.Type != string(constants.NodeTypeStart) {
-		// History
-		oldStatus := string(constants.NodeStatusInProgress)
-		if err := s.HistoryService.HistoryChangeNodeStatus(ctx, tx, userId, node.RequestID, nodeId, &oldStatus, string(constants.NodeStatusCompleted)); err != nil {
-			return err
+		if node.Type != string(constants.NodeTypeNotification) {
+			// History
+			oldStatus := string(constants.NodeStatusInProgress)
+			if err := s.HistoryService.HistoryChangeNodeStatus(ctx, tx, userId, node.RequestID, nodeId, &oldStatus, string(constants.NodeStatusCompleted)); err != nil {
+				return err
+			}
+
+			// Notify
+			if err := s.NotificationService.NotifyTaskCompleted(ctx, tx, nodeModel); err != nil {
+				return err
+			}
+		} else {
+			// History
+			if err := s.HistoryService.HistorySystemNotificationComplete(ctx, tx, node.RequestID, nodeId); err != nil {
+				return err
+			}
 		}
 
-		// Notify
-		if err := s.NotificationService.NotifyTaskCompleted(ctx, tx, nodeModel); err != nil {
-			return err
-		}
 	}
 
 	// Connections
