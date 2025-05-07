@@ -237,6 +237,8 @@ func (s *NodeService) CompleteNodeSwitchCaseLogic(ctx context.Context, tx *sql.T
 		}
 	case string(constants.NodeTypeApproval):
 		request, _ := s.RequestRepo.FindOneRequestByNodeId(ctx, s.DB, nextNode.ID)
+
+		// Notify
 		if err := s.NotificationService.NotifyNodeApproveNeeded(ctx, request.Title, *nextNode.AssigneeID); err != nil {
 			return err
 		}
@@ -253,8 +255,10 @@ func (s *NodeService) CompleteNodeSwitchCaseLogic(ctx context.Context, tx *sql.T
 		fallthrough
 	case string(constants.NodeTypeTask):
 		// Notify
-		if err := s.NotificationService.NotifyTaskAvailable(ctx, nextNode.Title, users.Data[0].ID); err != nil {
-			return err
+		if nextNode.Type != string(constants.NodeTypeApproval) {
+			if err := s.NotificationService.NotifyTaskAvailable(ctx, nextNode.Title, users.Data[0].ID); err != nil {
+				return err
+			}
 		}
 
 		// History
