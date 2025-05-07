@@ -966,7 +966,6 @@ func (s *RequestService) UpdateRequestHandler(ctx context.Context, requestId int
 	// ================================ SYNC WITH JIRA ================================
 	// Sync with Jira if this is a project workflow with project key
 	if originalRequest.Workflow.Type == string(constants.WorkflowTypeProject) && originalRequest.Workflow.ProjectKey != nil {
-		jiraKeyMap := make(map[string]string)
 		// Get the NatsService from WorkflowService
 
 		// Need to convert the original nodes and connections to the proper types
@@ -1004,29 +1003,37 @@ func (s *RequestService) UpdateRequestHandler(ctx context.Context, requestId int
 				return fmt.Errorf("sync workflow to Jira fail: %s", *response.Data.Data.ErrorMessage)
 			}
 
-			// Dùng lại bản đồ ID -> JiraKey đã có hoặc JiraKey từ database
+			// Sử dụng thông tin issues từ response của Jira
 			updatedNodes := make([]requests.Node, len(finalNodes))
 			for i, node := range finalNodes {
 				updatedNode := node
-				// Ưu tiên JiraKey từ Jira response
-				if jiraKey, exists := jiraKeyMap[node.Id]; exists && jiraKey != "" {
-					updatedNode.JiraKey = &jiraKey
+				// Tìm JiraKey từ response của Jira
+				for _, issue := range response.Data.Data.Issues {
+					if issue.NodeId == node.Id {
+						updatedNode.JiraKey = &issue.JiraKey
+						updatedNode.Data.JiraLinkUrl = &issue.JiraLinkURL
+						break
+					}
 				}
 				updatedNodes[i] = updatedNode
 			}
 
-			// Cập nhật JiraKey cho stories
+			// Cập nhật JiraKey cho stories từ response của Jira
 			updatedStories := make([]requests.Story, len(req.Stories))
 			for i, story := range req.Stories {
 				updatedStory := story
-				// Ưu tiên JiraKey từ Jira response
-				if jiraKey, exists := jiraKeyMap[story.Node.Id]; exists && jiraKey != "" {
-					updatedStory.Node.JiraKey = &jiraKey
+				// Tìm JiraKey từ response của Jira
+				for _, issue := range response.Data.Data.Issues {
+					if issue.NodeId == story.Node.Id {
+						updatedStory.Node.JiraKey = &issue.JiraKey
+						updatedStory.Node.Data.JiraLinkUrl = &issue.JiraLinkURL
+						break
+					}
 				}
 				updatedStories[i] = updatedStory
 			}
 
-			// Tính toán Gantt Chart với JiraKey đã cập nhật
+			// Tính toán Gantt Chart với JiraKey đã cập nhật từ response
 			if err := s.NatsService.PublishWorkflowToGanttChart(ctx, tx, updatedNodes, updatedStories, finalConnections, *originalRequest.Workflow.ProjectKey, *originalRequest.SprintID, originalRequest.Workflow.ID); err != nil {
 				slog.Error("Failed to calculate Gantt Chart", "error", err)
 			}
@@ -1094,6 +1101,48 @@ func (s *RequestService) UpdateRequestHandler(ctx context.Context, requestId int
 	// --- End Logic for Update Request ---
 	if err := s.UpdateCalculateRequestProgress(ctx, tx, requestId); err != nil {
 		return err
+	}
+
+	// Calculate Gantt Chart if project key exists
+	if originalRequest.Workflow.ProjectKey != nil && originalRequest.SprintID != nil && s.NatsService != nil {
+		// Create a map to track JiraKeys
+		jiraKeyMap := make(map[string]string)
+
+		// Sync with Jira first
+		response, err := s.NatsService.PublishWorkflowToJira(ctx, tx, req.Nodes, req.Stories, req.Connections, *originalRequest.Workflow.ProjectKey, *originalRequest.SprintID)
+		if err != nil {
+			slog.Error("Failed to sync with Jira", "error", err)
+			// Continue processing, don't return error
+		} else {
+			if !response.Success {
+				return fmt.Errorf("sync workflow to Jira fail: %s", *response.Data.Data.ErrorMessage)
+			}
+
+			// Update nodes with JiraKeys
+			updatedNodes := make([]requests.Node, len(req.Nodes))
+			for i, node := range req.Nodes {
+				updatedNode := node
+				if jiraKey, exists := jiraKeyMap[node.Id]; exists && jiraKey != "" {
+					updatedNode.JiraKey = &jiraKey
+				}
+				updatedNodes[i] = updatedNode
+			}
+
+			// Update stories with JiraKeys
+			updatedStories := make([]requests.Story, len(req.Stories))
+			for i, story := range req.Stories {
+				updatedStory := story
+				if jiraKey, exists := jiraKeyMap[story.Node.Id]; exists && jiraKey != "" {
+					updatedStory.Node.JiraKey = &jiraKey
+				}
+				updatedStories[i] = updatedStory
+			}
+
+			// Calculate Gantt Chart with updated JiraKeys
+			if err := s.NatsService.PublishWorkflowToGanttChart(ctx, tx, updatedNodes, updatedStories, req.Connections, *originalRequest.Workflow.ProjectKey, *originalRequest.SprintID, originalRequest.Workflow.ID); err != nil {
+				slog.Error("Failed to calculate Gantt Chart", "error", err)
+			}
+		}
 	}
 
 	//Commit

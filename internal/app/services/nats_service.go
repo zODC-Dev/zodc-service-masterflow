@@ -1013,7 +1013,7 @@ func (s *NatsService) SyncJiraWhenReassignNode(node model.Nodes) error {
 	if err := json.Unmarshal(response.Data, &syncResponse); err != nil {
 		return fmt.Errorf("failed to unmarshal Jira reassignment response: %w", err)
 	}
-	
+
 	// Kiểm tra kết quả
 	if !syncResponse.Success {
 		errorMsg := "unknown error"
