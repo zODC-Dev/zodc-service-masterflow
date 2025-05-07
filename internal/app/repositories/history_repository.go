@@ -44,6 +44,9 @@ func (r *HistoryRepository) FindAllHistoryByRequestId(ctx context.Context, db *s
 	).ORDER_BY(
 		Histories.CreatedAt.DESC(),
 		Histories.TypeAction.EQ(postgres.String(constants.HistoryTypeNewTask)).DESC(),
+		Histories.TypeAction.EQ(postgres.String(constants.HistoryTypeEndRequest)).DESC(),
+		Histories.TypeAction.EQ(postgres.String(constants.HistoryTypeTerminateRequest)).DESC(),
+		Histories.TypeAction.EQ(postgres.String(constants.HistoryTypeCancelRequest)).DESC(),
 	)
 
 	var histories []results.HistoryResult

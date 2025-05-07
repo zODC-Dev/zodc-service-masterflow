@@ -237,6 +237,8 @@ func (s *NodeService) CompleteNodeSwitchCaseLogic(ctx context.Context, tx *sql.T
 		}
 	case string(constants.NodeTypeApproval):
 		request, _ := s.RequestRepo.FindOneRequestByNodeId(ctx, s.DB, nextNode.ID)
+
+		// Notify
 		if err := s.NotificationService.NotifyNodeApproveNeeded(ctx, request.Title, *nextNode.AssigneeID); err != nil {
 			return err
 		}
@@ -253,8 +255,10 @@ func (s *NodeService) CompleteNodeSwitchCaseLogic(ctx context.Context, tx *sql.T
 		fallthrough
 	case string(constants.NodeTypeTask):
 		// Notify
-		if err := s.NotificationService.NotifyTaskAvailable(ctx, nextNode.Title, users.Data[0].ID); err != nil {
-			return err
+		if nextNode.Type != string(constants.NodeTypeApproval) {
+			if err := s.NotificationService.NotifyTaskAvailable(ctx, nextNode.Title, users.Data[0].ID); err != nil {
+				return err
+			}
 		}
 
 		// History
@@ -335,6 +339,7 @@ func (s *NodeService) CompleteNodeSwitchCaseLogic(ctx context.Context, tx *sql.T
 			}
 		}
 
+		// Send notification
 		notificationBytes, err := json.Marshal(notification)
 		if err != nil {
 			return fmt.Errorf("marshal notification failed: %w", err)
@@ -388,16 +393,24 @@ func (s *NodeService) CompleteNodeLogic(ctx context.Context, tx *sql.Tx, nodeId 
 	}
 
 	if node.Type != string(constants.NodeTypeStart) {
-		// History
-		oldStatus := string(constants.NodeStatusInProgress)
-		if err := s.HistoryService.HistoryChangeNodeStatus(ctx, tx, userId, node.RequestID, nodeId, &oldStatus, string(constants.NodeStatusCompleted)); err != nil {
-			return err
+		if node.Type != string(constants.NodeTypeNotification) {
+			// History
+			oldStatus := string(constants.NodeStatusInProgress)
+			if err := s.HistoryService.HistoryChangeNodeStatus(ctx, tx, userId, node.RequestID, nodeId, &oldStatus, string(constants.NodeStatusCompleted)); err != nil {
+				return err
+			}
+
+			// Notify
+			if err := s.NotificationService.NotifyTaskCompleted(ctx, tx, nodeModel); err != nil {
+				return err
+			}
+		} else {
+			// History
+			if err := s.HistoryService.HistorySystemNotificationComplete(ctx, tx, node.RequestID, nodeId); err != nil {
+				return err
+			}
 		}
 
-		// Notify
-		if err := s.NotificationService.NotifyTaskCompleted(ctx, tx, nodeModel); err != nil {
-			return err
-		}
 	}
 
 	// Connections
@@ -519,19 +532,6 @@ func (s *NodeService) CompleteNodeHandler(ctx context.Context, nodeId string, us
 
 	if err := s.CompleteNodeLogic(ctx, tx, nodeId, userId); err != nil {
 		return err
-	}
-
-	nodeResult, err := s.NodeRepo.FindOneNodeByNodeIdTx(ctx, tx, nodeId)
-	if err != nil {
-		return fmt.Errorf("find node by node id fail: %w", err)
-	}
-
-	node := model.Nodes{}
-	utils.Mapper(nodeResult, &node)
-
-	// Sync with Jira
-	if err := s.SyncJiraWhenCompleteNode(ctx, tx, node); err != nil {
-		return fmt.Errorf("sync jira when complete node fail: %w", err)
 	}
 
 	// Commit
