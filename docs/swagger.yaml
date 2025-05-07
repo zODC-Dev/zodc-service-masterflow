@@ -1,125 +1,16 @@
 basePath: /api/v1  // Adjusted BasePath for clarity (e.g., /api/v1) - Ensure routes
   match this prefix
 definitions:
-  requests.Connection:
+  requests.CreateComment:
     properties:
-      from:
-        type: string
-      id:
-        type: string
-      isCompleted:
-        type: boolean
-      text:
-        type: string
-      to:
+      content:
         type: string
     type: object
   requests.CreateWorkflow:
-    properties:
-      categoryId:
-        type: integer
-      connections:
-        items:
-          $ref: '#/definitions/requests.Connection'
-        type: array
-      decoration:
-        type: string
-      description:
-        type: string
-      nodes:
-        description: ko chứa story
-        items:
-          $ref: '#/definitions/requests.Node'
-        type: array
-      projectKey:
-        type: string
-      sprintId:
-        type: integer
-      stories:
-        items:
-          $ref: '#/definitions/requests.Story'
-        type: array
-      title:
-        type: string
-      type:
-        type: string
     type: object
   requests.FormTemplateCreate:
     type: object
-  requests.Node:
-    properties:
-      data:
-        $ref: '#/definitions/requests.NodeData'
-      form:
-        items:
-          $ref: '#/definitions/requests.NodeForm'
-        type: array
-      id:
-        type: string
-      isCurrent:
-        type: boolean
-      jiraKey:
-        type: string
-      lastSyncedAt:
-        type: string
-      level:
-        type: integer
-      parentId:
-        type: string
-      position:
-        $ref: '#/definitions/types.Position'
-      size:
-        $ref: '#/definitions/types.Size'
-      status:
-        type: string
-      type:
-        type: string
-    type: object
-  requests.NodeData:
-    properties:
-      actualEndTime:
-        type: string
-      actualStartTime:
-        type: string
-      assignee:
-        $ref: '#/definitions/requests.NodeDataAssignee'
-      attachFile:
-        type: string
-      condition:
-        $ref: '#/definitions/requests.NodeDataCondition'
-      description:
-        type: string
-      editorContent:
-        $ref: '#/definitions/requests.NodeDataEditorContent'
-      endDate:
-        type: string
-      endType:
-        type: string
-      estimatePoint:
-        type: number
-      formAttached:
-        items:
-          $ref: '#/definitions/requests.NodeDataFormAttached'
-        type: array
-      jiraKey:
-        type: string
-      jiraLinkUrl:
-        type: string
-      plannedEndTime:
-        type: string
-      plannedStartTime:
-        description: Add for update request
-        type: string
-      subRequestID:
-        type: integer
-      taskCompleted:
-        $ref: '#/definitions/requests.TaskConfigNotification'
-      taskStarted:
-        $ref: '#/definitions/requests.TaskConfigNotification'
-      title:
-        type: string
-      type:
-        type: string
+  requests.FormTemplateUpdate:
     type: object
   requests.NodeDataAssignee:
     properties:
@@ -194,88 +85,17 @@ definitions:
       isApproved:
         type: boolean
     type: object
-  requests.NodeForm:
+  requests.NodesConnectionsStories:
+    type: object
+  requests.RequestUpdateRequest:
+    type: object
+  requests.StartWorkflow:
+    type: object
+  requests.SubmitNodeFormRequest:
     properties:
       fieldId:
         type: string
       value:
-        type: string
-    type: object
-  requests.NodesConnectionsStories:
-    properties:
-      connections:
-        items:
-          $ref: '#/definitions/requests.Connection'
-        type: array
-      nodes:
-        description: ko chứa story
-        items:
-          $ref: '#/definitions/requests.Node'
-        type: array
-      stories:
-        items:
-          $ref: '#/definitions/requests.Story'
-        type: array
-    type: object
-  requests.RequestUpdateRequest:
-    properties:
-      connections:
-        items:
-          $ref: '#/definitions/requests.Connection'
-        type: array
-      nodes:
-        description: ko chứa story
-        items:
-          $ref: '#/definitions/requests.Node'
-        type: array
-      stories:
-        items:
-          $ref: '#/definitions/requests.Story'
-        type: array
-    type: object
-  requests.StartWorkflow:
-    properties:
-      connections:
-        items:
-          $ref: '#/definitions/requests.Connection'
-        type: array
-      isTemplate:
-        type: boolean
-      nodes:
-        description: ko chứa story
-        items:
-          $ref: '#/definitions/requests.Node'
-        type: array
-      requestID:
-        type: integer
-      sprintID:
-        type: integer
-      stories:
-        items:
-          $ref: '#/definitions/requests.Story'
-        type: array
-      template:
-        $ref: '#/definitions/requests.NodesConnectionsStories'
-      title:
-        type: string
-    type: object
-  requests.Story:
-    properties:
-      categoryId:
-        type: integer
-      categoryKey:
-        type: string
-      decoration:
-        type: string
-      description:
-        type: string
-      isSystemLinked:
-        type: boolean
-      node:
-        $ref: '#/definitions/requests.Node'
-      title:
-        type: string
-      type:
         type: string
     type: object
   requests.TaskConfigNotification:
@@ -324,6 +144,15 @@ definitions:
       name:
         type: string
       type:
+        type: string
+    type: object
+  responses.CommentResponse:
+    properties:
+      assignee:
+        $ref: '#/definitions/types.Assignee'
+      content:
+        type: string
+      createdAt:
         type: string
     type: object
   responses.ConnectionResponse:
@@ -488,10 +317,18 @@ definitions:
         type: string
       assignee:
         $ref: '#/definitions/types.Assignee'
+      attachFiles:
+        items:
+          type: string
+        type: array
       condition:
         $ref: '#/definitions/responses.NodeDataConditionResponse'
+      description:
+        type: string
       editorContent:
         $ref: '#/definitions/responses.NodeDataResponseEditorContent'
+      endDate:
+        type: string
       endType:
         type: string
       estimatePoint:
@@ -526,6 +363,10 @@ definitions:
         items:
           type: string
         type: array
+      isSendApprovedForm:
+        type: boolean
+      isSendRejectedForm:
+        type: boolean
       subject:
         type: string
       to:
@@ -590,6 +431,8 @@ definitions:
         type: boolean
       jiraKey:
         type: string
+      lastSyncedAt:
+        type: string
       level:
         type: integer
       parentId:
@@ -604,6 +447,17 @@ definitions:
         type: string
       type:
         type: string
+    type: object
+  responses.NodeTaskCountResponse:
+    properties:
+      activeRequests:
+        type: integer
+      approvalTasks:
+        type: integer
+      inputTasks:
+        type: integer
+      projectTasks:
+        type: integer
     type: object
   responses.RequestCompletedFormApprovalOverviewResponse:
     properties:
@@ -725,6 +579,8 @@ definitions:
         type: integer
       isArchived:
         type: boolean
+      isTemplate:
+        type: boolean
       lastAssignee:
         $ref: '#/definitions/types.Assignee'
       nodes:
@@ -804,6 +660,12 @@ definitions:
         type: string
       assignee:
         $ref: '#/definitions/types.Assignee'
+      attachFiles:
+        items:
+          type: string
+        type: array
+      description:
+        type: string
       estimatePoint:
         type: number
       id:
@@ -870,6 +732,12 @@ definitions:
         type: string
       assignee:
         $ref: '#/definitions/types.Assignee'
+      attachFiles:
+        items:
+          type: string
+        type: array
+      description:
+        type: string
       estimatePoint:
         type: number
       id:
@@ -921,10 +789,14 @@ definitions:
     properties:
       assignee:
         $ref: '#/definitions/types.Assignee'
+      id:
+        type: string
       key:
         type: string
       status:
         type: string
+      subRequestId:
+        type: integer
       title:
         type: string
       type:
@@ -951,6 +823,8 @@ definitions:
       id:
         type: integer
       isArchived:
+        type: boolean
+      isTemplate:
         type: boolean
       lastAssignee:
         $ref: '#/definitions/types.Assignee'
@@ -1065,6 +939,31 @@ paths:
       summary: Lấy danh sách tất cả Category
       tags:
       - Categories
+  /forms/data/{formDataId}:
+    get:
+      description: Retrieves detailed data of a specific submitted form by its ID.
+      parameters:
+      - description: Form Data ID
+        in: path
+        name: formDataId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.JiraFormDetailResponse'
+        "400":
+          description: 'error: Invalid ID or service error'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get form data by ID
+      tags:
+      - FormData
   /forms/templates:
     get:
       description: Retrieves a list of form templates, optionally filtered by category
@@ -1125,6 +1024,105 @@ paths:
       summary: Create a new form template
       tags:
       - Forms
+  /forms/templates/{formTemplateId}:
+    put:
+      consumes:
+      - application/json
+      description: Updates the details of a specific form template by its ID.
+      parameters:
+      - description: Form Template ID
+        in: path
+        name: formTemplateId
+        required: true
+        type: integer
+      - description: Form Template update payload
+        in: body
+        name: formTemplate
+        required: true
+        schema:
+          $ref: '#/definitions/requests.FormTemplateUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: Form template updated successfully'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: 'error: Invalid ID, bad request, or service error'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update a form template
+      tags:
+      - Forms
+  /forms/templates/{formTemplateId}/details:
+    get:
+      description: Retrieves detailed information of a specific form template using
+        its ID.
+      parameters:
+      - description: Form Template ID
+        in: path
+        name: formTemplateId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.FormTemplateDetails'
+        "400":
+          description: 'error: Invalid formTemplateId or service error'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get form template detail by ID
+      tags:
+      - Forms
+  /forms/templates/edit-profile:
+    get:
+      description: Retrieves the form template used for editing a user's profile.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.FormTemplateDetails'
+        "400":
+          description: 'error: Service error or unable to retrieve the form template'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get edit profile form template
+      tags:
+      - Forms
+  /forms/templates/performance-evaluate:
+    get:
+      description: Retrieves the form template used for performance evaluations.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.FormTemplateDetails'
+        "400":
+          description: 'error: Service error or unable to retrieve the form template'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get performance evaluation form template
+      tags:
+      - Forms
   /history/{requestId}:
     get:
       consumes:
@@ -1160,6 +1158,96 @@ paths:
       summary: Find all history by request id
       tags:
       - History
+  /nodes/{id}/approve:
+    put:
+      description: Approves a specific node based on its ID. The user must have permission
+        to approve the node.
+      parameters:
+      - description: Node ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: Node approved successfully'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: 'error: Invalid node ID, permission issues, or service error'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Approve a node
+      tags:
+      - Nodes
+  /nodes/{id}/comments:
+    get:
+      description: Retrieves all comments associated with a specific node.
+      parameters:
+      - description: Node ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            items:
+              $ref: '#/definitions/responses.CommentResponse'
+            type: array
+        "400":
+          description: 'error: Invalid node ID or service error'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get all comments for a node
+      tags:
+      - Comments
+    post:
+      consumes:
+      - application/json
+      description: Adds a comment to a specific node, submitted by the authenticated
+        user.
+      parameters:
+      - description: Node ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Comment payload
+        in: body
+        name: comment
+        required: true
+        schema:
+          $ref: '#/definitions/requests.CreateComment'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: Comment created successfully'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: 'error: Invalid input or service error'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new comment on a node
+      tags:
+      - Comments
   /nodes/{id}/complete:
     patch:
       description: Marks a specific node as completed by the logged-in user.
@@ -1222,6 +1310,158 @@ paths:
       summary: Get node form based on permission
       tags:
       - Nodes
+  /nodes/{id}/forms/{formDataId}/edit:
+    put:
+      consumes:
+      - application/json
+      description: Edits a specific form data associated with a node, requiring node
+        ID and form ID.
+      parameters:
+      - description: Node ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Form Data ID
+        in: path
+        name: formDataId
+        required: true
+        type: string
+      - description: Form data submission payload
+        in: body
+        name: body
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/requests.SubmitNodeFormRequest'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: Node form edited successfully'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: 'error: Invalid node ID, form ID, or service error'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Edit a form associated with a node
+      tags:
+      - Nodes
+  /nodes/{id}/forms/{formId}/approve:
+    put:
+      description: Approves a specific form based on node ID and form ID. The user
+        must have permission to approve the form.
+      parameters:
+      - description: Node ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Form ID
+        in: path
+        name: formId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: Node form approved successfully'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: 'error: Invalid node ID, form ID, or service error'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Approve a form associated with a node
+      tags:
+      - Nodes
+  /nodes/{id}/forms/{formId}/reject:
+    put:
+      description: Rejects a specific form based on node ID and form ID. The user
+        must have permission to reject the form.
+      parameters:
+      - description: Node ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Form ID
+        in: path
+        name: formId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: Node form rejected successfully'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: 'error: Invalid node ID, form ID, or service error'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Reject a form associated with a node
+      tags:
+      - Nodes
+  /nodes/{id}/forms/{formId}/submit:
+    post:
+      consumes:
+      - application/json
+      description: Submits form data for a specific node based on node ID and form
+        ID. Requires user authentication and valid data.
+      parameters:
+      - description: Node ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Form ID
+        in: path
+        name: formId
+        required: true
+        type: string
+      - description: Form submission data
+        in: body
+        name: body
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/requests.SubmitNodeFormRequest'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: Node form submitted successfully'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: 'error: Invalid node ID, form ID, or submission error'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Submit a form associated with a node
+      tags:
+      - Nodes
   /nodes/{id}/jira-form:
     get:
       description: Retrieves the Jira-specific form details associated with a node.
@@ -1246,6 +1486,67 @@ paths:
               type: string
             type: object
       summary: Get Jira form for a node
+      tags:
+      - Nodes
+  /nodes/{id}/reassign/{userId}:
+    put:
+      description: Reassigns a specific node to a new user based on node ID and user
+        ID. The current user must have permission to reassign the node.
+      parameters:
+      - description: Node ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User ID (new assignee)
+        in: path
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: Node re-assigned successfully'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: 'error: Invalid node ID, user ID, or service error'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Reassign a node to a new user
+      tags:
+      - Nodes
+  /nodes/{id}/reject:
+    put:
+      description: Rejects a specific node based on its ID. The user must have permission
+        to reject the node.
+      parameters:
+      - description: Node ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: Node rejected successfully'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: 'error: Invalid node ID, permission issues, or service error'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Reject a node
       tags:
       - Nodes
   /nodes/{id}/start:
@@ -1300,6 +1601,66 @@ paths:
               type: string
             type: object
       summary: Get task details for a node
+      tags:
+      - Nodes
+  /nodes/{id}/tasks/count:
+    get:
+      description: Returns the total number of tasks associated with a specific node.
+      parameters:
+      - description: Node ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.NodeTaskCountResponse'
+        "400":
+          description: 'error: Error message for bad request (e.g., invalid ID, service
+            error)'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get task count for a node
+      tags:
+      - Nodes
+  /nodes}/stories:
+    get:
+      description: Retrieves a list of stories that are assigned to a specific user
+        (assignee) on a given node.
+      parameters:
+      - description: Node ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Assignee ID or username
+        in: query
+        name: assignee
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/responses.WorkflowResponse'
+            type: array
+        "400":
+          description: 'error: Error message for bad request (e.g., missing ID, service
+            error)'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get stories assigned to a user on a node
       tags:
       - Nodes
   /requests:
@@ -1452,6 +1813,31 @@ paths:
           schema:
             type: string
       summary: Cancel a request
+      tags:
+      - Requests
+  /requests/{id}/complete:
+    put:
+      description: Marks a specific request as completed based on its request ID.
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Complete request successfully
+          schema:
+            type: string
+        "400":
+          description: 'error: Invalid request ID or service error'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Complete a specific request
       tags:
       - Requests
   /requests/{id}/completed-form:
@@ -1701,6 +2087,32 @@ paths:
       - application/json
       responses: {}
       summary: Get retrospective report
+      tags:
+      - Requests
+  /requests/sprint/{sprintId}/complete:
+    put:
+      description: Marks all requests for a specific sprint as completed based on
+        the sprint ID.
+      parameters:
+      - description: Sprint ID
+        in: path
+        name: sprintId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Complete all requests successfully
+          schema:
+            type: string
+        "400":
+          description: 'error: Invalid sprint ID or service error'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Complete all requests for a specific sprint
       tags:
       - Requests
   /requests/tasks/by-project:

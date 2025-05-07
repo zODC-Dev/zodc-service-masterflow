@@ -304,6 +304,8 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			JiraLinkURL: storyReq.Node.Data.JiraLinkUrl,
 
 			PlannedEndTime: setTimeToEndOfWorkday(storyReq.Node.Data.EndDate),
+			EndDate:        setTimeToEndOfWorkday(storyReq.Node.Data.EndDate),
+
 			// Index
 			Level: storyReq.Node.Level,
 
@@ -427,6 +429,8 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 				JiraLinkURL: storyNodeReq.Data.JiraLinkUrl,
 
 				PlannedEndTime: setTimeToEndOfWorkday(storyNodeReq.Data.EndDate),
+				EndDate:        setTimeToEndOfWorkday(storyNodeReq.Data.EndDate),
+
 				//
 				Level: storyNodeReq.Level,
 
@@ -606,6 +610,7 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 			JiraKey: workflowNodeReq.JiraKey,
 
 			PlannedEndTime: setTimeToEndOfWorkday(workflowNodeReq.Data.EndDate),
+			EndDate:        setTimeToEndOfWorkday(workflowNodeReq.Data.EndDate),
 
 			Subject: workflowNodeReq.Data.EditorContent.Subject,
 			Body:    workflowNodeReq.Data.EditorContent.Body,

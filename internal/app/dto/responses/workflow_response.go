@@ -53,6 +53,8 @@ type NodeDataResponse struct {
 	ActualStartTime  *time.Time `json:"actualStartTime"`
 	ActualEndTime    *time.Time `json:"actualEndTime"`
 
+	EndDate *time.Time `json:"endDate"`
+
 	//
 	//
 	Description *string   `json:"description"`

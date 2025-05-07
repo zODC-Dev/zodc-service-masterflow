@@ -76,6 +76,15 @@ func (c *FormController) FindAllFormTemplate(e echo.Context) error {
 	return e.JSON(http.StatusCreated, formTemplates)
 }
 
+// FindOneFormTemplateDetailByFormTemplateId godoc
+// @Summary      Get form template detail by ID
+// @Description  Retrieves detailed information of a specific form template using its ID.
+// @Tags         Forms
+// @Produce      json
+// @Param        formTemplateId path int true "Form Template ID"
+// @Success      200 {object} responses.FormTemplateDetails
+// @Failure      400 {object} map[string]string "error: Invalid formTemplateId or service error"
+// @Router       /forms/templates/{formTemplateId}/details [get]
 func (c *FormController) FindOneFormTemplateDetailByFormTemplateId(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -98,6 +107,17 @@ func (c *FormController) FindOneFormTemplateDetailByFormTemplateId(e echo.Contex
 
 }
 
+// UpdateFormTemplate godoc
+// @Summary      Update a form template
+// @Description  Updates the details of a specific form template by its ID.
+// @Tags         Forms
+// @Accept       json
+// @Produce      json
+// @Param        formTemplateId path int true "Form Template ID"
+// @Param        formTemplate body requests.FormTemplateUpdate true "Form Template update payload"
+// @Success      200 {object} map[string]string "message: Form template updated successfully"
+// @Failure      400 {object} map[string]string "error: Invalid ID, bad request, or service error"
+// @Router       /forms/templates/{formTemplateId} [put]
 func (c *FormController) UpdateFormTemplate(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -152,6 +172,15 @@ func (c *FormController) ConfigFormTemplate(e echo.Context) error {
 	})
 }
 
+// FindOneFormDataByFormDataId godoc
+// @Summary      Get form data by ID
+// @Description  Retrieves detailed data of a specific submitted form by its ID.
+// @Tags         FormData
+// @Produce      json
+// @Param        formDataId path int true "Form Data ID"
+// @Success      200 {object} responses.JiraFormDetailResponse
+// @Failure      400 {object} map[string]string "error: Invalid ID or service error"
+// @Router       /forms/data/{formDataId} [get]
 func (c *FormController) FindOneFormDataByFormDataId(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -168,6 +197,14 @@ func (c *FormController) FindOneFormDataByFormDataId(e echo.Context) error {
 	return e.JSON(http.StatusOK, formData)
 }
 
+// GetEditProfileFormTemplate godoc
+// @Summary      Get edit profile form template
+// @Description  Retrieves the form template used for editing a user's profile.
+// @Tags         Forms
+// @Produce      json
+// @Success      200 {object} responses.FormTemplateDetails
+// @Failure      400 {object} map[string]string "error: Service error or unable to retrieve the form template"
+// @Router       /forms/templates/edit-profile [get]
 func (c *FormController) GetEditProfileFormTemplate(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -179,6 +216,14 @@ func (c *FormController) GetEditProfileFormTemplate(e echo.Context) error {
 	return e.JSON(http.StatusOK, formTemplate)
 }
 
+// GetPerformanceEvaluateFormTemplate godoc
+// @Summary      Get performance evaluation form template
+// @Description  Retrieves the form template used for performance evaluations.
+// @Tags         Forms
+// @Produce      json
+// @Success      200 {object} responses.FormTemplateDetails
+// @Failure      400 {object} map[string]string "error: Service error or unable to retrieve the form template"
+// @Router       /forms/templates/performance-evaluate [get]
 func (c *FormController) GetPerformanceEvaluateFormTemplate(e echo.Context) error {
 	ctx := e.Request().Context()
 

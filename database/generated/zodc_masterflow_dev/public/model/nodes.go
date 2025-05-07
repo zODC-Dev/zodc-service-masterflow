@@ -38,6 +38,7 @@ type Nodes struct {
 	PlannedEndTime            *time.Time
 	ActualStartTime           *time.Time
 	ActualEndTime             *time.Time
+	EndDate                   *time.Time
 	Body                      *string
 	Subject                   *string
 	CcEmails                  *string

@@ -56,6 +56,44 @@ const docTemplate = `{
                 }
             }
         },
+        "/forms/data/{formDataId}": {
+            "get": {
+                "description": "Retrieves detailed data of a specific submitted form by its ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "FormData"
+                ],
+                "summary": "Get form data by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Form Data ID",
+                        "name": "formDataId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.JiraFormDetailResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "error: Invalid ID or service error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/forms/templates": {
             "get": {
                 "description": "Retrieves a list of form templates, optionally filtered by category ID and search query.",
@@ -146,6 +184,155 @@ const docTemplate = `{
                 }
             }
         },
+        "/forms/templates/edit-profile": {
+            "get": {
+                "description": "Retrieves the form template used for editing a user's profile.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Forms"
+                ],
+                "summary": "Get edit profile form template",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.FormTemplateDetails"
+                        }
+                    },
+                    "400": {
+                        "description": "error: Service error or unable to retrieve the form template",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/forms/templates/performance-evaluate": {
+            "get": {
+                "description": "Retrieves the form template used for performance evaluations.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Forms"
+                ],
+                "summary": "Get performance evaluation form template",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.FormTemplateDetails"
+                        }
+                    },
+                    "400": {
+                        "description": "error: Service error or unable to retrieve the form template",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/forms/templates/{formTemplateId}": {
+            "put": {
+                "description": "Updates the details of a specific form template by its ID.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Forms"
+                ],
+                "summary": "Update a form template",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Form Template ID",
+                        "name": "formTemplateId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Form Template update payload",
+                        "name": "formTemplate",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.FormTemplateUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "message: Form template updated successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "error: Invalid ID, bad request, or service error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/forms/templates/{formTemplateId}/details": {
+            "get": {
+                "description": "Retrieves detailed information of a specific form template using its ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Forms"
+                ],
+                "summary": "Get form template detail by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Form Template ID",
+                        "name": "formTemplateId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.FormTemplateDetails"
+                        }
+                    },
+                    "400": {
+                        "description": "error: Invalid formTemplateId or service error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/history/{requestId}": {
             "get": {
                 "description": "Find all history by request id",
@@ -189,6 +376,139 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/nodes/{id}/approve": {
+            "put": {
+                "description": "Approves a specific node based on its ID. The user must have permission to approve the node.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Nodes"
+                ],
+                "summary": "Approve a node",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Node ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "message: Node approved successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "error: Invalid node ID, permission issues, or service error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/nodes/{id}/comments": {
+            "get": {
+                "description": "Retrieves all comments associated with a specific node.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Comments"
+                ],
+                "summary": "Get all comments for a node",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Node ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/responses.CommentResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "error: Invalid node ID or service error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Adds a comment to a specific node, submitted by the authenticated user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Comments"
+                ],
+                "summary": "Create a new comment on a node",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Node ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Comment payload",
+                        "name": "comment",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.CreateComment"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "message: Comment created successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "error: Invalid input or service error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -290,6 +610,228 @@ const docTemplate = `{
                 }
             }
         },
+        "/nodes/{id}/forms/{formDataId}/edit": {
+            "put": {
+                "description": "Edits a specific form data associated with a node, requiring node ID and form ID.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Nodes"
+                ],
+                "summary": "Edit a form associated with a node",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Node ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Form Data ID",
+                        "name": "formDataId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Form data submission payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/requests.SubmitNodeFormRequest"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "message: Node form edited successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "error: Invalid node ID, form ID, or service error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/nodes/{id}/forms/{formId}/approve": {
+            "put": {
+                "description": "Approves a specific form based on node ID and form ID. The user must have permission to approve the form.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Nodes"
+                ],
+                "summary": "Approve a form associated with a node",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Node ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Form ID",
+                        "name": "formId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "message: Node form approved successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "error: Invalid node ID, form ID, or service error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/nodes/{id}/forms/{formId}/reject": {
+            "put": {
+                "description": "Rejects a specific form based on node ID and form ID. The user must have permission to reject the form.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Nodes"
+                ],
+                "summary": "Reject a form associated with a node",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Node ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Form ID",
+                        "name": "formId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "message: Node form rejected successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "error: Invalid node ID, form ID, or service error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/nodes/{id}/forms/{formId}/submit": {
+            "post": {
+                "description": "Submits form data for a specific node based on node ID and form ID. Requires user authentication and valid data.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Nodes"
+                ],
+                "summary": "Submit a form associated with a node",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Node ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Form ID",
+                        "name": "formId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Form submission data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/requests.SubmitNodeFormRequest"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "message: Node form submitted successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "error: Invalid node ID, form ID, or submission error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/nodes/{id}/jira-form": {
             "get": {
                 "description": "Retrieves the Jira-specific form details associated with a node.",
@@ -318,6 +860,95 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "error: Error message for bad request (e.g., missing ID, service error)",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/nodes/{id}/reassign/{userId}": {
+            "put": {
+                "description": "Reassigns a specific node to a new user based on node ID and user ID. The current user must have permission to reassign the node.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Nodes"
+                ],
+                "summary": "Reassign a node to a new user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Node ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "User ID (new assignee)",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "message: Node re-assigned successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "error: Invalid node ID, user ID, or service error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/nodes/{id}/reject": {
+            "put": {
+                "description": "Rejects a specific node based on its ID. The user must have permission to reject the node.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Nodes"
+                ],
+                "summary": "Reject a node",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Node ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "message: Node rejected successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "error: Invalid node ID, permission issues, or service error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -392,6 +1023,92 @@ const docTemplate = `{
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/responses.TaskDetail"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "error: Error message for bad request (e.g., missing ID, service error)",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/nodes/{id}/tasks/count": {
+            "get": {
+                "description": "Returns the total number of tasks associated with a specific node.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Nodes"
+                ],
+                "summary": "Get task count for a node",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Node ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.NodeTaskCountResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "error: Error message for bad request (e.g., invalid ID, service error)",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/nodes}/stories": {
+            "get": {
+                "description": "Retrieves a list of stories that are assigned to a specific user (assignee) on a given node.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Nodes"
+                ],
+                "summary": "Get stories assigned to a user on a node",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Node ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Assignee ID or username",
+                        "name": "assignee",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/responses.WorkflowResponse"
                             }
                         }
                     },
@@ -570,6 +1287,44 @@ const docTemplate = `{
                 ],
                 "summary": "Get retrospective report",
                 "responses": {}
+            }
+        },
+        "/requests/sprint/{sprintId}/complete": {
+            "put": {
+                "description": "Marks all requests for a specific sprint as completed based on the sprint ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Requests"
+                ],
+                "summary": "Complete all requests for a specific sprint",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Sprint ID",
+                        "name": "sprintId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Complete all requests successfully",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "error: Invalid sprint ID or service error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
             }
         },
         "/requests/tasks/by-project": {
@@ -846,6 +1601,44 @@ const docTemplate = `{
                         "description": "Error message for internal server error",
                         "schema": {
                             "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/requests/{id}/complete": {
+            "put": {
+                "description": "Marks a specific request as completed based on its request ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Requests"
+                ],
+                "summary": "Complete a specific request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Complete request successfully",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "error: Invalid request ID or service error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -1524,186 +2317,22 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "requests.Connection": {
+        "requests.CreateComment": {
             "type": "object",
             "properties": {
-                "from": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "isCompleted": {
-                    "type": "boolean"
-                },
-                "text": {
-                    "type": "string"
-                },
-                "to": {
+                "content": {
                     "type": "string"
                 }
             }
         },
         "requests.CreateWorkflow": {
-            "type": "object",
-            "properties": {
-                "categoryId": {
-                    "type": "integer"
-                },
-                "connections": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/requests.Connection"
-                    }
-                },
-                "decoration": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "nodes": {
-                    "description": "ko chứa story",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/requests.Node"
-                    }
-                },
-                "projectKey": {
-                    "type": "string"
-                },
-                "sprintId": {
-                    "type": "integer"
-                },
-                "stories": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/requests.Story"
-                    }
-                },
-                "title": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
+            "type": "object"
         },
         "requests.FormTemplateCreate": {
             "type": "object"
         },
-        "requests.Node": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/requests.NodeData"
-                },
-                "form": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/requests.NodeForm"
-                    }
-                },
-                "id": {
-                    "type": "string"
-                },
-                "isCurrent": {
-                    "type": "boolean"
-                },
-                "jiraKey": {
-                    "type": "string"
-                },
-                "lastSyncedAt": {
-                    "type": "string"
-                },
-                "level": {
-                    "type": "integer"
-                },
-                "parentId": {
-                    "type": "string"
-                },
-                "position": {
-                    "$ref": "#/definitions/types.Position"
-                },
-                "size": {
-                    "$ref": "#/definitions/types.Size"
-                },
-                "status": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
-        },
-        "requests.NodeData": {
-            "type": "object",
-            "properties": {
-                "actualEndTime": {
-                    "type": "string"
-                },
-                "actualStartTime": {
-                    "type": "string"
-                },
-                "assignee": {
-                    "$ref": "#/definitions/requests.NodeDataAssignee"
-                },
-                "attachFile": {
-                    "type": "string"
-                },
-                "condition": {
-                    "$ref": "#/definitions/requests.NodeDataCondition"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "editorContent": {
-                    "$ref": "#/definitions/requests.NodeDataEditorContent"
-                },
-                "endDate": {
-                    "type": "string"
-                },
-                "endType": {
-                    "type": "string"
-                },
-                "estimatePoint": {
-                    "type": "number"
-                },
-                "formAttached": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/requests.NodeDataFormAttached"
-                    }
-                },
-                "jiraKey": {
-                    "type": "string"
-                },
-                "jiraLinkUrl": {
-                    "type": "string"
-                },
-                "plannedEndTime": {
-                    "type": "string"
-                },
-                "plannedStartTime": {
-                    "description": "Add for update request",
-                    "type": "string"
-                },
-                "subRequestID": {
-                    "type": "integer"
-                },
-                "taskCompleted": {
-                    "$ref": "#/definitions/requests.TaskConfigNotification"
-                },
-                "taskStarted": {
-                    "$ref": "#/definitions/requests.TaskConfigNotification"
-                },
-                "title": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
+        "requests.FormTemplateUpdate": {
+            "type": "object"
         },
         "requests.NodeDataAssignee": {
             "type": "object",
@@ -1817,129 +2446,22 @@ const docTemplate = `{
                 }
             }
         },
-        "requests.NodeForm": {
+        "requests.NodesConnectionsStories": {
+            "type": "object"
+        },
+        "requests.RequestUpdateRequest": {
+            "type": "object"
+        },
+        "requests.StartWorkflow": {
+            "type": "object"
+        },
+        "requests.SubmitNodeFormRequest": {
             "type": "object",
             "properties": {
                 "fieldId": {
                     "type": "string"
                 },
                 "value": {
-                    "type": "string"
-                }
-            }
-        },
-        "requests.NodesConnectionsStories": {
-            "type": "object",
-            "properties": {
-                "connections": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/requests.Connection"
-                    }
-                },
-                "nodes": {
-                    "description": "ko chứa story",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/requests.Node"
-                    }
-                },
-                "stories": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/requests.Story"
-                    }
-                }
-            }
-        },
-        "requests.RequestUpdateRequest": {
-            "type": "object",
-            "properties": {
-                "connections": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/requests.Connection"
-                    }
-                },
-                "nodes": {
-                    "description": "ko chứa story",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/requests.Node"
-                    }
-                },
-                "stories": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/requests.Story"
-                    }
-                }
-            }
-        },
-        "requests.StartWorkflow": {
-            "type": "object",
-            "properties": {
-                "connections": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/requests.Connection"
-                    }
-                },
-                "isTemplate": {
-                    "type": "boolean"
-                },
-                "nodes": {
-                    "description": "ko chứa story",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/requests.Node"
-                    }
-                },
-                "requestID": {
-                    "type": "integer"
-                },
-                "sprintID": {
-                    "type": "integer"
-                },
-                "stories": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/requests.Story"
-                    }
-                },
-                "template": {
-                    "$ref": "#/definitions/requests.NodesConnectionsStories"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "requests.Story": {
-            "type": "object",
-            "properties": {
-                "categoryId": {
-                    "type": "integer"
-                },
-                "categoryKey": {
-                    "type": "string"
-                },
-                "decoration": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "isSystemLinked": {
-                    "type": "boolean"
-                },
-                "node": {
-                    "$ref": "#/definitions/requests.Node"
-                },
-                "title": {
-                    "type": "string"
-                },
-                "type": {
                     "type": "string"
                 }
             }
@@ -2014,6 +2536,20 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "responses.CommentResponse": {
+            "type": "object",
+            "properties": {
+                "assignee": {
+                    "$ref": "#/definitions/types.Assignee"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "createdAt": {
                     "type": "string"
                 }
             }
@@ -2264,11 +2800,23 @@ const docTemplate = `{
                 "assignee": {
                     "$ref": "#/definitions/types.Assignee"
                 },
+                "attachFiles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "condition": {
                     "$ref": "#/definitions/responses.NodeDataConditionResponse"
                 },
+                "description": {
+                    "type": "string"
+                },
                 "editorContent": {
                     "$ref": "#/definitions/responses.NodeDataResponseEditorContent"
+                },
+                "endDate": {
+                    "type": "string"
                 },
                 "endType": {
                     "type": "string"
@@ -2320,6 +2868,12 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "isSendApprovedForm": {
+                    "type": "boolean"
+                },
+                "isSendRejectedForm": {
+                    "type": "boolean"
                 },
                 "subject": {
                     "type": "string"
@@ -2419,6 +2973,9 @@ const docTemplate = `{
                 "jiraKey": {
                     "type": "string"
                 },
+                "lastSyncedAt": {
+                    "type": "string"
+                },
                 "level": {
                     "type": "integer"
                 },
@@ -2439,6 +2996,23 @@ const docTemplate = `{
                 },
                 "type": {
                     "type": "string"
+                }
+            }
+        },
+        "responses.NodeTaskCountResponse": {
+            "type": "object",
+            "properties": {
+                "activeRequests": {
+                    "type": "integer"
+                },
+                "approvalTasks": {
+                    "type": "integer"
+                },
+                "inputTasks": {
+                    "type": "integer"
+                },
+                "projectTasks": {
+                    "type": "integer"
                 }
             }
         },
@@ -2624,6 +3198,9 @@ const docTemplate = `{
                 "isArchived": {
                     "type": "boolean"
                 },
+                "isTemplate": {
+                    "type": "boolean"
+                },
                 "lastAssignee": {
                     "$ref": "#/definitions/types.Assignee"
                 },
@@ -2744,6 +3321,15 @@ const docTemplate = `{
                 "assignee": {
                     "$ref": "#/definitions/types.Assignee"
                 },
+                "attachFiles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "description": {
+                    "type": "string"
+                },
                 "estimatePoint": {
                     "type": "number"
                 },
@@ -2844,6 +3430,15 @@ const docTemplate = `{
                 "assignee": {
                     "$ref": "#/definitions/types.Assignee"
                 },
+                "attachFiles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "description": {
+                    "type": "string"
+                },
                 "estimatePoint": {
                     "type": "number"
                 },
@@ -2921,11 +3516,17 @@ const docTemplate = `{
                 "assignee": {
                     "$ref": "#/definitions/types.Assignee"
                 },
+                "id": {
+                    "type": "string"
+                },
                 "key": {
                     "type": "string"
                 },
                 "status": {
                     "type": "string"
+                },
+                "subRequestId": {
+                    "type": "integer"
                 },
                 "title": {
                     "type": "string"
@@ -2966,6 +3567,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "isArchived": {
+                    "type": "boolean"
+                },
+                "isTemplate": {
                     "type": "boolean"
                 },
                 "lastAssignee": {

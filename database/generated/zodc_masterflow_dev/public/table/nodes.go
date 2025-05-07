@@ -43,6 +43,7 @@ type nodesTable struct {
 	PlannedEndTime            postgres.ColumnTimestamp
 	ActualStartTime           postgres.ColumnTimestamp
 	ActualEndTime             postgres.ColumnTimestamp
+	EndDate                   postgres.ColumnTimestamp
 	Body                      postgres.ColumnString
 	Subject                   postgres.ColumnString
 	CcEmails                  postgres.ColumnString
@@ -129,6 +130,7 @@ func newNodesTableImpl(schemaName, tableName, alias string) nodesTable {
 		PlannedEndTimeColumn            = postgres.TimestampColumn("planned_end_time")
 		ActualStartTimeColumn           = postgres.TimestampColumn("actual_start_time")
 		ActualEndTimeColumn             = postgres.TimestampColumn("actual_end_time")
+		EndDateColumn                   = postgres.TimestampColumn("end_date")
 		BodyColumn                      = postgres.StringColumn("body")
 		SubjectColumn                   = postgres.StringColumn("subject")
 		CcEmailsColumn                  = postgres.StringColumn("cc_emails")
@@ -149,8 +151,8 @@ func newNodesTableImpl(schemaName, tableName, alias string) nodesTable {
 		RequestIDColumn                 = postgres.IntegerColumn("request_id")
 		FormTemplateIDColumn            = postgres.IntegerColumn("form_template_id")
 		FormDataIDColumn                = postgres.StringColumn("form_data_id")
-		allColumns                      = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, LevelColumn, KeyColumn, JiraKeyColumn, TitleColumn, AssigneeIDColumn, SubRequestIDColumn, TypeColumn, StatusColumn, IsCurrentColumn, LastSyncedAtColumn, JiraLinkURLColumn, DescriptionColumn, AttachFileColumn, EstimatePointColumn, PlannedStartTimeColumn, PlannedEndTimeColumn, ActualStartTimeColumn, ActualEndTimeColumn, BodyColumn, SubjectColumn, CcEmailsColumn, ToEmailsColumn, BccEmailsColumn, IsSendApprovedFormColumn, IsSendRejectedFormColumn, IsApprovedColumn, IsRejectedColumn, EndTypeColumn, TaskStartedRequesterColumn, TaskStartedAssigneeColumn, TaskStartedParticipantsColumn, TaskCompletedRequesterColumn, TaskCompletedAssigneeColumn, TaskCompletedParticipantsColumn, ParentIDColumn, RequestIDColumn, FormTemplateIDColumn, FormDataIDColumn}
-		mutableColumns                  = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, LevelColumn, KeyColumn, JiraKeyColumn, TitleColumn, AssigneeIDColumn, SubRequestIDColumn, TypeColumn, StatusColumn, IsCurrentColumn, LastSyncedAtColumn, JiraLinkURLColumn, DescriptionColumn, AttachFileColumn, EstimatePointColumn, PlannedStartTimeColumn, PlannedEndTimeColumn, ActualStartTimeColumn, ActualEndTimeColumn, BodyColumn, SubjectColumn, CcEmailsColumn, ToEmailsColumn, BccEmailsColumn, IsSendApprovedFormColumn, IsSendRejectedFormColumn, IsApprovedColumn, IsRejectedColumn, EndTypeColumn, TaskStartedRequesterColumn, TaskStartedAssigneeColumn, TaskStartedParticipantsColumn, TaskCompletedRequesterColumn, TaskCompletedAssigneeColumn, TaskCompletedParticipantsColumn, ParentIDColumn, RequestIDColumn, FormTemplateIDColumn, FormDataIDColumn}
+		allColumns                      = postgres.ColumnList{IDColumn, CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, LevelColumn, KeyColumn, JiraKeyColumn, TitleColumn, AssigneeIDColumn, SubRequestIDColumn, TypeColumn, StatusColumn, IsCurrentColumn, LastSyncedAtColumn, JiraLinkURLColumn, DescriptionColumn, AttachFileColumn, EstimatePointColumn, PlannedStartTimeColumn, PlannedEndTimeColumn, ActualStartTimeColumn, ActualEndTimeColumn, EndDateColumn, BodyColumn, SubjectColumn, CcEmailsColumn, ToEmailsColumn, BccEmailsColumn, IsSendApprovedFormColumn, IsSendRejectedFormColumn, IsApprovedColumn, IsRejectedColumn, EndTypeColumn, TaskStartedRequesterColumn, TaskStartedAssigneeColumn, TaskStartedParticipantsColumn, TaskCompletedRequesterColumn, TaskCompletedAssigneeColumn, TaskCompletedParticipantsColumn, ParentIDColumn, RequestIDColumn, FormTemplateIDColumn, FormDataIDColumn}
+		mutableColumns                  = postgres.ColumnList{CreatedAtColumn, UpdatedAtColumn, DeletedAtColumn, XColumn, YColumn, WidthColumn, HeightColumn, LevelColumn, KeyColumn, JiraKeyColumn, TitleColumn, AssigneeIDColumn, SubRequestIDColumn, TypeColumn, StatusColumn, IsCurrentColumn, LastSyncedAtColumn, JiraLinkURLColumn, DescriptionColumn, AttachFileColumn, EstimatePointColumn, PlannedStartTimeColumn, PlannedEndTimeColumn, ActualStartTimeColumn, ActualEndTimeColumn, EndDateColumn, BodyColumn, SubjectColumn, CcEmailsColumn, ToEmailsColumn, BccEmailsColumn, IsSendApprovedFormColumn, IsSendRejectedFormColumn, IsApprovedColumn, IsRejectedColumn, EndTypeColumn, TaskStartedRequesterColumn, TaskStartedAssigneeColumn, TaskStartedParticipantsColumn, TaskCompletedRequesterColumn, TaskCompletedAssigneeColumn, TaskCompletedParticipantsColumn, ParentIDColumn, RequestIDColumn, FormTemplateIDColumn, FormDataIDColumn}
 	)
 
 	return nodesTable{
@@ -183,6 +185,7 @@ func newNodesTableImpl(schemaName, tableName, alias string) nodesTable {
 		PlannedEndTime:            PlannedEndTimeColumn,
 		ActualStartTime:           ActualStartTimeColumn,
 		ActualEndTime:             ActualEndTimeColumn,
+		EndDate:                   EndDateColumn,
 		Body:                      BodyColumn,
 		Subject:                   SubjectColumn,
 		CcEmails:                  CcEmailsColumn,

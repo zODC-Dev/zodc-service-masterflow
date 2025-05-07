@@ -123,6 +123,16 @@ func (c *NodeController) GetNodeJiraForm(e echo.Context) error {
 	return e.JSON(http.StatusOK, jiraForm)
 }
 
+// ReassignNode godoc
+// @Summary      Reassign a node to a new user
+// @Description  Reassigns a specific node to a new user based on node ID and user ID. The current user must have permission to reassign the node.
+// @Tags         Nodes
+// @Produce      json
+// @Param        id path string true "Node ID"
+// @Param        userId path string true "User ID (new assignee)"
+// @Success      200 {object} map[string]string "message: Node re-assigned successfully"
+// @Failure      400 {object} map[string]string "error: Invalid node ID, user ID, or service error"
+// @Router       /nodes/{id}/reassign/{userId} [put]
 func (c *NodeController) ReassignNode(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -147,6 +157,18 @@ func (c *NodeController) ReassignNode(e echo.Context) error {
 	return e.JSON(http.StatusOK, map[string]string{"message": "Node re-assigned successfully"})
 }
 
+// SubmitNodeForm godoc
+// @Summary      Submit a form associated with a node
+// @Description  Submits form data for a specific node based on node ID and form ID. Requires user authentication and valid data.
+// @Tags         Nodes
+// @Accept       json
+// @Produce      json
+// @Param        id path string true "Node ID"
+// @Param        formId path string true "Form ID"
+// @Param        body body []requests.SubmitNodeFormRequest true "Form submission data"
+// @Success      200 {object} map[string]string "message: Node form submitted successfully"
+// @Failure      400 {object} map[string]string "error: Invalid node ID, form ID, or submission error"
+// @Router       /nodes/{id}/forms/{formId}/submit [post]
 func (c *NodeController) SubmitNodeForm(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -171,6 +193,18 @@ func (c *NodeController) SubmitNodeForm(e echo.Context) error {
 	return e.JSON(http.StatusOK, map[string]string{"message": "Node form submitted successfully"})
 }
 
+// EditNodeForm godoc
+// @Summary      Edit a form associated with a node
+// @Description  Edits a specific form data associated with a node, requiring node ID and form ID.
+// @Tags         Nodes
+// @Accept       json
+// @Produce      json
+// @Param        id path string true "Node ID"
+// @Param        formDataId path string true "Form Data ID"
+// @Param        body body []requests.SubmitNodeFormRequest true "Form data submission payload"
+// @Success      200 {object} map[string]string "message: Node form edited successfully"
+// @Failure      400 {object} map[string]string "error: Invalid node ID, form ID, or service error"
+// @Router       /nodes/{id}/forms/{formDataId}/edit [put]
 func (c *NodeController) EditNodeForm(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -194,6 +228,16 @@ func (c *NodeController) EditNodeForm(e echo.Context) error {
 	return e.JSON(http.StatusOK, map[string]string{"message": "Node form edited successfully"})
 }
 
+// ApproveNodeForm godoc
+// @Summary      Approve a form associated with a node
+// @Description  Approves a specific form based on node ID and form ID. The user must have permission to approve the form.
+// @Tags         Nodes
+// @Produce      json
+// @Param        id path string true "Node ID"
+// @Param        formId path string true "Form ID"
+// @Success      200 {object} map[string]string "message: Node form approved successfully"
+// @Failure      400 {object} map[string]string "error: Invalid node ID, form ID, or service error"
+// @Router       /nodes/{id}/forms/{formId}/approve [put]
 func (c *NodeController) ApproveNodeForm(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -213,6 +257,16 @@ func (c *NodeController) ApproveNodeForm(e echo.Context) error {
 	return e.JSON(http.StatusOK, map[string]string{"message": "Node form approved successfully"})
 }
 
+// RejectNodeForm godoc
+// @Summary      Reject a form associated with a node
+// @Description  Rejects a specific form based on node ID and form ID. The user must have permission to reject the form.
+// @Tags         Nodes
+// @Produce      json
+// @Param        id path string true "Node ID"
+// @Param        formId path string true "Form ID"
+// @Success      200 {object} map[string]string "message: Node form rejected successfully"
+// @Failure      400 {object} map[string]string "error: Invalid node ID, form ID, or service error"
+// @Router       /nodes/{id}/forms/{formId}/reject [put]
 func (c *NodeController) RejectNodeForm(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -232,6 +286,15 @@ func (c *NodeController) RejectNodeForm(e echo.Context) error {
 	return e.JSON(http.StatusOK, map[string]string{"message": "Node form rejected successfully"})
 }
 
+// ApproveNode godoc
+// @Summary      Approve a node
+// @Description  Approves a specific node based on its ID. The user must have permission to approve the node.
+// @Tags         Nodes
+// @Produce      json
+// @Param        id path string true "Node ID"
+// @Success      200 {object} map[string]string "message: Node approved successfully"
+// @Failure      400 {object} map[string]string "error: Invalid node ID, permission issues, or service error"
+// @Router       /nodes/{id}/approve [put]
 func (c *NodeController) ApproveNode(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -249,6 +312,15 @@ func (c *NodeController) ApproveNode(e echo.Context) error {
 	return e.JSON(http.StatusOK, map[string]string{"message": "Node approved successfully"})
 }
 
+// RejectNode godoc
+// @Summary      Reject a node
+// @Description  Rejects a specific node based on its ID. The user must have permission to reject the node.
+// @Tags         Nodes
+// @Produce      json
+// @Param        id path string true "Node ID"
+// @Success      200 {object} map[string]string "message: Node rejected successfully"
+// @Failure      400 {object} map[string]string "error: Invalid node ID, permission issues, or service error"
+// @Router       /nodes/{id}/reject [put]
 func (c *NodeController) RejectNode(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -291,6 +363,16 @@ func (c *NodeController) GetNodeTaskDetail(e echo.Context) error {
 	return e.JSON(http.StatusOK, tasks)
 }
 
+// GetNodeStoryByAssignee godoc
+// @Summary      Get stories assigned to a user on a node
+// @Description  Retrieves a list of stories that are assigned to a specific user (assignee) on a given node.
+// @Tags         Nodes
+// @Produce      json
+// @Param        id path string true "Node ID"
+// @Param        assignee query string true "Assignee ID or username"
+// @Success      200 {array} responses.WorkflowResponse
+// @Failure      400 {object} map[string]string "error: Error message for bad request (e.g., missing ID, service error)"
+// @Router       /nodes}/stories [get]
 func (c *NodeController) GetNodeStoryByAssignee(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -304,6 +386,15 @@ func (c *NodeController) GetNodeStoryByAssignee(e echo.Context) error {
 	return e.JSON(http.StatusOK, stories)
 }
 
+// GetNodeTaskCount godoc
+// @Summary      Get task count for a node
+// @Description  Returns the total number of tasks associated with a specific node.
+// @Tags         Nodes
+// @Produce      json
+// @Param        id path string true "Node ID"
+// @Success      200 {object} responses.NodeTaskCountResponse
+// @Failure      400 {object} map[string]string "error: Error message for bad request (e.g., invalid ID, service error)"
+// @Router       /nodes/{id}/tasks/count [get]
 func (c *NodeController) GetNodeTaskCount(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -317,6 +408,17 @@ func (c *NodeController) GetNodeTaskCount(e echo.Context) error {
 	return e.JSON(http.StatusOK, count)
 }
 
+// CreateComment godoc
+// @Summary      Create a new comment on a node
+// @Description  Adds a comment to a specific node, submitted by the authenticated user.
+// @Tags         Comments
+// @Accept       json
+// @Produce      json
+// @Param        id path string true "Node ID"
+// @Param        comment body requests.CreateComment true "Comment payload"
+// @Success      200 {object} map[string]string "message: Comment created successfully"
+// @Failure      400 {object} map[string]string "error: Invalid input or service error"
+// @Router       /nodes/{id}/comments [post]
 func (c *NodeController) CreateComment(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -335,6 +437,15 @@ func (c *NodeController) CreateComment(e echo.Context) error {
 	return e.JSON(http.StatusOK, map[string]string{"message": "Comment created successfully"})
 }
 
+// GetAllComments godoc
+// @Summary      Get all comments for a node
+// @Description  Retrieves all comments associated with a specific node.
+// @Tags         Comments
+// @Produce      json
+// @Param        id path string true "Node ID"
+// @Success      200 {array} responses.CommentResponse "Success"
+// @Failure      400 {object} map[string]string "error: Invalid node ID or service error"
+// @Router       /nodes/{id}/comments [get]
 func (c *NodeController) GetAllComments(e echo.Context) error {
 	ctx := e.Request().Context()
 

@@ -112,6 +112,8 @@ CREATE TABLE nodes (
     planned_end_time TIMESTAMP,
     actual_start_time TIMESTAMP,
     actual_end_time TIMESTAMP,
+    
+    end_date TIMESTAMP,
 
     -- notification node
     body TEXT,

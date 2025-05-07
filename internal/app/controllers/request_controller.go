@@ -633,6 +633,15 @@ func (c *RequestController) GetRetrospectiveReport(e echo.Context) error {
 	return e.JSON(http.StatusOK, retrospectiveReportResponse)
 }
 
+// CompleteRequestHandler godoc
+// @Summary      Complete a specific request
+// @Description  Marks a specific request as completed based on its request ID.
+// @Tags         Requests
+// @Produce      json
+// @Param        id path string true "Request ID"
+// @Success      200 {string} string "Complete request successfully"
+// @Failure      400 {object} map[string]string "error: Invalid request ID or service error"
+// @Router       /requests/{id}/complete [put]
 func (c *RequestController) CompleteRequestHandler(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -650,6 +659,15 @@ func (c *RequestController) CompleteRequestHandler(e echo.Context) error {
 	return e.JSON(http.StatusOK, "Complete request succesfully")
 }
 
+// CompleteAllRequestBySprintIdHandler godoc
+// @Summary      Complete all requests for a specific sprint
+// @Description  Marks all requests for a specific sprint as completed based on the sprint ID.
+// @Tags         Requests
+// @Produce      json
+// @Param        sprintId path string true "Sprint ID"
+// @Success      200 {string} string "Complete all requests successfully"
+// @Failure      400 {object} map[string]string "error: Invalid sprint ID or service error"
+// @Router       /requests/sprint/{sprintId}/complete [put]
 func (c *RequestController) CompleteAllRequestBySprintIdHandler(e echo.Context) error {
 	ctx := e.Request().Context()
 
