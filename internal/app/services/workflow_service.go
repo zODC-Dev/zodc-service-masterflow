@@ -642,9 +642,6 @@ func (s *WorkflowService) CreateNodesConnectionsStories(ctx context.Context, tx 
 		if workflowNodeReq.Data.PlannedStartTime != nil {
 			workflowNode.PlannedStartTime = workflowNodeReq.Data.PlannedStartTime
 		}
-		if workflowNodeReq.Data.PlannedEndTime != nil {
-			workflowNode.PlannedEndTime = workflowNodeReq.Data.PlannedEndTime
-		}
 		if workflowNodeReq.Data.ActualStartTime != nil {
 			workflowNode.ActualStartTime = workflowNodeReq.Data.ActualStartTime
 		}
