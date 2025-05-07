@@ -3,8 +3,6 @@ package repositories
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"log/slog"
 	"strconv"
 	"time"
 
@@ -246,86 +244,6 @@ func (r *FormRepository) FindFormDataById(ctx context.Context, db *sql.DB, formD
 	return result, err
 }
 
-func (r *FormRepository) UpdateFormFieldJiraKey(ctx context.Context, tx *sql.Tx, nodeId string, jiraKey string) error {
-	Nodes := table.Nodes
-	FormFieldData := table.FormFieldData
-	FormTemplateFields := table.FormTemplateFields
-
-	// 2. Lấy formDataId từ nodeId
-	formDataQuery := postgres.SELECT(
-		Nodes.FormDataID,
-	).FROM(
-		Nodes,
-	).WHERE(
-		Nodes.ID.EQ(postgres.String(nodeId)),
-	)
-
-	var nodeData struct {
-		FormDataID *string
-	}
-	if err := formDataQuery.QueryContext(ctx, tx, &nodeData); err != nil {
-		slog.Error("Error when querying formDataId", "nodeId", nodeId, "error", err)
-		return fmt.Errorf("error when querying formDataId from nodeId: %w", err)
-	}
-
-	// Nếu node không có formDataId thì return
-	if nodeData.FormDataID == nil || *nodeData.FormDataID == "" {
-		return nil
-	}
-
-	formDataId := *nodeData.FormDataID
-
-	// 3. Tìm và cập nhật trường có fieldId là "key" trong form_field_data
-	// Trước tiên, tìm xem có field nào có fieldId="key" không
-	findKeyFieldQuery := postgres.SELECT(
-		FormFieldData.ID,
-		FormTemplateFields.FieldID,
-	).FROM(
-		FormFieldData.
-			INNER_JOIN(FormTemplateFields, FormFieldData.FormTemplateFieldID.EQ(FormTemplateFields.ID)),
-	).WHERE(
-		FormFieldData.FormDataID.EQ(postgres.String(formDataId)).
-			AND(FormTemplateFields.FieldID.EQ(postgres.String("key"))),
-	)
-
-	var keyFields []struct {
-		ID      int32
-		FieldID string
-	}
-
-	if err := findKeyFieldQuery.QueryContext(ctx, tx, &keyFields); err != nil {
-		slog.Error("Error when finding field with fieldId='key'", "formDataId", formDataId, "error", err)
-		return fmt.Errorf("error when finding field with fieldId='key': %w", err)
-	}
-
-	if len(keyFields) == 0 {
-		return nil
-	}
-
-	// 4. Thực hiện update
-	subQuery := postgres.SELECT(
-		FormFieldData.ID,
-	).FROM(
-		FormFieldData.
-			INNER_JOIN(FormTemplateFields, FormFieldData.FormTemplateFieldID.EQ(FormTemplateFields.ID)),
-	).WHERE(
-		FormFieldData.FormDataID.EQ(postgres.String(formDataId)).
-			AND(FormTemplateFields.FieldID.EQ(postgres.String("key"))),
-	)
-
-	statement := FormFieldData.UPDATE(FormFieldData.Value).
-		SET(postgres.String(jiraKey)).
-		WHERE(FormFieldData.ID.IN(subQuery))
-
-	_, err := statement.ExecContext(ctx, tx)
-	if err != nil {
-		slog.Error("Error when updating jiraKey", "formDataId", formDataId, "error", err)
-		return fmt.Errorf("error when updating jiraKey in form field data: %w", err)
-	}
-
-	return nil
-}
-
 func (r *FormRepository) UpdateFormTemplate(ctx context.Context, tx *sql.Tx, formTemplate model.FormTemplates) error {
 	FormTemplates := table.FormTemplates
 
@@ -334,6 +252,38 @@ func (r *FormRepository) UpdateFormTemplate(ctx context.Context, tx *sql.Tx, for
 	columns := FormTemplates.AllColumns.Except(FormTemplates.ID, FormTemplates.CreatedAt, FormTemplates.DeletedAt)
 
 	statement := FormTemplates.UPDATE(columns).MODEL(formTemplate).WHERE(FormTemplates.ID.EQ(postgres.Int32(formTemplate.ID)))
+
+	_, err := statement.ExecContext(ctx, tx)
+
+	return err
+}
+
+func (r *FormRepository) UpdateFormFieldDataValueNodeProjectJira(ctx context.Context, tx *sql.Tx, nodeId string, fieldId string, value string) error {
+	FormData := table.FormData
+	FormFieldData := table.FormFieldData
+	FormTemplateFields := table.FormTemplateFields
+	Nodes := table.Nodes
+
+	statmentQueryNode := postgres.SELECT(
+		FormFieldData.ID,
+	).FROM(
+		Nodes.
+			LEFT_JOIN(
+				FormData, FormData.ID.EQ(Nodes.FormDataID),
+			).
+			LEFT_JOIN(
+				FormFieldData, FormFieldData.FormDataID.EQ(FormData.ID),
+			).
+			LEFT_JOIN(
+				FormTemplateFields, FormTemplateFields.ID.EQ(FormFieldData.FormTemplateFieldID),
+			),
+	).WHERE(
+		Nodes.ID.EQ(postgres.String(nodeId)).AND(FormTemplateFields.FieldID.EQ(postgres.String(fieldId))),
+	)
+
+	statement := FormFieldData.UPDATE(FormFieldData.Value).
+		SET(postgres.String(value)).
+		WHERE(FormFieldData.ID.IN(statmentQueryNode))
 
 	_, err := statement.ExecContext(ctx, tx)
 

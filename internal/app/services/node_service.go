@@ -459,6 +459,10 @@ func (s *NodeService) CompleteNodeLogic(ctx context.Context, tx *sql.Tx, nodeId 
 		return err
 	}
 
+	// Form Jira Update
+	s.FormRepo.UpdateFormFieldDataValueNodeProjectJira(ctx, tx, nodeId, string(constants.FormTemplateFieldFieldIdStatus), string(constants.NodeStatusCompleted))
+	s.FormRepo.UpdateFormFieldDataValueNodeProjectJira(ctx, tx, nodeId, string(constants.FormTemplateFieldFieldIdActualEndTime), now.Format("2006-01-02T15:04:05Z07:00"))
+
 	// Sync with Jira
 	if err := s.SyncJiraWhenCompleteNode(ctx, tx, nodeModel); err != nil {
 		return fmt.Errorf("sync jira when complete node fail: %w", err)
@@ -497,6 +501,10 @@ func (s *NodeService) StartNodeHandler(ctx context.Context, userId int32, nodeId
 	if err := s.NodeRepo.UpdateNode(ctx, tx, node); err != nil {
 		return fmt.Errorf("update node fail: %w", err)
 	}
+
+	// Form Jira Status Update
+	s.FormRepo.UpdateFormFieldDataValueNodeProjectJira(ctx, tx, nodeId, string(constants.FormTemplateFieldFieldIdStatus), string(constants.NodeStatusInProgress))
+	s.FormRepo.UpdateFormFieldDataValueNodeProjectJira(ctx, tx, nodeId, string(constants.FormTemplateFieldFieldIdActualEndTime), now.Format("2006-01-02T15:04:05Z07:00"))
 
 	// Sync with Jira
 	if err := s.SyncJiraWhenStartNode(ctx, tx, node); err != nil {

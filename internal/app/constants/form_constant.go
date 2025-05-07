@@ -20,3 +20,12 @@ type FormTemplateFieldType string
 const (
 	FormTemplateFieldTypeAttachment FormTemplateFieldType = "ATTACHMENT"
 )
+
+type FormTemplateFieldFieldId string
+
+const (
+	FormTemplateFieldFieldIdKey             FormTemplateFieldFieldId = "key"
+	FormTemplateFieldFieldIdStatus          FormTemplateFieldFieldId = "status"
+	FormTemplateFieldFieldIdActualStartTime FormTemplateFieldFieldId = "actualStartTime"
+	FormTemplateFieldFieldIdActualEndTime   FormTemplateFieldFieldId = "actualEndTime"
+)
