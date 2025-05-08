@@ -26,7 +26,7 @@ func NewCategoryController(categoryService *services.CategoryService) *CategoryC
 // @Produce      json
 // @Success      200  {array}  responses.CategoryFindAll  "Danh sách Category"
 // @Failure      500  {object} string "Lỗi Server Nội Bộ"
-// @Router       /api/v1/categories [get]
+// @Router      /services/services/categories [get]
 func (c *CategoryController) FindAll(e echo.Context) error {
 	ctx := e.Request().Context()
 

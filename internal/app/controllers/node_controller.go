@@ -30,7 +30,7 @@ func NewNodeController(nodeService *services.NodeService) *NodeController {
 // @Param        id path string true "Node ID"
 // @Success      200 {object} map[string]string "message: Node completed successfully"
 // @Failure      400 {object} map[string]string "error: Error message for bad request (e.g., missing ID, invalid ID, service error)"
-// @Router       /nodes/{id}/complete [patch] // Assuming PATCH, could be POST
+// @Router      /services/nodes/{id}/complete [patch] // Assuming PATCH, could be POST
 func (c *NodeController) CompleteNode(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -56,7 +56,7 @@ func (c *NodeController) CompleteNode(e echo.Context) error {
 // @Param        id path string true "Node ID"
 // @Success      200 {object} map[string]string "message: Node started successfully"
 // @Failure      400 {object} string "Error message for bad request (e.g., missing ID, service error)"
-// @Router       /nodes/{id}/start [patch] // Assuming PATCH, could be POST
+// @Router      /services/nodes/{id}/start [patch] // Assuming PATCH, could be POST
 func (c *NodeController) StartNode(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -79,7 +79,7 @@ func (c *NodeController) StartNode(e echo.Context) error {
 // @Param        permission path string true "Permission level (e.g., 'read', 'write')"
 // @Success      200 {object} responses.NodeFormResponse // Assuming responses.NodeFormResponse exists
 // @Failure      400 {object} map[string]string "error: Error message for bad request (e.g., missing params, service error)"
-// @Router       /nodes/{id}/form/{permission} [get]
+// @Router      /services/nodes/{id}/form/{permission} [get]
 func (c *NodeController) GetNodeFormWithPermission(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -106,7 +106,7 @@ func (c *NodeController) GetNodeFormWithPermission(e echo.Context) error {
 // @Param        id path string true "Node ID"
 // @Success      200 {object} responses.JiraFormDetailResponse // Assuming responses.NodeJiraFormResponse exists
 // @Failure      400 {object} map[string]string "error: Error message for bad request (e.g., missing ID, service error)"
-// @Router       /nodes/{id}/jira-form [get]
+// @Router      /services/nodes/{id}/jira-form [get]
 func (c *NodeController) GetNodeJiraForm(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -132,7 +132,7 @@ func (c *NodeController) GetNodeJiraForm(e echo.Context) error {
 // @Param        userId path string true "User ID (new assignee)"
 // @Success      200 {object} map[string]string "message: Node re-assigned successfully"
 // @Failure      400 {object} map[string]string "error: Invalid node ID, user ID, or service error"
-// @Router       /nodes/{id}/reassign/{userId} [put]
+// @Router      /services/nodes/{id}/reassign/{userId} [put]
 func (c *NodeController) ReassignNode(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -168,7 +168,7 @@ func (c *NodeController) ReassignNode(e echo.Context) error {
 // @Param        body body []requests.SubmitNodeFormRequest true "Form submission data"
 // @Success      200 {object} map[string]string "message: Node form submitted successfully"
 // @Failure      400 {object} map[string]string "error: Invalid node ID, form ID, or submission error"
-// @Router       /nodes/{id}/forms/{formId}/submit [post]
+// @Router      /services/nodes/{id}/forms/{formId}/submit [post]
 func (c *NodeController) SubmitNodeForm(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -204,7 +204,7 @@ func (c *NodeController) SubmitNodeForm(e echo.Context) error {
 // @Param        body body []requests.SubmitNodeFormRequest true "Form data submission payload"
 // @Success      200 {object} map[string]string "message: Node form edited successfully"
 // @Failure      400 {object} map[string]string "error: Invalid node ID, form ID, or service error"
-// @Router       /nodes/{id}/forms/{formDataId}/edit [put]
+// @Router      /services/nodes/{id}/forms/{formDataId}/edit [put]
 func (c *NodeController) EditNodeForm(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -237,7 +237,7 @@ func (c *NodeController) EditNodeForm(e echo.Context) error {
 // @Param        formId path string true "Form ID"
 // @Success      200 {object} map[string]string "message: Node form approved successfully"
 // @Failure      400 {object} map[string]string "error: Invalid node ID, form ID, or service error"
-// @Router       /nodes/{id}/forms/{formId}/approve [put]
+// @Router      /services/nodes/{id}/forms/{formId}/approve [put]
 func (c *NodeController) ApproveNodeForm(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -266,7 +266,7 @@ func (c *NodeController) ApproveNodeForm(e echo.Context) error {
 // @Param        formId path string true "Form ID"
 // @Success      200 {object} map[string]string "message: Node form rejected successfully"
 // @Failure      400 {object} map[string]string "error: Invalid node ID, form ID, or service error"
-// @Router       /nodes/{id}/forms/{formId}/reject [put]
+// @Router      /services/nodes/{id}/forms/{formId}/reject [put]
 func (c *NodeController) RejectNodeForm(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -294,7 +294,7 @@ func (c *NodeController) RejectNodeForm(e echo.Context) error {
 // @Param        id path string true "Node ID"
 // @Success      200 {object} map[string]string "message: Node approved successfully"
 // @Failure      400 {object} map[string]string "error: Invalid node ID, permission issues, or service error"
-// @Router       /nodes/{id}/approve [put]
+// @Router      /services/nodes/{id}/approve [put]
 func (c *NodeController) ApproveNode(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -320,7 +320,7 @@ func (c *NodeController) ApproveNode(e echo.Context) error {
 // @Param        id path string true "Node ID"
 // @Success      200 {object} map[string]string "message: Node rejected successfully"
 // @Failure      400 {object} map[string]string "error: Invalid node ID, permission issues, or service error"
-// @Router       /nodes/{id}/reject [put]
+// @Router      /services/nodes/{id}/reject [put]
 func (c *NodeController) RejectNode(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -346,7 +346,7 @@ func (c *NodeController) RejectNode(e echo.Context) error {
 // @Param        id path string true "Node ID"
 // @Success      200 {array} responses.TaskDetail // Assuming responses.TaskResponse exists
 // @Failure      400 {object} map[string]string "error: Error message for bad request (e.g., missing ID, service error)"
-// @Router       /nodes/{id}/tasks [get]
+// @Router      /services/nodes/{id}/tasks [get]
 func (c *NodeController) GetNodeTaskDetail(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -372,7 +372,7 @@ func (c *NodeController) GetNodeTaskDetail(e echo.Context) error {
 // @Param        assignee query string true "Assignee ID or username"
 // @Success      200 {array} responses.WorkflowResponse
 // @Failure      400 {object} map[string]string "error: Error message for bad request (e.g., missing ID, service error)"
-// @Router       /nodes}/stories [get]
+// @Router      /services/nodes}/stories [get]
 func (c *NodeController) GetNodeStoryByAssignee(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -394,7 +394,7 @@ func (c *NodeController) GetNodeStoryByAssignee(e echo.Context) error {
 // @Param        id path string true "Node ID"
 // @Success      200 {object} responses.NodeTaskCountResponse
 // @Failure      400 {object} map[string]string "error: Error message for bad request (e.g., invalid ID, service error)"
-// @Router       /nodes/{id}/tasks/count [get]
+// @Router      /services/nodes/{id}/tasks/count [get]
 func (c *NodeController) GetNodeTaskCount(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -418,7 +418,7 @@ func (c *NodeController) GetNodeTaskCount(e echo.Context) error {
 // @Param        comment body requests.CreateComment true "Comment payload"
 // @Success      200 {object} map[string]string "message: Comment created successfully"
 // @Failure      400 {object} map[string]string "error: Invalid input or service error"
-// @Router       /nodes/{id}/comments [post]
+// @Router      /services/nodes/{id}/comments [post]
 func (c *NodeController) CreateComment(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -445,7 +445,7 @@ func (c *NodeController) CreateComment(e echo.Context) error {
 // @Param        id path string true "Node ID"
 // @Success      200 {array} responses.CommentResponse "Success"
 // @Failure      400 {object} map[string]string "error: Invalid node ID or service error"
-// @Router       /nodes/{id}/comments [get]
+// @Router      /services/nodes/{id}/comments [get]
 func (c *NodeController) GetAllComments(e echo.Context) error {
 	ctx := e.Request().Context()
 

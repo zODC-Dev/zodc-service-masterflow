@@ -30,7 +30,7 @@ func NewFormController(formService *services.FormService) *FormController {
 // @Success      201 {object} map[string]string "message: Form created successfully"
 // @Failure      400 {object} string "Error message for bad request"
 // @Failure      500 {object} string "Error message for internal server error"
-// @Router       /forms/templates [post]
+// @Router      /services/forms/templates [post]
 func (c *FormController) CreateFormTemplate(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -58,7 +58,7 @@ func (c *FormController) CreateFormTemplate(e echo.Context) error {
 // @Param        search query string false "Search query for form template names or descriptions"
 // @Success      200 {array} responses.FormTemplateFindAll // Assuming responses.FormTemplateResponse exists
 // @Failure      500 {object} string "Error message for internal server error"
-// @Router       /forms/templates [get]
+// @Router      /services/forms/templates [get]
 func (c *FormController) FindAllFormTemplate(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -84,7 +84,7 @@ func (c *FormController) FindAllFormTemplate(e echo.Context) error {
 // @Param        formTemplateId path int true "Form Template ID"
 // @Success      200 {object} responses.FormTemplateDetails
 // @Failure      400 {object} map[string]string "error: Invalid formTemplateId or service error"
-// @Router       /forms/templates/{formTemplateId}/details [get]
+// @Router      /services/forms/templates/{formTemplateId}/details [get]
 func (c *FormController) FindOneFormTemplateDetailByFormTemplateId(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -117,7 +117,7 @@ func (c *FormController) FindOneFormTemplateDetailByFormTemplateId(e echo.Contex
 // @Param        formTemplate body requests.FormTemplateUpdate true "Form Template update payload"
 // @Success      200 {object} map[string]string "message: Form template updated successfully"
 // @Failure      400 {object} map[string]string "error: Invalid ID, bad request, or service error"
-// @Router       /forms/templates/{formTemplateId} [put]
+// @Router      /services/forms/templates/{formTemplateId} [put]
 func (c *FormController) UpdateFormTemplate(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -180,7 +180,7 @@ func (c *FormController) ConfigFormTemplate(e echo.Context) error {
 // @Param        formDataId path int true "Form Data ID"
 // @Success      200 {object} responses.JiraFormDetailResponse
 // @Failure      400 {object} map[string]string "error: Invalid ID or service error"
-// @Router       /forms/data/{formDataId} [get]
+// @Router      /services/forms/data/{formDataId} [get]
 func (c *FormController) FindOneFormDataByFormDataId(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -204,7 +204,7 @@ func (c *FormController) FindOneFormDataByFormDataId(e echo.Context) error {
 // @Produce      json
 // @Success      200 {object} responses.FormTemplateDetails
 // @Failure      400 {object} map[string]string "error: Service error or unable to retrieve the form template"
-// @Router       /forms/templates/edit-profile [get]
+// @Router      /services/forms/templates/edit-profile [get]
 func (c *FormController) GetEditProfileFormTemplate(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -223,7 +223,7 @@ func (c *FormController) GetEditProfileFormTemplate(e echo.Context) error {
 // @Produce      json
 // @Success      200 {object} responses.FormTemplateDetails
 // @Failure      400 {object} map[string]string "error: Service error or unable to retrieve the form template"
-// @Router       /forms/templates/performance-evaluate [get]
+// @Router      /services/forms/templates/performance-evaluate [get]
 func (c *FormController) GetPerformanceEvaluateFormTemplate(e echo.Context) error {
 	ctx := e.Request().Context()
 

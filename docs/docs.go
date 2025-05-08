@@ -24,39 +24,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/categories": {
-            "get": {
-                "description": "Trả về danh sách tất cả các category có trong hệ thống.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Categories"
-                ],
-                "summary": "Lấy danh sách tất cả Category",
-                "responses": {
-                    "200": {
-                        "description": "Danh sách Category",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/responses.CategoryFindAll"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Lỗi Server Nội Bộ",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/forms/data/{formDataId}": {
+        "/services/forms/data/{formDataId}": {
             "get": {
                 "description": "Retrieves detailed data of a specific submitted form by its ID.",
                 "produces": [
@@ -94,7 +62,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/forms/templates": {
+        "/services/forms/templates": {
             "get": {
                 "description": "Retrieves a list of form templates, optionally filtered by category ID and search query.",
                 "produces": [
@@ -184,7 +152,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/forms/templates/edit-profile": {
+        "/services/forms/templates/edit-profile": {
             "get": {
                 "description": "Retrieves the form template used for editing a user's profile.",
                 "produces": [
@@ -213,7 +181,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/forms/templates/performance-evaluate": {
+        "/services/forms/templates/performance-evaluate": {
             "get": {
                 "description": "Retrieves the form template used for performance evaluations.",
                 "produces": [
@@ -242,7 +210,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/forms/templates/{formTemplateId}": {
+        "/services/forms/templates/{formTemplateId}": {
             "put": {
                 "description": "Updates the details of a specific form template by its ID.",
                 "consumes": [
@@ -295,7 +263,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/forms/templates/{formTemplateId}/details": {
+        "/services/forms/templates/{formTemplateId}/details": {
             "get": {
                 "description": "Retrieves detailed information of a specific form template using its ID.",
                 "produces": [
@@ -333,7 +301,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/history/{requestId}": {
+        "/services/history/{requestId}": {
             "get": {
                 "description": "Find all history by request id",
                 "consumes": [
@@ -386,7 +354,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/nodes/{id}/approve": {
+        "/services/nodes/{id}/approve": {
             "put": {
                 "description": "Approves a specific node based on its ID. The user must have permission to approve the node.",
                 "produces": [
@@ -427,7 +395,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/nodes/{id}/comments": {
+        "/services/nodes/{id}/comments": {
             "get": {
                 "description": "Retrieves all comments associated with a specific node.",
                 "produces": [
@@ -519,7 +487,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/nodes/{id}/complete": {
+        "/services/nodes/{id}/complete": {
             "patch": {
                 "security": [
                     {
@@ -565,7 +533,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/nodes/{id}/form/{permission}": {
+        "/services/nodes/{id}/form/{permission}": {
             "get": {
                 "description": "Retrieves the form associated with a node, considering the user's permission level.",
                 "produces": [
@@ -610,7 +578,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/nodes/{id}/forms/{formDataId}/edit": {
+        "/services/nodes/{id}/forms/{formDataId}/edit": {
             "put": {
                 "description": "Edits a specific form data associated with a node, requiring node ID and form ID.",
                 "consumes": [
@@ -673,7 +641,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/nodes/{id}/forms/{formId}/approve": {
+        "/services/nodes/{id}/forms/{formId}/approve": {
             "put": {
                 "description": "Approves a specific form based on node ID and form ID. The user must have permission to approve the form.",
                 "produces": [
@@ -721,7 +689,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/nodes/{id}/forms/{formId}/reject": {
+        "/services/nodes/{id}/forms/{formId}/reject": {
             "put": {
                 "description": "Rejects a specific form based on node ID and form ID. The user must have permission to reject the form.",
                 "produces": [
@@ -769,7 +737,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/nodes/{id}/forms/{formId}/submit": {
+        "/services/nodes/{id}/forms/{formId}/submit": {
             "post": {
                 "description": "Submits form data for a specific node based on node ID and form ID. Requires user authentication and valid data.",
                 "consumes": [
@@ -832,7 +800,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/nodes/{id}/jira-form": {
+        "/services/nodes/{id}/jira-form": {
             "get": {
                 "description": "Retrieves the Jira-specific form details associated with a node.",
                 "produces": [
@@ -870,7 +838,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/nodes/{id}/reassign/{userId}": {
+        "/services/nodes/{id}/reassign/{userId}": {
             "put": {
                 "description": "Reassigns a specific node to a new user based on node ID and user ID. The current user must have permission to reassign the node.",
                 "produces": [
@@ -918,7 +886,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/nodes/{id}/reject": {
+        "/services/nodes/{id}/reject": {
             "put": {
                 "description": "Rejects a specific node based on its ID. The user must have permission to reject the node.",
                 "produces": [
@@ -959,7 +927,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/nodes/{id}/start": {
+        "/services/nodes/{id}/start": {
             "patch": {
                 "description": "Marks a specific node as started.",
                 "produces": [
@@ -997,7 +965,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/nodes/{id}/tasks": {
+        "/services/nodes/{id}/tasks": {
             "get": {
                 "description": "Retrieves detailed information about the tasks associated with a specific node.",
                 "produces": [
@@ -1038,7 +1006,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/nodes/{id}/tasks/count": {
+        "/services/nodes/{id}/tasks/count": {
             "get": {
                 "description": "Returns the total number of tasks associated with a specific node.",
                 "produces": [
@@ -1076,7 +1044,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/nodes}/stories": {
+        "/services/nodes}/stories": {
             "get": {
                 "description": "Retrieves a list of stories that are assigned to a specific user (assignee) on a given node.",
                 "produces": [
@@ -1124,7 +1092,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/requests": {
+        "/services/requests": {
             "get": {
                 "security": [
                     {
@@ -1216,118 +1184,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/requests/count": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Retrieves counts of requests grouped by status or other criteria for the logged-in user.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Requests"
-                ],
-                "summary": "Get request counts",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/responses.RequestOverviewResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Error message for internal server error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/requests/report/mid-sprint-tasks": {
-            "get": {
-                "description": "Report mid sprint tasks",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Requests"
-                ],
-                "summary": "Report mid sprint tasks",
-                "responses": {
-                    "200": {
-                        "description": "Request Task Response",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/responses.RequestTaskResponse"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Error message for internal server error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/requests/retrospective/report": {
-            "get": {
-                "description": "Get retrospective report",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Requests"
-                ],
-                "summary": "Get retrospective report",
-                "responses": {}
-            }
-        },
-        "/requests/sprint/{sprintId}/complete": {
-            "put": {
-                "description": "Marks all requests for a specific sprint as completed based on the sprint ID.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Requests"
-                ],
-                "summary": "Complete all requests for a specific sprint",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Sprint ID",
-                        "name": "sprintId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Complete all requests successfully",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "400": {
-                        "description": "error: Invalid sprint ID or service error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/requests/tasks/by-project": {
+        "/services/requests//tasks/projects": {
             "get": {
                 "security": [
                     {
@@ -1411,7 +1268,164 @@ const docTemplate = `{
                 }
             }
         },
-        "/requests/tasks/count": {
+        "/services/requests/count": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Retrieves counts of requests grouped by status or other criteria for the logged-in user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Requests"
+                ],
+                "summary": "Get request counts",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.RequestOverviewResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error message for internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/services/requests/detail/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Retrieves detailed information for a specific request ID for the logged-in user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Requests"
+                ],
+                "summary": "Get request details",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.RequestDetailResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Error message for invalid request ID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Error message for internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/services/requests/report/mid-sprint-tasks": {
+            "get": {
+                "description": "Report mid sprint tasks",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Requests"
+                ],
+                "summary": "Report mid sprint tasks",
+                "responses": {
+                    "200": {
+                        "description": "Request Task Response",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/responses.RequestTaskResponse"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Error message for internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/services/requests/retrospective/report": {
+            "get": {
+                "description": "Get retrospective report",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Requests"
+                ],
+                "summary": "Get retrospective report",
+                "responses": {}
+            }
+        },
+        "/services/requests/sprint/{sprintId}/complete": {
+            "put": {
+                "description": "Marks all requests for a specific sprint as completed based on the sprint ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Requests"
+                ],
+                "summary": "Complete all requests for a specific sprint",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Sprint ID",
+                        "name": "sprintId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Complete all requests successfully",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "error: Invalid sprint ID or service error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/services/requests/tasks/count": {
             "get": {
                 "security": [
                     {
@@ -1463,51 +1477,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/requests/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Retrieves detailed information for a specific request ID for the logged-in user.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Requests"
-                ],
-                "summary": "Get request details",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Request ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/responses.RequestDetailResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Error message for invalid request ID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "500": {
-                        "description": "Error message for internal server error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            },
+        "/services/requests/{id}": {
             "put": {
                 "security": [
                     {
@@ -1565,7 +1535,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/requests/{id}/cancel": {
+        "/services/requests/{id}/cancel": {
             "put": {
                 "description": "Cancels a request identified by its ID.",
                 "produces": [
@@ -1606,7 +1576,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/requests/{id}/complete": {
+        "/services/requests/{id}/complete": {
             "put": {
                 "description": "Marks a specific request as completed based on its request ID.",
                 "produces": [
@@ -1644,7 +1614,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/requests/{id}/completed-form": {
+        "/services/requests/{id}/completed-form": {
             "get": {
                 "description": "Retrieves the completed form for a specific request ID.",
                 "produces": [
@@ -1688,7 +1658,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/requests/{id}/completed-form/approval": {
+        "/services/requests/{id}/completed-form/approval": {
             "get": {
                 "description": "Retrieves the completed form approval for a specific request ID.",
                 "produces": [
@@ -1732,7 +1702,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/requests/{id}/file-manager": {
+        "/services/requests/{id}/file-manager": {
             "get": {
                 "description": "Retrieves the file manager for a specific request ID.",
                 "produces": [
@@ -1773,7 +1743,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/requests/{id}/overview": {
+        "/services/requests/{id}/overview": {
             "get": {
                 "description": "Retrieves overview information (like counts, statuses) for a specific request ID.",
                 "produces": [
@@ -1814,7 +1784,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/requests/{id}/sub-requests": {
+        "/services/requests/{id}/sub-requests": {
             "get": {
                 "description": "Retrieves a paginated list of sub-requests associated with a specific parent request ID.",
                 "produces": [
@@ -1884,7 +1854,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/requests/{id}/tasks": {
+        "/services/requests/{id}/tasks": {
             "get": {
                 "description": "Retrieves a paginated list of tasks associated with a given request ID.",
                 "produces": [
@@ -1951,7 +1921,39 @@ const docTemplate = `{
                 }
             }
         },
-        "/utils/excel-extract": {
+        "/services/services/categories": {
+            "get": {
+                "description": "Trả về danh sách tất cả các category có trong hệ thống.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Categories"
+                ],
+                "summary": "Lấy danh sách tất cả Category",
+                "responses": {
+                    "200": {
+                        "description": "Danh sách Category",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/responses.CategoryFindAll"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Lỗi Server Nội Bộ",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/services/utils/excel-extract": {
             "post": {
                 "description": "Uploads an Excel file and extracts data from it.",
                 "consumes": [
@@ -2002,7 +2004,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/workflows": {
+        "/services/workflows": {
             "get": {
                 "security": [
                     {
@@ -2126,7 +2128,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/workflows/start": {
+        "/services/workflows/start": {
             "post": {
                 "security": [
                     {
@@ -2189,7 +2191,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/workflows/{id}": {
+        "/services/workflows/{id}": {
             "get": {
                 "description": "Retrieves detailed information for a specific workflow version ID.",
                 "produces": [
@@ -2277,7 +2279,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/workflows/{id}/archive": {
+        "/services/workflows/{id}/archive": {
             "patch": {
                 "description": "Marks a workflow definition as archived based on its ID.",
                 "produces": [

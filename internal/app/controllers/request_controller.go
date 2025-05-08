@@ -38,7 +38,7 @@ func NewRequestController(requestService *services.RequestService) *RequestContr
 // @Param        pageSize query int false "Number of items per page" default(10)
 // @Success      200 {object} responses.Response{data=responses.RequestResponse} // Assuming appropriate response structure
 // @Failure      400 {object} map[string]string "error: Error message for bad request (e.g., service error)"
-// @Router       /requests [get]
+// @Router      /services/requests [get]
 func (c *RequestController) FindAllRequest(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -93,7 +93,7 @@ func (c *RequestController) FindAllRequest(e echo.Context) error {
 // @Security     ApiKeyAuth
 // @Success      200 {object} responses.RequestOverviewResponse // Assuming responses.RequestOverviewResponse exists
 // @Failure      500 {object} string "Error message for internal server error"
-// @Router       /requests/count [get]
+// @Router      /services/requests/count [get]
 func (c *RequestController) GetRequestCount(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -117,7 +117,7 @@ func (c *RequestController) GetRequestCount(e echo.Context) error {
 // @Success      200 {object} responses.RequestDetailResponse // Assuming responses.RequestDetailResponse exists
 // @Failure      400 {object} string "Error message for invalid request ID"
 // @Failure      500 {object} string "Error message for internal server error"
-// @Router       /requests/{id} [get]
+// @Router      /services/requests/detail/{id} [get]
 func (c *RequestController) GetRequestDetail(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -149,7 +149,7 @@ func (c *RequestController) GetRequestDetail(e echo.Context) error {
 // @Success      200 {object} responses.Response{data=responses.RequestTaskResponse} // Assuming appropriate response structure
 // @Failure      400 {object} string "Error message for invalid request ID"
 // @Failure      500 {object} string "Error message for internal server error"
-// @Router       /requests/{id}/tasks [get]
+// @Router      /services/requests/{id}/tasks [get]
 func (c *RequestController) GetRequestTasks(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -198,15 +198,15 @@ func (c *RequestController) GetRequestTasks(e echo.Context) error {
 // @Tags         Requests
 // @Produce      json
 // @Security     ApiKeyAuth
-// @Param        projectKey query string true "Filter by project key" // Marked as required based on context
+// @Param        projectKey query string true "Filter by project key"
 // @Param        workflowType query string false "Filter by workflow type"
 // @Param        status query string false "Filter by task status"
 // @Param        type query string false "Filter by task type"
 // @Param        page query int false "Page number for pagination" default(1)
 // @Param        pageSize query int false "Number of items per page" default(10)
-// @Success      200 {object} responses.Response{data=responses.RequestTaskResponse} // Assuming appropriate response structure
+// @Success      200 {object} responses.Response{data=responses.RequestTaskResponse}
 // @Failure      500 {object} string "Error message for internal server error"
-// @Router       /requests/tasks/by-project [get] // Consider a more descriptive path like /projects/{projectKey}/tasks
+// @Router      /services/requests//tasks/projects [get]
 func (c *RequestController) GetRequestTasksByProject(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -260,7 +260,7 @@ func (c *RequestController) GetRequestTasksByProject(e echo.Context) error {
 // @Success      200 {object} responses.RequestOverviewResponse // Assuming responses.RequestOverviewData exists
 // @Failure      400 {object} string "Error message for invalid request ID"
 // @Failure      500 {object} string "Error message for internal server error"
-// @Router       /requests/{id}/overview [get]
+// @Router      /services/requests/{id}/overview [get]
 func (c *RequestController) GetRequestOverview(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -289,7 +289,7 @@ func (c *RequestController) GetRequestOverview(e echo.Context) error {
 // @Success      200 {object} responses.Response{data=[]responses.RequestResponse} // Assuming appropriate response structure
 // @Failure      400 {object} string "Error message for invalid request ID"
 // @Failure      500 {object} string "Error message for internal server error"
-// @Router       /requests/{id}/sub-requests [get]
+// @Router      /services/requests/{id}/sub-requests [get]
 func (c *RequestController) FindAllSubRequestByRequestId(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -341,7 +341,7 @@ func (c *RequestController) FindAllSubRequestByRequestId(e echo.Context) error {
 // @Success      200 {object} string "Success message: Request updated successfully: {id}"
 // @Failure      400 {object} string "Error message for invalid request ID or bad request body"
 // @Failure      500 {object} string "Error message for internal server error"
-// @Router       /requests/{id} [put] // Or PATCH
+// @Router      /services/requests/{id} [put] // Or PATCH
 func (c *RequestController) UpdateRequest(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -377,7 +377,7 @@ func (c *RequestController) UpdateRequest(e echo.Context) error {
 // @Param        type query string false "Filter by task type"
 // @Success      200 {object} responses.RequestTaskCountResponse // Assuming responses.RequestTaskCountResponse exists
 // @Failure      500 {object} string "Error message for internal server error"
-// @Router       /requests/tasks/count [get] // Consider a path like /projects/{projectKey}/tasks/count
+// @Router      /services/requests/tasks/count [get] // Consider a path like /projects/{projectKey}/tasks/count
 func (c *RequestController) GetRequestTasksCount(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -406,7 +406,7 @@ func (c *RequestController) GetRequestTasksCount(e echo.Context) error {
 // @Success      200 {object} []responses.RequestCompletedFormInputResponse // Assuming responses.RequestCompletedFormResponse exists
 // @Failure      400 {object} string "Error message for invalid request ID"
 // @Failure      500 {object} string "Error message for internal server error"
-// @Router       /requests/{id}/completed-form [get]
+// @Router      /services/requests/{id}/completed-form [get]
 func (c *RequestController) GetRequestCompletedForm(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -455,7 +455,7 @@ func (c *RequestController) GetRequestCompletedForm(e echo.Context) error {
 // @Success      200 {object} responses.RequestFileManagerResponse // Assuming responses.RequestFileManagerResponse exists
 // @Failure      400 {object} string "Error message for invalid request ID"
 // @Failure      500 {object} string "Error message for internal server error"
-// @Router       /requests/{id}/file-manager [get]
+// @Router      /services/requests/{id}/file-manager [get]
 func (c *RequestController) GetRequestFileManager(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -504,7 +504,7 @@ func (c *RequestController) GetRequestFileManager(e echo.Context) error {
 // @Success      200 {object} []responses.RequestCompletedFormApprovalOverviewResponse // Assuming responses.RequestCompletedFormApprovalResponse exists
 // @Failure      400 {object} string "Error message for invalid request ID"
 // @Failure      500 {object} string "Error message for internal server error"
-// @Router       /requests/{id}/completed-form/approval [get]
+// @Router      /services/requests/{id}/completed-form/approval [get]
 func (c *RequestController) GetRequestCompletedFormApproval(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -537,7 +537,7 @@ func (c *RequestController) GetRequestCompletedFormApproval(e echo.Context) erro
 // @Success      200 {object} []responses.HistoryResponse "History"
 // @Failure      400 {object} map[string]string "Bad Request"
 // @Failure      500 {object} map[string]string "Internal Server Error"
-// @Router       /history/{requestId} [get]
+// @Router      /services/history/{requestId} [get]
 func (c *RequestController) FindAllHistoryByRequestId(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -563,7 +563,7 @@ func (c *RequestController) FindAllHistoryByRequestId(e echo.Context) error {
 // @Produce      json
 // @Success      200 {object} []responses.RequestTaskResponse "Request Task Response"
 // @Failure      500 {object} string "Error message for internal server error"
-// @Router       /requests/report/mid-sprint-tasks [get]
+// @Router      /services/requests/report/mid-sprint-tasks [get]
 func (c *RequestController) ReportMidSprintTasks(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -596,7 +596,7 @@ func (c *RequestController) ReportMidSprintTasks(e echo.Context) error {
 // @Success      200 {object} string "Success message: Request canceled successfully: {id}"
 // @Failure      400 {object} string "Error message for invalid request ID"
 // @Failure      500 {object} string "Error message for internal server error"
-// @Router       /requests/{id}/cancel [put]
+// @Router      /services/requests/{id}/cancel [put]
 func (c *RequestController) CancelRequest(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -619,7 +619,7 @@ func (c *RequestController) CancelRequest(e echo.Context) error {
 // @Description  Get retrospective report
 // @Tags         Requests
 // @Produce      json
-// @Router       /requests/retrospective/report [get]
+// @Router      /services/requests/retrospective/report [get]
 func (c *RequestController) GetRetrospectiveReport(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -641,7 +641,7 @@ func (c *RequestController) GetRetrospectiveReport(e echo.Context) error {
 // @Param        id path string true "Request ID"
 // @Success      200 {string} string "Complete request successfully"
 // @Failure      400 {object} map[string]string "error: Invalid request ID or service error"
-// @Router       /requests/{id}/complete [put]
+// @Router      /services/requests/{id}/complete [put]
 func (c *RequestController) CompleteRequestHandler(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -667,7 +667,7 @@ func (c *RequestController) CompleteRequestHandler(e echo.Context) error {
 // @Param        sprintId path string true "Sprint ID"
 // @Success      200 {string} string "Complete all requests successfully"
 // @Failure      400 {object} map[string]string "error: Invalid sprint ID or service error"
-// @Router       /requests/sprint/{sprintId}/complete [put]
+// @Router      /services/requests/sprint/{sprintId}/complete [put]
 func (c *RequestController) CompleteAllRequestBySprintIdHandler(e echo.Context) error {
 	ctx := e.Request().Context()
 

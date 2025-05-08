@@ -918,28 +918,7 @@ info:
   title: zODC Masterflow Service API
   version: "1.0"
 paths:
-  /api/v1/categories:
-    get:
-      consumes:
-      - application/json
-      description: Trả về danh sách tất cả các category có trong hệ thống.
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Danh sách Category
-          schema:
-            items:
-              $ref: '#/definitions/responses.CategoryFindAll'
-            type: array
-        "500":
-          description: Lỗi Server Nội Bộ
-          schema:
-            type: string
-      summary: Lấy danh sách tất cả Category
-      tags:
-      - Categories
-  /forms/data/{formDataId}:
+  /services/forms/data/{formDataId}:
     get:
       description: Retrieves detailed data of a specific submitted form by its ID.
       parameters:
@@ -964,7 +943,7 @@ paths:
       summary: Get form data by ID
       tags:
       - FormData
-  /forms/templates:
+  /services/forms/templates:
     get:
       description: Retrieves a list of form templates, optionally filtered by category
         ID and search query.
@@ -1024,7 +1003,7 @@ paths:
       summary: Create a new form template
       tags:
       - Forms
-  /forms/templates/{formTemplateId}:
+  /services/forms/templates/{formTemplateId}:
     put:
       consumes:
       - application/json
@@ -1059,7 +1038,7 @@ paths:
       summary: Update a form template
       tags:
       - Forms
-  /forms/templates/{formTemplateId}/details:
+  /services/forms/templates/{formTemplateId}/details:
     get:
       description: Retrieves detailed information of a specific form template using
         its ID.
@@ -1085,7 +1064,7 @@ paths:
       summary: Get form template detail by ID
       tags:
       - Forms
-  /forms/templates/edit-profile:
+  /services/forms/templates/edit-profile:
     get:
       description: Retrieves the form template used for editing a user's profile.
       produces:
@@ -1104,7 +1083,7 @@ paths:
       summary: Get edit profile form template
       tags:
       - Forms
-  /forms/templates/performance-evaluate:
+  /services/forms/templates/performance-evaluate:
     get:
       description: Retrieves the form template used for performance evaluations.
       produces:
@@ -1123,7 +1102,7 @@ paths:
       summary: Get performance evaluation form template
       tags:
       - Forms
-  /history/{requestId}:
+  /services/history/{requestId}:
     get:
       consumes:
       - application/json
@@ -1158,7 +1137,7 @@ paths:
       summary: Find all history by request id
       tags:
       - History
-  /nodes/{id}/approve:
+  /services/nodes/{id}/approve:
     put:
       description: Approves a specific node based on its ID. The user must have permission
         to approve the node.
@@ -1186,7 +1165,7 @@ paths:
       summary: Approve a node
       tags:
       - Nodes
-  /nodes/{id}/comments:
+  /services/nodes/{id}/comments:
     get:
       description: Retrieves all comments associated with a specific node.
       parameters:
@@ -1248,7 +1227,7 @@ paths:
       summary: Create a new comment on a node
       tags:
       - Comments
-  /nodes/{id}/complete:
+  /services/nodes/{id}/complete:
     patch:
       description: Marks a specific node as completed by the logged-in user.
       parameters:
@@ -1278,7 +1257,7 @@ paths:
       summary: Complete a node
       tags:
       - Nodes
-  /nodes/{id}/form/{permission}:
+  /services/nodes/{id}/form/{permission}:
     get:
       description: Retrieves the form associated with a node, considering the user's
         permission level.
@@ -1310,7 +1289,7 @@ paths:
       summary: Get node form based on permission
       tags:
       - Nodes
-  /nodes/{id}/forms/{formDataId}/edit:
+  /services/nodes/{id}/forms/{formDataId}/edit:
     put:
       consumes:
       - application/json
@@ -1353,7 +1332,7 @@ paths:
       summary: Edit a form associated with a node
       tags:
       - Nodes
-  /nodes/{id}/forms/{formId}/approve:
+  /services/nodes/{id}/forms/{formId}/approve:
     put:
       description: Approves a specific form based on node ID and form ID. The user
         must have permission to approve the form.
@@ -1386,7 +1365,7 @@ paths:
       summary: Approve a form associated with a node
       tags:
       - Nodes
-  /nodes/{id}/forms/{formId}/reject:
+  /services/nodes/{id}/forms/{formId}/reject:
     put:
       description: Rejects a specific form based on node ID and form ID. The user
         must have permission to reject the form.
@@ -1419,7 +1398,7 @@ paths:
       summary: Reject a form associated with a node
       tags:
       - Nodes
-  /nodes/{id}/forms/{formId}/submit:
+  /services/nodes/{id}/forms/{formId}/submit:
     post:
       consumes:
       - application/json
@@ -1462,7 +1441,7 @@ paths:
       summary: Submit a form associated with a node
       tags:
       - Nodes
-  /nodes/{id}/jira-form:
+  /services/nodes/{id}/jira-form:
     get:
       description: Retrieves the Jira-specific form details associated with a node.
       parameters:
@@ -1488,7 +1467,7 @@ paths:
       summary: Get Jira form for a node
       tags:
       - Nodes
-  /nodes/{id}/reassign/{userId}:
+  /services/nodes/{id}/reassign/{userId}:
     put:
       description: Reassigns a specific node to a new user based on node ID and user
         ID. The current user must have permission to reassign the node.
@@ -1521,7 +1500,7 @@ paths:
       summary: Reassign a node to a new user
       tags:
       - Nodes
-  /nodes/{id}/reject:
+  /services/nodes/{id}/reject:
     put:
       description: Rejects a specific node based on its ID. The user must have permission
         to reject the node.
@@ -1549,7 +1528,7 @@ paths:
       summary: Reject a node
       tags:
       - Nodes
-  /nodes/{id}/start:
+  /services/nodes/{id}/start:
     patch:
       description: Marks a specific node as started.
       parameters:
@@ -1574,7 +1553,7 @@ paths:
       summary: Start a node
       tags:
       - Nodes
-  /nodes/{id}/tasks:
+  /services/nodes/{id}/tasks:
     get:
       description: Retrieves detailed information about the tasks associated with
         a specific node.
@@ -1603,7 +1582,7 @@ paths:
       summary: Get task details for a node
       tags:
       - Nodes
-  /nodes/{id}/tasks/count:
+  /services/nodes/{id}/tasks/count:
     get:
       description: Returns the total number of tasks associated with a specific node.
       parameters:
@@ -1629,7 +1608,7 @@ paths:
       summary: Get task count for a node
       tags:
       - Nodes
-  /nodes}/stories:
+  /services/nodes}/stories:
     get:
       description: Retrieves a list of stories that are assigned to a specific user
         (assignee) on a given node.
@@ -1663,7 +1642,7 @@ paths:
       summary: Get stories assigned to a user on a node
       tags:
       - Nodes
-  /requests:
+  /services/requests:
     get:
       description: Retrieves a paginated list of requests based on various filter
         criteria for the logged-in user.
@@ -1721,401 +1700,7 @@ paths:
       summary: Find all requests
       tags:
       - Requests
-  /requests/{id}:
-    get:
-      description: Retrieves detailed information for a specific request ID for the
-        logged-in user.
-      parameters:
-      - description: Request ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/responses.RequestDetailResponse'
-        "400":
-          description: Error message for invalid request ID
-          schema:
-            type: string
-        "500":
-          description: Error message for internal server error
-          schema:
-            type: string
-      security:
-      - ApiKeyAuth: []
-      summary: Get request details
-      tags:
-      - Requests
-    put:
-      consumes:
-      - application/json
-      description: Updates details of an existing request identified by its ID. Requires
-        user authentication.
-      parameters:
-      - description: Request ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Request Update Data
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/requests.RequestUpdateRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 'Success message: Request updated successfully: {id}'
-          schema:
-            type: string
-        "400":
-          description: Error message for invalid request ID or bad request body
-          schema:
-            type: string
-        "500":
-          description: Error message for internal server error
-          schema:
-            type: string
-      security:
-      - ApiKeyAuth: []
-      summary: Update a request
-      tags:
-      - Requests
-  /requests/{id}/cancel:
-    put:
-      description: Cancels a request identified by its ID.
-      parameters:
-      - description: Request ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 'Success message: Request canceled successfully: {id}'
-          schema:
-            type: string
-        "400":
-          description: Error message for invalid request ID
-          schema:
-            type: string
-        "500":
-          description: Error message for internal server error
-          schema:
-            type: string
-      summary: Cancel a request
-      tags:
-      - Requests
-  /requests/{id}/complete:
-    put:
-      description: Marks a specific request as completed based on its request ID.
-      parameters:
-      - description: Request ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Complete request successfully
-          schema:
-            type: string
-        "400":
-          description: 'error: Invalid request ID or service error'
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Complete a specific request
-      tags:
-      - Requests
-  /requests/{id}/completed-form:
-    get:
-      description: Retrieves the completed form for a specific request ID.
-      parameters:
-      - description: Request ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/responses.RequestCompletedFormInputResponse'
-            type: array
-        "400":
-          description: Error message for invalid request ID
-          schema:
-            type: string
-        "500":
-          description: Error message for internal server error
-          schema:
-            type: string
-      summary: Get completed form for a request
-      tags:
-      - Requests
-  /requests/{id}/completed-form/approval:
-    get:
-      description: Retrieves the completed form approval for a specific request ID.
-      parameters:
-      - description: Request ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/responses.RequestCompletedFormApprovalOverviewResponse'
-            type: array
-        "400":
-          description: Error message for invalid request ID
-          schema:
-            type: string
-        "500":
-          description: Error message for internal server error
-          schema:
-            type: string
-      summary: Get completed form approval for a request
-      tags:
-      - Requests
-  /requests/{id}/file-manager:
-    get:
-      description: Retrieves the file manager for a specific request ID.
-      parameters:
-      - description: Request ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/responses.RequestFileManagerResponse'
-        "400":
-          description: Error message for invalid request ID
-          schema:
-            type: string
-        "500":
-          description: Error message for internal server error
-          schema:
-            type: string
-      summary: Get file manager for a request
-      tags:
-      - Requests
-  /requests/{id}/overview:
-    get:
-      description: Retrieves overview information (like counts, statuses) for a specific
-        request ID.
-      parameters:
-      - description: Request ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/responses.RequestOverviewResponse'
-        "400":
-          description: Error message for invalid request ID
-          schema:
-            type: string
-        "500":
-          description: Error message for internal server error
-          schema:
-            type: string
-      summary: Get request overview
-      tags:
-      - Requests
-  /requests/{id}/sub-requests:
-    get:
-      description: Retrieves a paginated list of sub-requests associated with a specific
-        parent request ID.
-      parameters:
-      - description: Parent Request ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - default: 1
-        description: Page number for pagination
-        in: query
-        name: page
-        type: integer
-      - default: 10
-        description: Number of items per page
-        in: query
-        name: pageSize
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/responses.Response'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/responses.RequestResponse'
-                  type: array
-              type: object
-        "400":
-          description: Error message for invalid request ID
-          schema:
-            type: string
-        "500":
-          description: Error message for internal server error
-          schema:
-            type: string
-      summary: Find all sub-requests for a given request
-      tags:
-      - Requests
-  /requests/{id}/tasks:
-    get:
-      description: Retrieves a paginated list of tasks associated with a given request
-        ID.
-      parameters:
-      - description: Request ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - default: 1
-        description: Page number for pagination
-        in: query
-        name: page
-        type: integer
-      - default: 10
-        description: Number of items per page
-        in: query
-        name: pageSize
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/responses.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/responses.RequestTaskResponse'
-              type: object
-        "400":
-          description: Error message for invalid request ID
-          schema:
-            type: string
-        "500":
-          description: Error message for internal server error
-          schema:
-            type: string
-      summary: Get tasks for a specific request
-      tags:
-      - Requests
-  /requests/count:
-    get:
-      description: Retrieves counts of requests grouped by status or other criteria
-        for the logged-in user.
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/responses.RequestOverviewResponse'
-        "500":
-          description: Error message for internal server error
-          schema:
-            type: string
-      security:
-      - ApiKeyAuth: []
-      summary: Get request counts
-      tags:
-      - Requests
-  /requests/report/mid-sprint-tasks:
-    get:
-      description: Report mid sprint tasks
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Request Task Response
-          schema:
-            items:
-              $ref: '#/definitions/responses.RequestTaskResponse'
-            type: array
-        "500":
-          description: Error message for internal server error
-          schema:
-            type: string
-      summary: Report mid sprint tasks
-      tags:
-      - Requests
-  /requests/retrospective/report:
-    get:
-      description: Get retrospective report
-      produces:
-      - application/json
-      responses: {}
-      summary: Get retrospective report
-      tags:
-      - Requests
-  /requests/sprint/{sprintId}/complete:
-    put:
-      description: Marks all requests for a specific sprint as completed based on
-        the sprint ID.
-      parameters:
-      - description: Sprint ID
-        in: path
-        name: sprintId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Complete all requests successfully
-          schema:
-            type: string
-        "400":
-          description: 'error: Invalid sprint ID or service error'
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Complete all requests for a specific sprint
-      tags:
-      - Requests
-  /requests/tasks/by-project:
+  /services/requests//tasks/projects:
     get:
       description: Retrieves a paginated list of tasks across requests, filtered by
         project, type, status, and workflow type for the logged-in user.
@@ -2168,7 +1753,402 @@ paths:
       summary: Get request tasks by project and filters
       tags:
       - Requests
-  /requests/tasks/count:
+  /services/requests/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Updates details of an existing request identified by its ID. Requires
+        user authentication.
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Request Update Data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/requests.RequestUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'Success message: Request updated successfully: {id}'
+          schema:
+            type: string
+        "400":
+          description: Error message for invalid request ID or bad request body
+          schema:
+            type: string
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Update a request
+      tags:
+      - Requests
+  /services/requests/{id}/cancel:
+    put:
+      description: Cancels a request identified by its ID.
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'Success message: Request canceled successfully: {id}'
+          schema:
+            type: string
+        "400":
+          description: Error message for invalid request ID
+          schema:
+            type: string
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      summary: Cancel a request
+      tags:
+      - Requests
+  /services/requests/{id}/complete:
+    put:
+      description: Marks a specific request as completed based on its request ID.
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Complete request successfully
+          schema:
+            type: string
+        "400":
+          description: 'error: Invalid request ID or service error'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Complete a specific request
+      tags:
+      - Requests
+  /services/requests/{id}/completed-form:
+    get:
+      description: Retrieves the completed form for a specific request ID.
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/responses.RequestCompletedFormInputResponse'
+            type: array
+        "400":
+          description: Error message for invalid request ID
+          schema:
+            type: string
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      summary: Get completed form for a request
+      tags:
+      - Requests
+  /services/requests/{id}/completed-form/approval:
+    get:
+      description: Retrieves the completed form approval for a specific request ID.
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/responses.RequestCompletedFormApprovalOverviewResponse'
+            type: array
+        "400":
+          description: Error message for invalid request ID
+          schema:
+            type: string
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      summary: Get completed form approval for a request
+      tags:
+      - Requests
+  /services/requests/{id}/file-manager:
+    get:
+      description: Retrieves the file manager for a specific request ID.
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.RequestFileManagerResponse'
+        "400":
+          description: Error message for invalid request ID
+          schema:
+            type: string
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      summary: Get file manager for a request
+      tags:
+      - Requests
+  /services/requests/{id}/overview:
+    get:
+      description: Retrieves overview information (like counts, statuses) for a specific
+        request ID.
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.RequestOverviewResponse'
+        "400":
+          description: Error message for invalid request ID
+          schema:
+            type: string
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      summary: Get request overview
+      tags:
+      - Requests
+  /services/requests/{id}/sub-requests:
+    get:
+      description: Retrieves a paginated list of sub-requests associated with a specific
+        parent request ID.
+      parameters:
+      - description: Parent Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - default: 1
+        description: Page number for pagination
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of items per page
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/responses.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/responses.RequestResponse'
+                  type: array
+              type: object
+        "400":
+          description: Error message for invalid request ID
+          schema:
+            type: string
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      summary: Find all sub-requests for a given request
+      tags:
+      - Requests
+  /services/requests/{id}/tasks:
+    get:
+      description: Retrieves a paginated list of tasks associated with a given request
+        ID.
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - default: 1
+        description: Page number for pagination
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of items per page
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/responses.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/responses.RequestTaskResponse'
+              type: object
+        "400":
+          description: Error message for invalid request ID
+          schema:
+            type: string
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      summary: Get tasks for a specific request
+      tags:
+      - Requests
+  /services/requests/count:
+    get:
+      description: Retrieves counts of requests grouped by status or other criteria
+        for the logged-in user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.RequestOverviewResponse'
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Get request counts
+      tags:
+      - Requests
+  /services/requests/detail/{id}:
+    get:
+      description: Retrieves detailed information for a specific request ID for the
+        logged-in user.
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.RequestDetailResponse'
+        "400":
+          description: Error message for invalid request ID
+          schema:
+            type: string
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Get request details
+      tags:
+      - Requests
+  /services/requests/report/mid-sprint-tasks:
+    get:
+      description: Report mid sprint tasks
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Request Task Response
+          schema:
+            items:
+              $ref: '#/definitions/responses.RequestTaskResponse'
+            type: array
+        "500":
+          description: Error message for internal server error
+          schema:
+            type: string
+      summary: Report mid sprint tasks
+      tags:
+      - Requests
+  /services/requests/retrospective/report:
+    get:
+      description: Get retrospective report
+      produces:
+      - application/json
+      responses: {}
+      summary: Get retrospective report
+      tags:
+      - Requests
+  /services/requests/sprint/{sprintId}/complete:
+    put:
+      description: Marks all requests for a specific sprint as completed based on
+        the sprint ID.
+      parameters:
+      - description: Sprint ID
+        in: path
+        name: sprintId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Complete all requests successfully
+          schema:
+            type: string
+        "400":
+          description: 'error: Invalid sprint ID or service error'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Complete all requests for a specific sprint
+      tags:
+      - Requests
+  /services/requests/tasks/count:
     get:
       description: Retrieves the total count of tasks matching filter criteria like
         project, workflow type, and task type for the logged-in user.
@@ -2202,7 +2182,28 @@ paths:
       summary: Get count of request tasks based on filters
       tags:
       - Requests
-  /utils/excel-extract:
+  /services/services/categories:
+    get:
+      consumes:
+      - application/json
+      description: Trả về danh sách tất cả các category có trong hệ thống.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Danh sách Category
+          schema:
+            items:
+              $ref: '#/definitions/responses.CategoryFindAll'
+            type: array
+        "500":
+          description: Lỗi Server Nội Bộ
+          schema:
+            type: string
+      summary: Lấy danh sách tất cả Category
+      tags:
+      - Categories
+  /services/utils/excel-extract:
     post:
       consumes:
       - multipart/form-data
@@ -2236,7 +2237,7 @@ paths:
       summary: Extract data from an Excel file
       tags:
       - Utils
-  /workflows:
+  /services/workflows:
     get:
       description: Retrieves a list of workflows based on various filter criteria
         for the logged-in user.
@@ -2317,7 +2318,7 @@ paths:
       summary: Create a new workflow
       tags:
       - Workflows
-  /workflows/{id}:
+  /services/workflows/{id}:
     get:
       description: Retrieves detailed information for a specific workflow version
         ID.
@@ -2377,7 +2378,7 @@ paths:
       summary: Update a workflow
       tags:
       - Workflows
-  /workflows/{id}/archive:
+  /services/workflows/{id}/archive:
     patch:
       description: Marks a workflow definition as archived based on its ID.
       parameters:
@@ -2403,7 +2404,7 @@ paths:
       summary: Archive a workflow
       tags:
       - Workflows
-  /workflows/start:
+  /services/workflows/start:
     post:
       consumes:
       - application/json
