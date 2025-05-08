@@ -281,7 +281,7 @@ func (s *NatsSubscriberService) handleJiraIssueUpdate(tx *sql.Tx, data []byte) (
 							slog.Error("Failed to start node", "nodeId", nodeId, "error", err)
 						}
 					})
-				} else if *oldSystemStatus == string(constants.NodeStatusInProgress) && systemStatus == string(constants.NodeStatusCompleted) {
+				} else if (*oldSystemStatus == string(constants.NodeStatusInProgress) || *oldSystemStatus == string(constants.NodeStatusTodo)) && systemStatus == string(constants.NodeStatusCompleted) {
 					// From In Progress to Completed -> Complete Node
 					var assigneeId int32 = 1 // default system user ID
 					if message.AssigneeId != nil {
